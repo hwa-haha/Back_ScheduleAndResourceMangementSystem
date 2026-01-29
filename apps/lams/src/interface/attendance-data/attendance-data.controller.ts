@@ -294,7 +294,7 @@ export class AttendanceDataController {
         description:
             '연월을 기준으로 스냅샷 데이터를 조회합니다. 기본적으로 가장 최신 스냅샷을 반환하며, 정렬 및 필터 조건을 통해 유연하게 조회할 수 있습니다.',
     })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiQuery({
         name: 'sortBy',
@@ -319,7 +319,7 @@ export class AttendanceDataController {
             sortBy: dto.sortBy || 'latest',
             filters: dto.filters,
         });
-
+        console.log('result', result);
         return result;
     }
 

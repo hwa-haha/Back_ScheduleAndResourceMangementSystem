@@ -34,7 +34,10 @@ export class GetSnapshotListHandler implements IQueryHandler<GetSnapshotListQuer
         if (filters) {
             filteredSnapshots = this.필터적용한다(filteredSnapshots, filters);
         }
-
+        filteredSnapshots = filteredSnapshots.map((snapshot) => {
+            delete snapshot.children;
+            return snapshot;
+        });
         // 3. 정렬 적용
         const sortedSnapshots = this.정렬적용한다(filteredSnapshots, sortBy);
 
