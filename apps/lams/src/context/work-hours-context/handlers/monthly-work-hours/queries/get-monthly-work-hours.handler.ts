@@ -1,5 +1,6 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
+import { endOfMonth, format } from 'date-fns';
 import { GetMonthlyWorkHoursQuery } from './get-monthly-work-hours.query';
 import { IGetMonthlyWorkHoursResponse } from '../../../interfaces/response/get-monthly-work-hours-response.interface';
 import { DomainAssignedProjectService } from '../../../../../domain/assigned-project/assigned-project.service';
@@ -29,10 +30,11 @@ export class GetMonthlyWorkHoursHandler
         // 1. 직원의 할당된 프로젝트 목록 조회
         const assignedProjects = await this.assignedProjectService.직원ID로조회한다(employeeId);
 
-        // 2. 각 할당된 프로젝트의 시수 조회
-        const yearMonth = `${year}-${month.padStart(2, '0')}`;
-        const startDate = `${yearMonth}-01`;
-        const endDate = `${yearMonth}-31`;
+        // 2. 각 할당된 프로젝트의 시수 조회 (월 말일 계산: 11월→30일 등)
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month, 10);
+        const startDate = format(new Date(yearNum, monthNum - 1, 1), 'yyyy-MM-dd');
+        const endDate = format(endOfMonth(new Date(yearNum, monthNum - 1, 1)), 'yyyy-MM-dd');
 
         const allWorkHours: Array<{
             projectId: string;

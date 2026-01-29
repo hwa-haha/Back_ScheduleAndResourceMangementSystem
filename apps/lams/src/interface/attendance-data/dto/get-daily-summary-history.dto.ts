@@ -1,6 +1,17 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
+ * 일간 요약/변경 이력에 노출하는 간단한 직원 정보 DTO
+ */
+export class EmployeeSummaryForHistoryDto {
+    @ApiProperty({ description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+    employeeId: string;
+
+    @ApiProperty({ description: '직원 이름', example: '홍길동' })
+    name: string;
+}
+
+/**
  * 일간 요약 수정이력 항목 DTO
  */
 export class DailySummaryHistoryItemDto {
@@ -16,7 +27,7 @@ export class DailySummaryHistoryItemDto {
     @ApiProperty({ description: '변경 내용', example: '{"enter": "09:00:00", "leave": "18:00:00"}' })
     content: string;
 
-    @ApiProperty({ description: '변경자', example: '관리자' })
+    @ApiProperty({ description: '변경자 ID (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
     changedBy: string;
 
     @ApiProperty({ description: '변경 시간' })
@@ -33,6 +44,20 @@ export class DailySummaryHistoryItemDto {
 
     @ApiProperty({ description: '수정 시간' })
     updatedAt: Date;
+
+    @ApiPropertyOptional({
+        description: '일간 요약 대상 직원 (employeeId, name)',
+        type: EmployeeSummaryForHistoryDto,
+        nullable: true,
+    })
+    employeeInfo: EmployeeSummaryForHistoryDto | null;
+
+    @ApiPropertyOptional({
+        description: '변경한 사람 (employeeId, name)',
+        type: EmployeeSummaryForHistoryDto,
+        nullable: true,
+    })
+    changerInfo: EmployeeSummaryForHistoryDto | null;
 }
 
 /**

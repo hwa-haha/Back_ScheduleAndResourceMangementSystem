@@ -145,7 +145,7 @@ export class GenerateMonthlySummariesHandler implements ICommandHandler<
                                     where: { id: monthlySummary.id },
                                 });
                                 if (monthlySummaryEntity) {
-                                    monthlySummaryEntity.additional_note = note;
+                                    monthlySummaryEntity.note = note;
                                     await manager.save(MonthlyEventSummary, monthlySummaryEntity);
                                 }
                             }
