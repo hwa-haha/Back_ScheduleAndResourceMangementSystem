@@ -115,8 +115,8 @@ describe('시수 관리 API (e2e)', () => {
                         startDate,
                         endDate,
                     });
-                // 201 생성됨, 409 이미 할당됨, 500 DB 제약(중복 등)
-                expect([201, 409, 500]).toContain(res.status);
+                // 201 생성됨, 409 이미 할당됨 (500은 예상 외 오류이므로 테스트에서 허용하지 않음)
+                expect([201, 409]).toContain(res.status);
                 if (res.status === 201) {
                     expect(res.body).toHaveProperty('id');
                     expect(res.body).toHaveProperty('employeeId');

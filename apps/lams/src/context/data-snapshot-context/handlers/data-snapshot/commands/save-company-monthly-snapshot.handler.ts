@@ -305,9 +305,9 @@ export class SaveCompanyMonthlySnapshotHandler implements ICommandHandler<
         // 날짜 범위 계산
         const yearNum = parseInt(year);
         const monthNum = parseInt(month);
-        const startDate = `${year}${month.padStart(2, '0')}01`;
+        const startDate = `${year}-${month.padStart(2, '0')}-01`;
         const lastDay = new Date(yearNum, monthNum, 0).getDate();
-        const endDate = `${year}${month.padStart(2, '0')}${lastDay.toString().padStart(2, '0')}`;
+        const endDate = `${year}-${month.padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
 
         // EventInfo 조회 (yyyymmdd 기준으로 해당 연월 범위 조회, id 제외)
         const eventInfos = await manager

@@ -24,7 +24,7 @@ export class RemoveProjectAssignmentHandler
         this.logger.log(`프로젝트 할당 제거 시작: assignedProjectId=${assignedProjectId}`);
 
         await this.dataSource.transaction(async (manager) => {
-            await this.assignedProjectService.삭제한다(assignedProjectId, performedBy, manager);
+            await this.assignedProjectService.완전삭제한다(assignedProjectId, performedBy, manager);
         });
 
         this.logger.log(`프로젝트 할당 제거 완료: assignedProjectId=${assignedProjectId}`);

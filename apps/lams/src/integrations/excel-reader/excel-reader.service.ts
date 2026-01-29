@@ -209,7 +209,6 @@ export class ExcelReaderService {
             // 헤더가 있는 경우
             headers = Object.keys(limitedData[0]);
             records = limitedData;
-            console.log(records);
             // 엑셀 로케일 형식(d/m/yy h:mm 등) 방지: Date·날짜 문자열을 YYYY-MM-DD HH:mm:ss로 정규화
             normalizeDateValuesInRecords(records);
             rows = records.map((record) => headers!.map((header) => record[header]));
