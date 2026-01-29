@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsArray, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -33,9 +34,10 @@ export class ReflectFileContentRequestDto {
     year: string;
 
     @ApiProperty({
-        description: '월',
-        example: '11',
+        description: '월 (1~12, 1월은 01 또는 1 입력 가능)',
+        example: '01',
     })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;

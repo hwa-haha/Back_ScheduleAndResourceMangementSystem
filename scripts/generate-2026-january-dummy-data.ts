@@ -97,36 +97,32 @@ const WEEKEND_DAYS = [0, 6]; // 일요일(0), 토요일(6)
 const DEFAULT_START_TIME = '09:00:00';
 const DEFAULT_END_TIME = '18:00:00';
 
+/** 하드코딩 직원 데이터 (id, 사원번호, 이름, 이메일) */
+const HARDCODED_EMPLOYEES: Array<{ id: string; 사원번호: string; 이름: string; 이메일: string }> = [
+    { id: '604a5c05-e0c0-495f-97bc-b86046db4342', 사원번호: '23027', 이름: '김종식', 이메일: 'kim.jongsik@lumir.space' },
+    { id: '02b1d831-f278-4393-86ec-9db01248a1ec', 사원번호: '23047', 이름: '우창욱', 이메일: 'woo.changuk@lumir.space' },
+    { id: '839e6f06-8d44-43a1-948c-095253c4cf8c', 사원번호: '24016', 이름: '김규현', 이메일: 'kim.kyuhyun@lumir.space' },
+    { id: '1e9cc4b3-affb-4f63-9749-3480cd5261b9', 사원번호: '24019', 이름: '조민경', 이메일: 'jo.minkyeong@lumir.space' },
+    { id: 'fd3336ea-2b7f-463a-9f21-cced8d68892f', 사원번호: '24024', 이름: '이화영', 이메일: 'lee.hwayoung@lumir.space' },
+    { id: '2f0ecd69-1b07-4d33-8f49-b71ef9048d87', 사원번호: '24026', 이름: '민정호', 이메일: 'min.jeongho@lumir.space' },
+    { id: 'dbfbb104-6560-4557-8079-7845a82ffe14', 사원번호: '25040', 이름: '유승훈', 이메일: 'yoo.seunghun@lumir.space' },
+    { id: 'f5f08c1d-9330-40f8-b80c-e75d9442503b', 사원번호: '25049', 이름: '박헌남', 이메일: 'park.heonnam@lumir.space' },
+    { id: 'f5d3b1c3-5c94-473a-af9a-afef518d017c', 사원번호: '26002', 이름: '서우혁', 이메일: 'seo.woohyeok@lumir.space' },
+    { id: '490f6bca-2d5f-4f4b-bced-60e1b029b2d0', 사원번호: '26005', 이름: '조혜송', 이메일: 'cho.haesong@lumir.space' },
+];
+
 /**
- * 직원 정보 추출
+ * 하드코딩된 직원 목록을 Employee[] 로 반환
  */
-function extractEmployeesFromCSV(csvPath: string): Employee[] {
-    const content = fs.readFileSync(csvPath, 'utf-8');
-    const lines = content.split('\n').filter((line) => line.trim());
-    const header = lines[0].split(',');
-    
-    const employeeMap = new Map<string, Employee>();
-    
-    for (let i = 1; i < lines.length; i++) {
-        const values = parseCSVLine(lines[i]);
-        if (values.length < 7) continue;
-        
-        const 사원번호 = values[6]?.trim();
-        if (!사원번호) continue;
-        
-        if (!employeeMap.has(사원번호)) {
-            employeeMap.set(사원번호, {
-                사원번호,
-                이름: values[5]?.trim() || '',
-                카드번호: values[4]?.trim() || '',
-                조직: values[8]?.trim() || 'Web파트',
-                직급: values[9]?.trim() || '연구원',
-                근무조: values[7]?.trim() || '정상근무',
-            });
-        }
-    }
-    
-    return Array.from(employeeMap.values());
+function getHardcodedEmployees(): Employee[] {
+    return HARDCODED_EMPLOYEES.map((row) => ({
+        사원번호: row.사원번호,
+        이름: row.이름,
+        카드번호: `990${row.사원번호}9000702`,
+        조직: 'Web파트',
+        직급: '연구원',
+        근무조: '정상근무',
+    }));
 }
 
 /**
@@ -215,134 +211,206 @@ function getRandomStatus(type: '출근' | '퇴근' | '출입'): string {
     return `${type}(${method})`;
 }
 
+/** (직원사원번호_날짜) -> 시나리오 번호(1~10) */
+type ScenarioMap = Map<string, number>;
+
+const SCENARIO_NORMAL = 1;
+const SCENARIO_SPECIAL_MIN = 2;
+const SCENARIO_SPECIAL_MAX = 10;
+const SPECIAL_SCENARIO_COUNT = SCENARIO_SPECIAL_MAX - SCENARIO_NORMAL; // 9종
+
 /**
- * 출입내역 CSV 생성
+ * 평일 (직원, 날짜) 쌍 목록 생성
  */
-function generateAttendanceRecords(employees: Employee[]): AttendanceRecord[] {
+function getWeekdaySlots(employees: Employee[]): Array<{ employee: Employee; date: Date }> {
+    const startDate = new Date(YEAR, MONTH - 1, 1);
+    const endDate = new Date(YEAR, MONTH, 0);
+    const slots: Array<{ employee: Employee; date: Date }> = [];
+    for (const employee of employees) {
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const date = new Date(d);
+            if (isWeekday(date)) slots.push({ employee, date });
+        }
+    }
+    return slots;
+}
+
+/**
+ * Fisher–Yates 셔플
+ */
+function shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = randomInt(0, i);
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+/**
+ * 시나리오 할당: 정상근무(1) 대다수, 특이근무(2~10)는 각 1~3건만 배정
+ */
+function buildScenarioAssignment(employees: Employee[]): ScenarioMap {
+    const map: ScenarioMap = new Map();
+    const slots = getWeekdaySlots(employees);
+    const key = (emp: Employee, date: Date) => `${emp.사원번호}_${formatDate(date)}`;
+
+    // 전부 정상근무(1)로 초기화
+    for (const { employee, date } of slots) {
+        map.set(key(employee, date), SCENARIO_NORMAL);
+    }
+
+    // 특이 시나리오별 건수: 각 1~3건
+    const counts: number[] = [];
+    for (let s = SCENARIO_SPECIAL_MIN; s <= SCENARIO_SPECIAL_MAX; s++) {
+        counts.push(randomInt(1, 3));
+    }
+    const totalSpecial = counts.reduce((a, b) => a + b, 0);
+    if (totalSpecial > slots.length) return map;
+
+    // 슬롯 셔플 후 앞에서 totalSpecial개를 특이 시나리오에 배정
+    const shuffled = shuffle(slots);
+    let idx = 0;
+    for (let s = 0; s < SPECIAL_SCENARIO_COUNT; s++) {
+        const scenario = SCENARIO_SPECIAL_MIN + s;
+        for (let c = 0; c < counts[s] && idx < shuffled.length; c++, idx++) {
+            const { employee, date } = shuffled[idx];
+            map.set(key(employee, date), scenario);
+        }
+    }
+    return map;
+}
+
+/**
+ * 출입내역 CSV 생성 (시나리오 할당 기반)
+ */
+function generateAttendanceRecords(employees: Employee[], scenarioMap: ScenarioMap): AttendanceRecord[] {
     const records: AttendanceRecord[] = [];
     const startDate = new Date(YEAR, MONTH - 1, 1);
     const endDate = new Date(YEAR, MONTH, 0);
-    
-    // 각 직원별로 날짜별 데이터 생성
+    const key = (emp: Employee, date: Date) => `${emp.사원번호}_${formatDate(date)}`;
+
     for (const employee of employees) {
         const employeeRecords: AttendanceRecord[] = [];
-        
+
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const date = new Date(d);
-            const dayOfWeek = date.getDay();
-            const dayOfMonth = date.getDate();
-            
-            // 시나리오 결정 (평일만)
+
             if (!isWeekday(date)) {
-                // 주말/공휴일: 랜덤하게 출입 기록 생성 (이슈 발생 안 함)
                 if (randomInt(0, 100) < 30) {
-                    // 30% 확률로 출입 기록 생성
                     const time = formatTime(randomInt(9, 17), randomInt(0, 59));
                     employeeRecords.push(createAttendanceRecord(employee, date, time, getRandomStatus('출입')));
                 }
                 continue;
             }
-            
-            // 평일 시나리오
-            const scenario = randomInt(1, 10);
-            
+
+            const scenario = scenarioMap.get(key(employee, date)) ?? SCENARIO_NORMAL;
+
             switch (scenario) {
-                case 1: // 정상 근무
+                case 1: // 정상 근무 (9시 전 출근, 18시 이후 퇴근)
                     {
-                        const 출근시간 = formatTime(randomInt(8, 8), randomInt(30, 59), randomInt(0, 59));
-                        const 퇴근시간 = formatTime(randomInt(18, 18), randomInt(0, 30), randomInt(0, 59));
+                        const 출근시간 = formatTime(8, randomInt(30, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(18, randomInt(0, 30), randomInt(0, 59));
                         employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
-                        
-                        // 중간 출입 기록 0~3회
                         const midCount = randomInt(0, 3);
                         for (let i = 0; i < midCount; i++) {
                             const midTime = formatTime(randomInt(10, 17), randomInt(0, 59));
                             employeeRecords.push(createAttendanceRecord(employee, date, midTime, getRandomStatus('출입')));
                         }
-                        
                         employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
-                    
-                case 2: // 지각
+
+                case 2: // 지각 (9시 이후 출근, 18시 퇴근)
                     {
                         const 출근시간 = formatTime(9, randomInt(1, 30), randomInt(0, 59));
-                        const 퇴근시간 = formatTime(randomInt(18, 19), randomInt(0, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(18, randomInt(0, 30), randomInt(0, 59));
                         employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
-                        
                         const midCount = randomInt(0, 2);
                         for (let i = 0; i < midCount; i++) {
                             const midTime = formatTime(randomInt(10, 17), randomInt(0, 59));
                             employeeRecords.push(createAttendanceRecord(employee, date, midTime, getRandomStatus('출입')));
                         }
-                        
                         employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
-                    
-                case 3: // 조퇴
+
+                case 3: // 조퇴 (9시 전 출근, 18시 이전 퇴근)
                     {
-                        const 출근시간 = formatTime(randomInt(8, 8), randomInt(30, 59), randomInt(0, 59));
-                        const 퇴근시간 = formatTime(randomInt(17, 17), randomInt(0, 59), randomInt(0, 59));
+                        const 출근시간 = formatTime(8, randomInt(30, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(17, randomInt(0, 59), randomInt(0, 59));
                         employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
-                        
                         const midCount = randomInt(0, 2);
                         for (let i = 0; i < midCount; i++) {
                             const midTime = formatTime(randomInt(10, 16), randomInt(0, 59));
                             employeeRecords.push(createAttendanceRecord(employee, date, midTime, getRandomStatus('출입')));
                         }
-                        
                         employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
-                    
+
                 case 4: // 결근 (출입 기록 없음)
-                    // 기록 없음
                     break;
-                    
+
                 case 5: // 연차 사용 (출입 기록 없음, 근태신청내역에서 처리)
-                    // 기록 없음
                     break;
-                    
-                case 6: // 오전반차 사용 (출근 기록 없음, 퇴근만)
+
+                case 6: // 오전반차 (오후 출근 13~14시, 18시 퇴근 — 하루 한 건만 있으면 비정상이므로 출근·퇴근 둘 다)
                     {
-                        const 퇴근시간 = formatTime(randomInt(14, 18), randomInt(0, 59), randomInt(0, 59));
-                        employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
-                    }
-                    break;
-                    
-                case 7: // 오후반차 사용 (출근만, 퇴근 기록 없음)
-                    {
-                        const 출근시간 = formatTime(randomInt(8, 8), randomInt(30, 59), randomInt(0, 59));
+                        const 출근시간 = formatTime(13, randomInt(0, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(18, randomInt(0, 30), randomInt(0, 59));
                         employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
-                        
                         const midCount = randomInt(0, 2);
                         for (let i = 0; i < midCount; i++) {
-                            const midTime = formatTime(randomInt(10, 13), randomInt(0, 59));
+                            const midTime = formatTime(randomInt(14, 17), randomInt(0, 59));
                             employeeRecords.push(createAttendanceRecord(employee, date, midTime, getRandomStatus('출입')));
                         }
+                        employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
-                    
-                case 8: // 중복 시간 근태 (이슈 발생) - 출입 기록은 정상, 근태신청내역에서 처리
+
+                case 7: // 오후반차 (9시 전 출근, 13시 전 퇴근)
                     {
-                        const 출근시간 = formatTime(randomInt(8, 8), randomInt(30, 59), randomInt(0, 59));
-                        const 퇴근시간 = formatTime(randomInt(18, 18), randomInt(0, 30), randomInt(0, 59));
+                        const 출근시간 = formatTime(8, randomInt(30, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(12, randomInt(30, 59), randomInt(0, 59));
+                        employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
+                        const midCount = randomInt(0, 2);
+                        for (let i = 0; i < midCount; i++) {
+                            const midTime = formatTime(randomInt(10, 12), randomInt(0, 59));
+                            employeeRecords.push(createAttendanceRecord(employee, date, midTime, getRandomStatus('출입')));
+                        }
+                        employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
+                    }
+                    break;
+
+                case 8: // 중복 시간 근태 (이슈) — 출근·퇴근만 (9시 전 출근, 18시 이후 퇴근)
+                    {
+                        const 출근시간 = formatTime(8, randomInt(30, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(18, randomInt(0, 30), randomInt(0, 59));
                         employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
                         employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
-                    
-                case 9: // 복합 케이스: 지각 + 오후반차 (출근만, 퇴근 기록 없음)
+
+                case 9: // 지각 + 오후반차 (9시 이후 출근, 13시 전 퇴근)
                     {
                         const 출근시간 = formatTime(9, randomInt(1, 30), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(12, randomInt(30, 59), randomInt(0, 59));
                         employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
+                        employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
-                    
-                case 10: // 복합 케이스: 조퇴 + 오전반차 (퇴근만)
+
+                case 10: // 조퇴 + 오전반차 (오후 출근 13~14시, 17시대 조퇴)
                     {
-                        const 퇴근시간 = formatTime(randomInt(17, 17), randomInt(0, 59), randomInt(0, 59));
+                        const 출근시간 = formatTime(13, randomInt(0, 59), randomInt(0, 59));
+                        const 퇴근시간 = formatTime(17, randomInt(0, 59), randomInt(0, 59));
+                        employeeRecords.push(createAttendanceRecord(employee, date, 출근시간, getRandomStatus('출근')));
+                        const midCount = randomInt(0, 1);
+                        for (let i = 0; i < midCount; i++) {
+                            const midTime = formatTime(randomInt(14, 16), randomInt(0, 59));
+                            employeeRecords.push(createAttendanceRecord(employee, date, midTime, getRandomStatus('출입')));
+                        }
                         employeeRecords.push(createAttendanceRecord(employee, date, 퇴근시간, getRandomStatus('퇴근')));
                     }
                     break;
@@ -403,29 +471,27 @@ function createAttendanceRecord(
 }
 
 /**
- * 근태신청내역 CSV 생성
+ * 근태신청내역 CSV 생성 (시나리오 할당 기반: 5=연차, 6=오전반차, 7=오후반차, 8=중복만 신청 생성)
  */
-function generateLeaveRequests(employees: Employee[]): LeaveRequest[] {
+function generateLeaveRequests(employees: Employee[], scenarioMap: ScenarioMap): LeaveRequest[] {
     const requests: LeaveRequest[] = [];
     const startDate = new Date(YEAR, MONTH - 1, 1);
     const endDate = new Date(YEAR, MONTH, 0);
     let requestNo = 1;
-    
+    const key = (emp: Employee, date: Date) => `${emp.사원번호}_${formatDate(date)}`;
+
     for (const employee of employees) {
         for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
             const date = new Date(d);
-            
-            // 평일만 처리
             if (!isWeekday(date)) continue;
-            
-            // 랜덤하게 근태 신청 생성 (20% 확률)
-            if (randomInt(1, 100) > 20) continue;
-            
-            const scenario = randomInt(1, 8);
+
+            const scenario = scenarioMap.get(key(employee, date));
+            if (scenario == null || scenario < 5 || scenario > 8) continue;
+
             const dateStr = formatDate(date);
-            
+
             switch (scenario) {
-                case 1: // 연차
+                case 5: // 연차
                     requests.push({
                         No: String(requestNo++),
                         신청일: dateStr,
@@ -449,8 +515,8 @@ function generateLeaveRequests(employees: Employee[]): LeaveRequest[] {
                         비고: '',
                     });
                     break;
-                    
-                case 2: // 오전반차
+
+                case 6: // 오전반차
                     requests.push({
                         No: String(requestNo++),
                         신청일: dateStr,
@@ -474,8 +540,8 @@ function generateLeaveRequests(employees: Employee[]): LeaveRequest[] {
                         비고: '',
                     });
                     break;
-                    
-                case 3: // 오후반차
+
+                case 7: // 오후반차
                     requests.push({
                         No: String(requestNo++),
                         신청일: dateStr,
@@ -499,33 +565,8 @@ function generateLeaveRequests(employees: Employee[]): LeaveRequest[] {
                         비고: '',
                     });
                     break;
-                    
-                case 4: // 출장
-                    requests.push({
-                        No: String(requestNo++),
-                        신청일: dateStr,
-                        기간: `${dateStr} ~ ${dateStr}`,
-                        신청일수: '1',
-                        신청시간: '',
-                        사용일수: '1',
-                        부서: employee.조직,
-                        직급: employee.직급,
-                        이름: employee.이름,
-                        ERP사번: employee.사원번호,
-                        근태항목: '출장',
-                        근태구분: '출장',
-                        상태: '결재종결',
-                        종결일자: dateStr,
-                        신청내역: `출장신청서_${employee.이름}`,
-                        문서번호: `출장-26-${String(requestNo).padStart(4, '0')}`,
-                        출장지: '서울',
-                        교통수단: '지하철',
-                        출장목적: '고객 미팅',
-                        비고: '',
-                    });
-                    break;
-                    
-                case 5: // 중복 시간 근태 (이슈 발생) - 연차와 출장 동시
+
+                case 8: // 중복 시간 근태 (이슈 발생) - 연차와 출장 동시
                     requests.push({
                         No: String(requestNo++),
                         신청일: dateStr,
@@ -568,81 +609,6 @@ function generateLeaveRequests(employees: Employee[]): LeaveRequest[] {
                         출장지: '부산',
                         교통수단: 'KTX',
                         출장목적: '프로젝트 회의',
-                        비고: '',
-                    });
-                    break;
-                    
-                case 6: // 공가
-                    requests.push({
-                        No: String(requestNo++),
-                        신청일: dateStr,
-                        기간: `${dateStr} ~ ${dateStr}`,
-                        신청일수: '1',
-                        신청시간: '',
-                        사용일수: '1',
-                        부서: employee.조직,
-                        직급: employee.직급,
-                        이름: employee.이름,
-                        ERP사번: employee.사원번호,
-                        근태항목: '공가',
-                        근태구분: '공가',
-                        상태: '결재종결',
-                        종결일자: dateStr,
-                        신청내역: `공가신청서_${employee.이름}`,
-                        문서번호: `공가-26-${String(requestNo).padStart(4, '0')}`,
-                        출장지: '',
-                        교통수단: '',
-                        출장목적: '',
-                        비고: '',
-                    });
-                    break;
-                    
-                case 7: // 병가
-                    requests.push({
-                        No: String(requestNo++),
-                        신청일: dateStr,
-                        기간: `${dateStr} ~ ${dateStr}`,
-                        신청일수: '1',
-                        신청시간: '',
-                        사용일수: '1',
-                        부서: employee.조직,
-                        직급: employee.직급,
-                        이름: employee.이름,
-                        ERP사번: employee.사원번호,
-                        근태항목: '병가',
-                        근태구분: '병가',
-                        상태: '결재종결',
-                        종결일자: dateStr,
-                        신청내역: `병가신청서_${employee.이름}`,
-                        문서번호: `병가-26-${String(requestNo).padStart(4, '0')}`,
-                        출장지: '',
-                        교통수단: '',
-                        출장목적: '',
-                        비고: '',
-                    });
-                    break;
-                    
-                case 8: // 교육
-                    requests.push({
-                        No: String(requestNo++),
-                        신청일: dateStr,
-                        기간: `${dateStr} ~ ${dateStr}`,
-                        신청일수: '1',
-                        신청시간: '',
-                        사용일수: '1',
-                        부서: employee.조직,
-                        직급: employee.직급,
-                        이름: employee.이름,
-                        ERP사번: employee.사원번호,
-                        근태항목: '교육',
-                        근태구분: '교육',
-                        상태: '결재종결',
-                        종결일자: dateStr,
-                        신청내역: `교육신청서_${employee.이름}`,
-                        문서번호: `교육-26-${String(requestNo).padStart(4, '0')}`,
-                        출장지: '',
-                        교통수단: '',
-                        출장목적: '',
                         비고: '',
                     });
                     break;
@@ -698,19 +664,19 @@ function main() {
     // 프로젝트 루트 경로
     const projectRoot = path.resolve(__dirname, '..');
     
-    // 1. 기존 CSV에서 직원 정보 추출
-    const existingCSVPath = path.join(
-        projectRoot,
-        'storage/local-files/출입내역_수정본.csv',
-    );
+    // 1. 직원 정보 (하드코딩)
+    console.log('1. 직원 정보 로드 중...');
+    const employees = getHardcodedEmployees();
+    console.log(`   ${employees.length}명의 직원 정보 로드 완료\n`);
     
-    console.log('1. 직원 정보 추출 중...');
-    const employees = extractEmployeesFromCSV(existingCSVPath);
-    console.log(`   ${employees.length}명의 직원 정보 추출 완료\n`);
-    
-    // 2. 출입내역 CSV 생성
-    console.log('2. 출입내역 CSV 생성 중...');
-    const attendanceRecords = generateAttendanceRecords(employees);
+    // 2. 시나리오 할당 (정상 대다수, 특이 1~3건씩)
+    console.log('2. 시나리오 할당 중...');
+    const scenarioMap = buildScenarioAssignment(employees);
+    console.log('   시나리오 할당 완료\n');
+
+    // 3. 출입내역 CSV 생성
+    console.log('3. 출입내역 CSV 생성 중...');
+    const attendanceRecords = generateAttendanceRecords(employees, scenarioMap);
     const attendanceHeaders = [
         '위치',
         '발생시각',
@@ -737,9 +703,9 @@ function main() {
     writeCSV(attendanceOutputPath, attendanceRecords, attendanceHeaders);
     console.log('');
     
-    // 3. 근태신청내역 CSV 생성
-    console.log('3. 근태신청내역 CSV 생성 중...');
-    const leaveRequests = generateLeaveRequests(employees);
+    // 4. 근태신청내역 CSV 생성
+    console.log('4. 근태신청내역 CSV 생성 중...');
+    const leaveRequests = generateLeaveRequests(employees, scenarioMap);
     const leaveHeaders = [
         'No',
         '신청일',
@@ -769,8 +735,8 @@ function main() {
     writeCSV(leaveOutputPath, leaveRequests, leaveHeaders);
     console.log('');
     
-    // 4. 데이터 검증
-    console.log('4. 데이터 검증 중...');
+    // 5. 데이터 검증
+    console.log('5. 데이터 검증 중...');
     console.log(`   - 출입내역: ${attendanceRecords.length}건`);
     console.log(`   - 근태신청내역: ${leaveRequests.length}건`);
     console.log(`   - 날짜 범위: 2026-01-01 ~ 2026-01-31`);
