@@ -47,7 +47,7 @@ export class DashboardController {
             '연도별로 1월부터 12월까지의 평균근무시간 목록과 월별 직원별 총 근무시간을 내림차순으로 조회합니다. 지각, 조퇴 정보를 포함합니다.',
     })
     @ApiQuery({ name: 'departmentId', description: '부서 ID', example: 'd2860a56-99e0-4e79-b70e-0461eef212ac', required: true })
-    @ApiQuery({ name: 'year', description: '연도', example: '2025', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiResponse({
         status: 200,
         description: '부서별 월별 일평균 근무시간 조회 성공',
@@ -73,7 +73,7 @@ export class DashboardController {
         description: '근태사용내역을 기준으로 출장, 연차, 결근, 지각에 대한 정보를 조회합니다.',
     })
     @ApiQuery({ name: 'departmentId', description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,
@@ -101,7 +101,7 @@ export class DashboardController {
         description: '각 주차별로 주간근무시간이 높은 상위 5명의 직원을 조회합니다.',
     })
     @ApiQuery({ name: 'departmentId', description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,
@@ -129,7 +129,7 @@ export class DashboardController {
         description: '특정 부서의 연도, 월별 스냅샷 목록을 조회합니다.',
     })
     @ApiQuery({ name: 'departmentId', description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,
@@ -157,7 +157,7 @@ export class DashboardController {
         description: '특정 직원의 연도, 월별 근태 상세 정보를 조회합니다.',
     })
     @ApiQuery({ name: 'employeeId', description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,

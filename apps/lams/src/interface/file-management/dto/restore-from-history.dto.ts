@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 /**
  * 이력으로 되돌리기 요청 DTO
@@ -15,7 +16,7 @@ export class RestoreFromHistoryRequestDto {
 
     @ApiProperty({
         description: '연도',
-        example: '2024',
+        example: '2026',
     })
     @IsString()
     @IsNotEmpty()
@@ -25,6 +26,7 @@ export class RestoreFromHistoryRequestDto {
         description: '월',
         example: '01',
     })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;

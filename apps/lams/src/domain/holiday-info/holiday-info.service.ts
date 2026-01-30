@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, IsNull, Repository } from 'typeorm';
+import { Between, EntityManager, IsNull, Repository } from 'typeorm';
 import { HolidayInfo } from './holiday-info.entity';
 import { CreateHolidayInfoData, UpdateHolidayInfoData, HolidayInfoDTO } from './holiday-info.types';
 
@@ -56,6 +56,25 @@ export class DomainHolidayInfoService {
             order: { holiday_date: 'ASC' },
         });
         return holidayInfos.map((hi) => hi.DTO변환한다());
+    }
+
+    /**
+     * 특정 연도의 공휴일을 일괄 삭제한다 (Hard Delete).
+     * 공공 API 동기화 시 해당 연도 기존 데이터를 제거하기 위해 사용한다.
+     *
+     * @param year 연도 (예: '2026')
+     */
+    async 연도별공휴일일괄삭제한다(year: string, manager?: EntityManager): Promise<void> {
+        const repository = this.getRepository(manager);
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+        const entities = await repository.find({
+            where: { holiday_date: Between(startDate, endDate) },
+            withDeleted: true,
+        });
+        if (entities.length > 0) {
+            await repository.remove(entities);
+        }
     }
 
     /**

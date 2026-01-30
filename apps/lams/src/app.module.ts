@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '@libs/database/database.module';
 import { DomainModule } from './domain/domain.module';
 import { InterfaceModule } from './interface/interface.module';
@@ -14,9 +15,11 @@ import { JwtStrategy } from '../libs/strategies/jwt.strategy';
 import { OrganizationMigrationModule } from './integrations/migration/migration.module';
 import { InitModule } from './integrations/init/init.module';
 import { PrvDbMgrModule } from './integrations/prv-db-mgr/prv-db-mgr.module';
+import { HolidaySyncModule } from './integrations/holiday-sync';
 
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
         ConfigModule.forRoot({
             isGlobal: true,
             envFilePath: [path.resolve('apps', 'lams', '.env')],
@@ -34,6 +37,7 @@ import { PrvDbMgrModule } from './integrations/prv-db-mgr/prv-db-mgr.module';
         OrganizationMigrationModule,
         InitModule, // 기본 데이터 초기화 모듈
         PrvDbMgrModule,
+        HolidaySyncModule, // 매년 1/1 공휴일 API 동기화
     ],
     controllers: [],
     providers: [

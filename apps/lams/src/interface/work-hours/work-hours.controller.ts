@@ -163,7 +163,7 @@ export class WorkHoursController {
         description: '직원의 월별 시수 현황을 조회합니다.',
     })
     @ApiQuery({ name: 'employeeId', description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,

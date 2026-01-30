@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 /**
  * 연도, 월별 직원 근태상세 조회 요청 DTO
@@ -16,7 +17,7 @@ export class GetEmployeeAttendanceDetailRequestDto {
 
     @ApiProperty({
         description: '연도',
-        example: '2024',
+        example: '2026',
         required: true,
     })
     @IsString()
@@ -28,6 +29,7 @@ export class GetEmployeeAttendanceDetailRequestDto {
         example: '01',
         required: true,
     })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;

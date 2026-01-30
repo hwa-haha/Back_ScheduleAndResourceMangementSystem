@@ -108,7 +108,7 @@ export class DeleteHolidayInfoResponseDto {
 export class GetHolidayListRequestDto {
     @ApiPropertyOptional({
         description: '연도',
-        example: '2024',
+        example: '2026',
         required: false,
     })
     @IsString()

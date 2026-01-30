@@ -74,7 +74,7 @@ export class AttendanceIssueController {
         description:
             '해당 연월과 부서에 소속되었던 직원들의 근태 이슈를 조회하고 직원별로 그룹핑하여 반환합니다.',
     })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiQuery({
         name: 'departmentId',

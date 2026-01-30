@@ -27,7 +27,7 @@ export class OrganizationManagementController {
         description:
             '요청받은 연월을 기준으로 해당 월에 유효했던 조직도 상태를 반환합니다. 계층구조와 1차원 배열 두 가지 형태로 제공합니다.',
     })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,

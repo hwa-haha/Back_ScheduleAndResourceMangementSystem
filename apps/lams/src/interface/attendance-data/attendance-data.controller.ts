@@ -48,7 +48,7 @@ export class AttendanceDataController {
         summary: '월간 요약 조회',
         description: '연도, 월, 부서ID를 기준으로 월간 요약, 일간 요약, 일간 요약의 수정이력을 조회합니다.',
     })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiQuery({
         name: 'departmentId',
@@ -296,13 +296,13 @@ export class AttendanceDataController {
     })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
-    @ApiQuery({
-        name: 'sortBy',
-        description: '정렬 기준',
-        enum: ['latest', 'oldest', 'name', 'type'],
-        example: 'latest',
-        required: false,
-    })
+    // @ApiQuery({
+    //     name: 'sortBy',
+    //     description: '정렬 기준',
+    //     enum: ['latest', 'oldest', 'name', 'type'],
+    //     example: 'latest',
+    //     required: false,
+    // })
     @ApiResponse({
         status: 200,
         description: '스냅샷 목록 조회 성공',
@@ -316,10 +316,10 @@ export class AttendanceDataController {
         const result = await this.attendanceDataBusinessService.스냅샷목록을조회한다({
             year: dto.year,
             month: dto.month,
-            sortBy: dto.sortBy || 'latest',
-            filters: dto.filters,
+            // sortBy: dto.sortBy || 'latest',
+            // filters: dto.filters,
         });
-        console.log('result', result);
+
         return result;
     }
 

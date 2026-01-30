@@ -1,17 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
 import { DataSnapshotInfoDTO } from '../../../domain/data-snapshot-info/data-snapshot-info.types';
+import { Transform } from 'class-transformer';
 
 /**
  * 근태 스냅샷 저장 요청 DTO
  */
 export class SaveAttendanceSnapshotRequestDto {
-    @ApiProperty({ description: '연도', example: '2024' })
+    @ApiProperty({ description: '연도', example: '2026' })
     @IsString()
     @IsNotEmpty()
     year: string;
 
     @ApiProperty({ description: '월', example: '01' })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;

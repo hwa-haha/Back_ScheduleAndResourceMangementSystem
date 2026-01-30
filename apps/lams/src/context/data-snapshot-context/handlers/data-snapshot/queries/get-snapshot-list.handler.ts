@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { GetSnapshotListQuery } from './get-snapshot-list.query';
 import { IGetSnapshotListResponse } from '../../../interfaces/response/get-snapshot-list-response.interface';
 import { DomainDataSnapshotInfoService } from '../../../../../domain/data-snapshot-info/data-snapshot-info.service';
-import { SnapshotType } from '../../../../../domain/data-snapshot-info/data-snapshot-info.types';
+import { DataSnapshotInfoDTO, SnapshotType } from '../../../../../domain/data-snapshot-info/data-snapshot-info.types';
 
 /**
  * 스냅샷 목록 조회 Query Handler
@@ -18,7 +18,7 @@ export class GetSnapshotListHandler implements IQueryHandler<GetSnapshotListQuer
     constructor(private readonly dataSnapshotInfoService: DomainDataSnapshotInfoService) {}
 
     async execute(query: GetSnapshotListQuery): Promise<IGetSnapshotListResponse> {
-        const { year, month, sortBy = 'latest', filters } = query.data;
+        const { year, month } = query.data;
 
         this.logger.log(`스냅샷 목록 조회 시작: year=${year}, month=${month}`);
 
@@ -31,15 +31,15 @@ export class GetSnapshotListHandler implements IQueryHandler<GetSnapshotListQuer
 
         // 2. 추가 필터 적용 (향후 확장 가능)
         let filteredSnapshots = allSnapshots;
-        if (filters) {
-            filteredSnapshots = this.필터적용한다(filteredSnapshots, filters);
-        }
+        // if (filters) {
+        //     filteredSnapshots = this.필터적용한다(filteredSnapshots, filters);
+        // }
         filteredSnapshots = filteredSnapshots.map((snapshot) => {
             delete snapshot.children;
             return snapshot;
         });
         // 3. 정렬 적용
-        const sortedSnapshots = this.정렬적용한다(filteredSnapshots, sortBy);
+        const sortedSnapshots = this.정렬적용한다(filteredSnapshots);
 
         // 5. 가장 최신 스냅샷 추출
         const latestSnapshot = sortedSnapshots.length > 0 ? sortedSnapshots[0] : null;
@@ -96,43 +96,39 @@ export class GetSnapshotListHandler implements IQueryHandler<GetSnapshotListQuer
      *
      * 향후 확장 가능하도록 구조화된 정렬 로직
      */
-    private 정렬적용한다(snapshots: any[], sortBy: string): any[] {
+    private 정렬적용한다(snapshots: DataSnapshotInfoDTO[], sortBy?: string): DataSnapshotInfoDTO[] {
         const sorted = [...snapshots];
 
         switch (sortBy) {
-            case 'latest':
-                // 최신순 (기본값) - created_at DESC
-                sorted.sort((a, b) => {
-                    const dateA = new Date(a.createdAt).getTime();
-                    const dateB = new Date(b.createdAt).getTime();
-                    return dateB - dateA;
-                });
-                break;
-            case 'oldest':
-                // 오래된순 - created_at ASC
-                sorted.sort((a, b) => {
-                    const dateA = new Date(a.createdAt).getTime();
-                    const dateB = new Date(b.createdAt).getTime();
-                    return dateA - dateB;
-                });
-                break;
-            case 'name':
-                // 이름순
-                sorted.sort((a, b) => a.snapshotName.localeCompare(b.snapshotName, 'ko'));
-                break;
-            case 'type':
-                // 타입순
-                sorted.sort((a, b) => a.snapshotType.localeCompare(b.snapshotType));
-                break;
+            // case 'latest':
+            //     // 최신순 (기본값) - created_at DESC
+            //     sorted.sort((a, b) => {
+            //         const dateA = new Date(a.createdAt).getTime();
+            //         const dateB = new Date(b.createdAt).getTime();
+            //         return dateB - dateA;
+            //     });
+            //     break;
+            // case 'oldest':
+            //     // 오래된순 - created_at ASC
+            //     sorted.sort((a, b) => {
+            //         const dateA = new Date(a.createdAt).getTime();
+            //         const dateB = new Date(b.createdAt).getTime();
+            //         return dateA - dateB;
+            //     });
+            //     break;
+            // case 'name':
+            //     // 이름순
+            //     sorted.sort((a, b) => a.snapshotName.localeCompare(b.snapshotName, 'ko'));
+            //     break;
+            // case 'type':
+            //     // 타입순
+            //     sorted.sort((a, b) => a.snapshotType.localeCompare(b.snapshotType));
+            //     break;
             default:
                 // 기본값: 최신순
-                sorted.sort((a, b) => {
-                    const dateA = new Date(a.createdAt).getTime();
-                    const dateB = new Date(b.createdAt).getTime();
-                    return dateB - dateA;
-                });
-        }
+                sorted.sort((a, b) => b.snapshotVersion.localeCompare(a.snapshotVersion));
+            }
 
-        return sorted;
+            return sorted;
+        }
     }
-}

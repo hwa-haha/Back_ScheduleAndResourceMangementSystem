@@ -70,7 +70,7 @@ export class FileManagementController {
                 year: {
                     type: 'string',
                     description: '연도 (선택사항)',
-                    example: '2024',
+                    example: '2026',
                 },
                 month: {
                     type: 'string',
@@ -203,7 +203,7 @@ export class FileManagementController {
         summary: '파일 목록 조회',
         description: '파일 목록만 조회합니다. 반영이력은 포함되지 않습니다. 연도와 월을 필수로 제공해야 합니다.',
     })
-    @ApiQuery({ name: 'year', description: '연도', example: '2024', required: true })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,

@@ -229,7 +229,7 @@ export class SettingsController {
     @ApiQuery({
         name: 'year',
         description: '연도 (선택사항)',
-        example: '2024',
+        example: '2026',
         required: false,
     })
     @ApiResponse({
@@ -332,7 +332,7 @@ export class SettingsController {
     @ApiQuery({
         name: 'year',
         description: '연도 필터 (yyyy 형식, 생략 시 전체 조회)',
-        example: '2024',
+        example: '2026',
         required: false,
     })
     @ApiResponse({

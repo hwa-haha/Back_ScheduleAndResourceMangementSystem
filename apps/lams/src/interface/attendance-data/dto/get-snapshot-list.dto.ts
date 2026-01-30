@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsEnum, IsObject, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 /**
  * 날짜 범위 필터 DTO
@@ -40,7 +40,7 @@ export class SnapshotFiltersDto {
 export class GetSnapshotListRequestDto {
     @ApiProperty({
         description: '연도',
-        example: '2024',
+        example: '2026',
         required: true,
     })
     @IsString()
@@ -52,26 +52,27 @@ export class GetSnapshotListRequestDto {
         example: '01',
         required: true,
     })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;
 
-    @ApiPropertyOptional({
-        description: '정렬 기준',
-        enum: ['latest', 'oldest', 'name', 'type'],
-        example: 'latest',
-        default: 'latest',
-    })
-    @IsOptional()
-    @IsEnum(['latest', 'oldest', 'name', 'type'])
-    sortBy?: 'latest' | 'oldest' | 'name' | 'type';
+    // @ApiPropertyOptional({
+    //     description: '정렬 기준',
+    //     enum: ['latest', 'oldest', 'name', 'type'],
+    //     example: 'latest',
+    //     default: 'latest',
+    // })
+    // @IsOptional()
+    // @IsEnum(['latest', 'oldest', 'name', 'type'])
+    // sortBy?: 'latest' | 'oldest' | 'name' | 'type';
 
-    @ApiPropertyOptional({ description: '필터 조건', type: SnapshotFiltersDto })
-    @IsOptional()
-    @IsObject()
-    @ValidateNested()
-    @Type(() => SnapshotFiltersDto)
-    filters?: SnapshotFiltersDto;
+    // @ApiPropertyOptional({ description: '필터 조건', type: SnapshotFiltersDto })
+    // @IsOptional()
+    // @IsObject()
+    // @ValidateNested()
+    // @Type(() => SnapshotFiltersDto)
+    // filters?: SnapshotFiltersDto;
 }
 
 /**

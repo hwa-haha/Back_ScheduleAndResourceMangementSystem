@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsString, IsUUID, IsNotEmpty } from 'class-validator';
 
 /**
@@ -7,7 +8,7 @@ import { IsString, IsUUID, IsNotEmpty } from 'class-validator';
 export class GetMonthlySummariesRequestDto {
     @ApiProperty({
         description: '연도',
-        example: '2024',
+        example: '2026',
         required: true,
     })
     @IsString()
@@ -19,6 +20,7 @@ export class GetMonthlySummariesRequestDto {
         example: '01',
         required: true,
     })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;

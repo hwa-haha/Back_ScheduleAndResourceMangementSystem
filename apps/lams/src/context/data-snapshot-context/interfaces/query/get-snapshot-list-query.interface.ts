@@ -8,15 +8,15 @@ export interface IGetSnapshotListQuery {
      * 정렬 기준 (기본값: 'latest' - 최신순)
      * 향후 확장 가능: 'oldest', 'name', 'type' 등
      */
-    sortBy?: 'latest' | 'oldest' | 'name' | 'type';
+    // sortBy?: 'latest' | 'oldest' | 'name' | 'type';
     /**
      * 필터 조건 (향후 확장 가능)
      */
-    filters?: {
-        snapshotType?: string;
-        dateRange?: {
-            startDate?: string;
-            endDate?: string;
-        };
-    };
+    // filters?: {
+    //     snapshotType?: string;
+    //     dateRange?: {
+    //         startDate?: string;
+    //         endDate?: string;
+    //     };
+    // };
 }

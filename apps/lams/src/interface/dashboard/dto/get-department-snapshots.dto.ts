@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 /**
  * 부서별 연도, 월별 스냅샷 조회 요청 DTO
@@ -16,7 +17,7 @@ export class GetDepartmentSnapshotsRequestDto {
 
     @ApiProperty({
         description: '연도',
-        example: '2024',
+        example: '2026',
         required: true,
     })
     @IsString()
@@ -28,6 +29,7 @@ export class GetDepartmentSnapshotsRequestDto {
         example: '01',
         required: true,
     })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     @IsNotEmpty()
     month: string;
@@ -49,7 +51,7 @@ export class SnapshotChildInfoDto {
     @ApiProperty({ description: '직원 번호', example: 'E001' })
     employeeNumber: string;
 
-    @ApiProperty({ description: '연도', example: '2024' })
+    @ApiProperty({ description: '연도', example: '2026' })
     yyyy: string;
 
     @ApiProperty({ description: '월', example: '01' })
@@ -76,7 +78,7 @@ export class SnapshotInfoDto {
     @ApiProperty({ description: '스냅샷 이름', example: '2024년 1월 스냅샷' })
     snapshotName: string;
 
-    @ApiProperty({ description: '연도', example: '2024' })
+    @ApiProperty({ description: '연도', example: '2026' })
     year: string;
 
     @ApiProperty({ description: '월', example: '01' })

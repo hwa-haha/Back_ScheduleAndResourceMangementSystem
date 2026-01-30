@@ -132,7 +132,7 @@ export class DeleteWorkTimeOverrideResponseDto {
  * 특별근태시간 목록 조회 요청 DTO
  */
 export class GetWorkTimeOverrideListRequestDto {
-    @ApiPropertyOptional({ description: '연도 필터', example: '2024' })
+    @ApiPropertyOptional({ description: '연도 필터', example: '2026' })
     @IsString()
     @IsOptional()
     year?: string;

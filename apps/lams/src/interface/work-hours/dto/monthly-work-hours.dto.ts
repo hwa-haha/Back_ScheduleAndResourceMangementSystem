@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsUUID } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 /**
  * 월별 시수 현황 조회 요청 DTO
@@ -9,11 +10,12 @@ export class GetMonthlyWorkHoursRequestDto {
     @IsUUID()
     employeeId: string;
 
-    @ApiProperty({ description: '연도', example: '2024' })
+    @ApiProperty({ description: '연도', example: '2026' })
     @IsString()
     year: string;
 
     @ApiProperty({ description: '월', example: '01' })
+    @Transform(({ value }) => (typeof value === 'string' && value.length === 1 ? value.padStart(2, '0') : value))
     @IsString()
     month: string;
 }

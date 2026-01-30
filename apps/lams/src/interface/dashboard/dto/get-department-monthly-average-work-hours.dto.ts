@@ -16,7 +16,7 @@ export class GetDepartmentMonthlyAverageWorkHoursRequestDto {
 
     @ApiProperty({
         description: '연도',
-        example: '2024',
+        example: '2026',
         required: true,
     })
     @IsString()
