@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ReJudgeDailySummaryCommand } from './re-judge-daily-summary.command';
 import { DailySummaryJudgmentService } from '../../../services/daily-summary-judgment.service';
+import { DomainHolidayInfoService } from '../../../../../domain/holiday-info/holiday-info.service';
 import { DailyEventSummary } from '../../../../../domain/daily-event-summary/daily-event-summary.entity';
 import { DailyEventSummaryDTO } from '../../../../../domain/daily-event-summary/daily-event-summary.types';
 
@@ -10,6 +11,7 @@ import { DailyEventSummaryDTO } from '../../../../../domain/daily-event-summary/
  * 일간 요약 결근/지각/조퇴 재판정 Command Handler
  *
  * 기존 출퇴근·근태유형은 그대로 두고, 결근/지각/조퇴 판정만 다시 계산하여 일간 요약에 반영한다.
+ * 공휴일·주말 여부(is_holiday)도 휴일 목록과 주말 계산으로 다시 반영한다.
  * (update-daily-summary.handler.ts의 출퇴근 시간 수정 시 판정·업데이트 블록만 실행)
  */
 @CommandHandler(ReJudgeDailySummaryCommand)
@@ -20,6 +22,7 @@ export class ReJudgeDailySummaryHandler
 
     constructor(
         private readonly dailySummaryJudgmentService: DailySummaryJudgmentService,
+        private readonly holidayInfoService: DomainHolidayInfoService,
         private readonly dataSource: DataSource,
     ) {}
 
@@ -33,6 +36,10 @@ export class ReJudgeDailySummaryHandler
                 where: { date },
             });
 
+            // 공휴일·주말 여부 계산 (generate-daily-summaries와 동일)
+            const holidays = await this.holidayInfoService.목록조회한다();
+            const holidaySet = new Set(holidays.map((h) => h.holidayDate));
+
             const results: DailyEventSummaryDTO[] = [];
 
             for (const dailySummary of dailySummaries) {
@@ -41,6 +48,9 @@ export class ReJudgeDailySummaryHandler
                 const updatedRealEnter = dailySummary.real_enter ?? dailySummary.enter;
                 const updatedRealLeave = dailySummary.real_leave ?? dailySummary.leave;
                 const usedAttendances = dailySummary.used_attendances || undefined;
+
+                const is_holiday =
+                    holidaySet.has(dailySummary.date) || this.주말여부확인(dailySummary.date);
 
                 const workTime = this.근무시간을계산한다(
                     updatedEnter,
@@ -58,7 +68,7 @@ export class ReJudgeDailySummaryHandler
 
                 dailySummary.업데이트한다(
                     undefined,
-                    undefined,
+                    is_holiday,
                     updatedEnter,
                     updatedLeave,
                     updatedRealEnter,
@@ -145,5 +155,14 @@ export class ReJudgeDailySummaryHandler
         if (totalWorkMinutes < FOUR_HOURS) return 0;
         if (totalWorkMinutes < EIGHT_HOURS) return 30;
         return 60;
+    }
+
+    /**
+     * 주말 여부 확인 (generate-daily-summaries, daily-summary-judgment와 동일)
+     */
+    private 주말여부확인(dateString: string): boolean {
+        const date = new Date(dateString);
+        const dayOfWeek = date.getDay();
+        return dayOfWeek === 0 || dayOfWeek === 6;
     }
 }

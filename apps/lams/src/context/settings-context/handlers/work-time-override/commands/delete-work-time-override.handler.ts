@@ -26,7 +26,7 @@ export class DeleteWorkTimeOverrideHandler
             try {
                 this.logger.log(`특별근태시간 삭제 시작: id=${id}`);
 
-                await this.workTimeOverrideService.삭제한다(id, performedBy, manager);
+                await this.workTimeOverrideService.완전삭제한다(id, performedBy, manager);
 
                 this.logger.log(`특별근태시간 삭제 완료: id=${id}`);
 

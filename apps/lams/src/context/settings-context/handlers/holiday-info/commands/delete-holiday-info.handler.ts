@@ -26,7 +26,7 @@ export class DeleteHolidayInfoHandler
             try {
                 this.logger.log(`휴일 정보 삭제 시작: id=${id}`);
 
-                await this.holidayInfoService.삭제한다(id, performedBy, manager);
+                await this.holidayInfoService.완전삭제한다(id, performedBy, manager);
 
                 this.logger.log(`휴일 정보 삭제 완료: id=${id}`);
 
