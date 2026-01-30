@@ -108,11 +108,11 @@ export class AttendanceIssueBusinessService {
 
     /**
      * 근태 이슈를 반영한다 (관리자용)
+     * 확인자(confirmed_by)는 userId로 설정된다.
      */
     async 근태이슈를반영한다(
         id: string,
         data: {
-            confirmedBy: string;
             correctedEnterTime?: string;
             correctedLeaveTime?: string;
             correctedAttendanceTypeIds?: string[];
@@ -151,7 +151,7 @@ export class AttendanceIssueBusinessService {
         // 5. 이슈 상태를 반영으로 변경
         return await this.attendanceIssueContextService.근태이슈를반영한다({
             id,
-            confirmedBy: data.confirmedBy,
+            confirmedBy: userId,
             userId,
         });
     }

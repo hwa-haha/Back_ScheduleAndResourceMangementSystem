@@ -38,13 +38,9 @@ export class UpdateAttendanceIssueDescriptionRequestDto {
 
 /**
  * 근태 이슈 반영 요청 DTO
+ * 확인자(confirmed_by)는 인증된 사용자 ID(userId)로 자동 설정된다.
  */
 export class ApplyAttendanceIssueRequestDto {
-    @ApiPropertyOptional({ description: '확인자 이름', example: '관리자' })
-    @IsOptional()
-    @IsString()
-    confirmedBy?: string;
-
     @ApiPropertyOptional({ description: '변경할 출근 시간 (HH:MM:SS)', example: '09:00:00' })
     @IsOptional()
     @IsString()

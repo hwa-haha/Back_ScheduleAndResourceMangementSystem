@@ -168,8 +168,7 @@ export class AttendanceIssue extends BaseEntity<AttendanceIssueDTO> {
      */
     @Column({
         name: 'confirmed_by',
-        type: 'varchar',
-        length: 255,
+        type: 'uuid',
         nullable: true,
         comment: '확인자',
     })
@@ -222,11 +221,14 @@ export class AttendanceIssue extends BaseEntity<AttendanceIssueDTO> {
      */
     private validateRequiredData(): void {
         // TypeORM 메타데이터 검증 단계에서는 검증을 건너뜀
-        if (!this.employee_id || !this.date) {
+        if (!this.employee_id || !this.date || !this.confirmed_by) {
             return;
         }
 
         this.validateUuidFormat(this.employee_id, 'employee_id');
+        if (this.confirmed_by) {
+            this.validateUuidFormat(this.confirmed_by, 'confirmed_by');
+        }
     }
 
     /**

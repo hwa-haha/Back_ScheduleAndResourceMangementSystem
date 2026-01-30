@@ -162,7 +162,6 @@ export class AttendanceIssueController {
         const result = await this.attendanceIssueBusinessService.근태이슈를반영한다(
             id,
             {
-                confirmedBy: dto.confirmedBy || '관리자',
                 correctedEnterTime: dto.correctedEnterTime,
                 correctedLeaveTime: dto.correctedLeaveTime,
                 correctedAttendanceTypeIds: dto.correctedAttendanceTypeIds,
