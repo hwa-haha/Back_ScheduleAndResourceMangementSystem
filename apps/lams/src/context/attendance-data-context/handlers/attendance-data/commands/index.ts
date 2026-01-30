@@ -8,6 +8,7 @@ export * from './soft-delete-monthly-summaries.command';
 export * from './create-attendance-issues.command';
 export * from './restore-daily-summaries-from-snapshot.command';
 export * from './restore-monthly-summaries-from-snapshot.command';
+export * from './re-judge-daily-summary.command';
 
 // Handler 클래스 export
 export * from './generate-daily-summaries.handler';
@@ -19,6 +20,7 @@ export * from './soft-delete-monthly-summaries.handler';
 export * from './create-attendance-issues.handler';
 export * from './restore-daily-summaries-from-snapshot.handler';
 export * from './restore-monthly-summaries-from-snapshot.handler';
+export * from './re-judge-daily-summary.handler';
 
 // Handler 배열 export (Module 등록용)
 import { GenerateDailySummariesHandler } from './generate-daily-summaries.handler';
@@ -30,6 +32,7 @@ import { SoftDeleteMonthlySummariesHandler } from './soft-delete-monthly-summari
 import { CreateAttendanceIssuesHandler } from './create-attendance-issues.handler';
 import { RestoreDailySummariesFromSnapshotHandler } from './restore-daily-summaries-from-snapshot.handler';
 import { RestoreMonthlySummariesFromSnapshotHandler } from './restore-monthly-summaries-from-snapshot.handler';
+import { ReJudgeDailySummaryHandler } from './re-judge-daily-summary.handler';
 
 export const ATTENDANCE_DATA_COMMAND_HANDLERS = [
     GenerateDailySummariesHandler,
@@ -41,4 +44,5 @@ export const ATTENDANCE_DATA_COMMAND_HANDLERS = [
     CreateAttendanceIssuesHandler,
     RestoreDailySummariesFromSnapshotHandler,
     RestoreMonthlySummariesFromSnapshotHandler,
+    ReJudgeDailySummaryHandler,
 ];

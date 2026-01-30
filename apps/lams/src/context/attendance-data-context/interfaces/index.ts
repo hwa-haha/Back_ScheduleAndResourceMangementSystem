@@ -18,6 +18,7 @@ export * from './query/get-daily-summary-detail-query.interface';
 // Response 인터페이스
 export * from './response/generate-daily-summaries-response.interface';
 export * from './response/generate-monthly-summaries-response.interface';
+export * from './response/re-judge-and-generate-monthly-response.interface';
 export * from './response/get-monthly-summaries-response.interface';
 export * from './response/get-monthly-summary-note-response.interface';
 export * from './response/update-daily-summary-response.interface';

@@ -5,7 +5,9 @@ import {
     IUpdateEmployeeDepartmentPermissionCommand,
     IUpdateEmployeeExtraInfoCommand,
     IGetHolidayListQuery,
+    IGetHolidayQuery,
     IGetWorkTimeOverrideListQuery,
+    IGetWorkTimeOverrideQuery,
     IGetAttendanceTypeListQuery,
     IGetWageCalculationTypeListQuery,
     IGetDepartmentListForPermissionResponse,
@@ -14,7 +16,9 @@ import {
     IGetEmployeePermissionListQuery,
     IGetEmployeePermissionListResponse,
     IGetHolidayListResponse,
+    IGetHolidayResponse,
     IGetWorkTimeOverrideListResponse,
+    IGetWorkTimeOverrideResponse,
     IGetAttendanceTypeListResponse,
     IGetWageCalculationTypeListResponse,
     IUpdateEmployeeDepartmentPermissionResponse,
@@ -44,7 +48,9 @@ import { GetDepartmentListForPermissionQuery } from './handlers/department/queri
 import { GetPermissionRelatedEmployeeListQuery } from './handlers/permission/queries/get-permission-related-employee-list.query';
 import { GetEmployeePermissionListQuery } from './handlers/permission/queries/get-employee-permission-list.query';
 import { GetHolidayListQuery } from './handlers/holiday-info/queries/get-holiday-list.query';
+import { GetHolidayQuery } from './handlers/holiday-info/queries/get-holiday.query';
 import { GetWorkTimeOverrideListQuery } from './handlers/work-time-override/queries/get-work-time-override-list.query';
+import { GetWorkTimeOverrideQuery } from './handlers/work-time-override/queries/get-work-time-override.query';
 import { GetAttendanceTypeListQuery } from './handlers/attendance-type/queries/get-attendance-type-list.query';
 import { GetWageCalculationTypeListQuery } from './handlers/wage-calculation-type/queries/get-wage-calculation-type-list.query';
 import { UpdateEmployeeDepartmentPermissionCommand } from './handlers/permission/commands/update-employee-department-permission.command';
@@ -101,10 +107,26 @@ export class SettingsContextService {
     }
 
     /**
+     * 휴일 정보를 조회한다 (id 또는 date로 단건 조회)
+     */
+    async 휴일정보를조회한다(query: IGetHolidayQuery): Promise<IGetHolidayResponse> {
+        return await this.queryBus.execute(new GetHolidayQuery(query));
+    }
+
+    /**
      * 특별근태시간 목록을 조회한다
      */
     async 특별근태시간목록을조회한다(query: IGetWorkTimeOverrideListQuery): Promise<IGetWorkTimeOverrideListResponse> {
         return await this.queryBus.execute(new GetWorkTimeOverrideListQuery(query));
+    }
+
+    /**
+     * 특별근태시간을 조회한다 (id 또는 date로 단건 조회)
+     */
+    async 특별근태시간을조회한다(
+        query: IGetWorkTimeOverrideQuery,
+    ): Promise<IGetWorkTimeOverrideResponse> {
+        return await this.queryBus.execute(new GetWorkTimeOverrideQuery(query));
     }
 
     /**

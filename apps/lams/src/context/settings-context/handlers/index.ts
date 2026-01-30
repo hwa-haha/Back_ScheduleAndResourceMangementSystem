@@ -3,7 +3,9 @@ export * from './permission/queries/get-permission-related-department-list.handl
 export * from './permission/queries/get-permission-related-employee-list.handler';
 export * from './permission/queries/get-employee-permission-list.handler';
 export * from './holiday-info/queries/get-holiday-list.handler';
+export * from './holiday-info/queries/get-holiday.handler';
 export * from './work-time-override/queries/get-work-time-override-list.handler';
+export * from './work-time-override/queries/get-work-time-override.handler';
 export * from './attendance-type/queries/get-attendance-type-list.handler';
 export * from './wage-calculation-type/queries/get-wage-calculation-type-list.handler';
 export * from './wage-calculation-type/commands/create-wage-calculation-type.handler';
@@ -24,7 +26,9 @@ import { GetPermissionRelatedDepartmentListHandler } from './permission/queries/
 import { GetPermissionRelatedEmployeeListHandler } from './permission/queries/get-permission-related-employee-list.handler';
 import { GetEmployeePermissionListHandler } from './permission/queries/get-employee-permission-list.handler';
 import { GetHolidayListHandler } from './holiday-info/queries/get-holiday-list.handler';
+import { GetHolidayHandler } from './holiday-info/queries/get-holiday.handler';
 import { GetWorkTimeOverrideListHandler } from './work-time-override/queries/get-work-time-override-list.handler';
+import { GetWorkTimeOverrideHandler } from './work-time-override/queries/get-work-time-override.handler';
 import { GetAttendanceTypeListHandler } from './attendance-type/queries/get-attendance-type-list.handler';
 import { GetWageCalculationTypeListHandler } from './wage-calculation-type/queries/get-wage-calculation-type-list.handler';
 import { UpdateEmployeeDepartmentPermissionHandler } from './permission/commands/update-employee-department-permission.handler';
@@ -46,7 +50,9 @@ export const QUERY_HANDLERS = [
     GetPermissionRelatedEmployeeListHandler,
     GetEmployeePermissionListHandler,
     GetHolidayListHandler,
+    GetHolidayHandler,
     GetWorkTimeOverrideListHandler,
+    GetWorkTimeOverrideHandler,
     GetAttendanceTypeListHandler,
     GetWageCalculationTypeListHandler,
 ];

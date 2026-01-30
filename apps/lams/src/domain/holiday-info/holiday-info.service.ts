@@ -48,6 +48,20 @@ export class DomainHolidayInfoService {
     }
 
     /**
+     * 날짜로 휴일 정보를 조회한다
+     * 해당 날짜(holiday_date)에 해당하는 휴일 1건을 반환한다. 동일 날짜에 여러 건이면 첫 번째를 반환한다.
+     */
+    async 날짜로조회한다(holidayDate: string): Promise<HolidayInfoDTO> {
+        const holidayInfo = await this.repository.findOne({
+            where: { holiday_date: holidayDate },
+        });
+        if (!holidayInfo) {
+            throw new NotFoundException(`휴일 정보를 찾을 수 없습니다. (date: ${holidayDate})`);
+        }
+        return holidayInfo.DTO변환한다();
+    }
+
+    /**
      * 휴일 정보 목록을 조회한다
      */
     async 목록조회한다(): Promise<HolidayInfoDTO[]> {

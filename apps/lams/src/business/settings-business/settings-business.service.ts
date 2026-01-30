@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { format } from 'date-fns';
 import { SettingsContextService } from '../../context/settings-context/settings-context.service';
+import { AttendanceDataContextService } from '../../context/attendance-data-context/attendance-data-context.service';
 import {
     IGetDepartmentListForPermissionQuery,
     IGetHolidayListQuery,
@@ -44,7 +46,10 @@ import {
  */
 @Injectable()
 export class SettingsBusinessService {
-    constructor(private readonly settingsContextService: SettingsContextService) {}
+    constructor(
+        private readonly settingsContextService: SettingsContextService,
+        private readonly attendanceDataContextService: AttendanceDataContextService,
+    ) {}
 
     /**
      * 권한 관련 부서 목록을 조회한다
@@ -103,50 +108,104 @@ export class SettingsBusinessService {
 
     /**
      * 휴일 정보를 생성한다
+     * 생성 후 해당 휴일 날짜 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 휴일정보를생성한다(command: ICreateHolidayInfoCommand): Promise<ICreateHolidayInfoResponse> {
-        return await this.settingsContextService.휴일정보를생성한다(command);
+        const result = await this.settingsContextService.휴일정보를생성한다(command);
+        await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
+            command.holidayDate,
+            command.performedBy,
+        );
+        return result;
     }
 
     /**
      * 휴일 정보를 수정한다
+     * 수정 후 해당 휴일 날짜(변경 시) 또는 오늘 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 휴일정보를수정한다(command: IUpdateHolidayInfoCommand): Promise<IUpdateHolidayInfoResponse> {
-        return await this.settingsContextService.휴일정보를수정한다(command);
+        const result = await this.settingsContextService.휴일정보를수정한다(command);
+        const date = command.holidayDate ?? undefined;
+        if (date) {
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
+                date,
+                command.performedBy,
+            );
+        }
+        return result;
     }
 
     /**
      * 휴일 정보를 삭제한다
+     * 삭제 후 오늘 날짜 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 휴일정보를삭제한다(command: IDeleteHolidayInfoCommand): Promise<IDeleteHolidayInfoResponse> {
-        return await this.settingsContextService.휴일정보를삭제한다(command);
+        const holidayInfo = await this.settingsContextService.휴일정보를조회한다({
+            id: command.id,
+        });
+        const date = holidayInfo.holiday.holidayDate;
+        const result = await this.settingsContextService.휴일정보를삭제한다(command);
+        if (date) {
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
+                date,
+                command.performedBy,
+            );
+        }
+        return result;
     }
 
     /**
      * 특별근태시간을 생성한다
+     * 생성 후 해당 날짜 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 특별근태시간을생성한다(
         command: ICreateWorkTimeOverrideCommand,
     ): Promise<ICreateWorkTimeOverrideResponse> {
-        return await this.settingsContextService.특별근태시간을생성한다(command);
+        const result = await this.settingsContextService.특별근태시간을생성한다(command);
+        await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
+            command.date,
+            command.performedBy,
+        );
+        return result;
     }
 
     /**
      * 특별근태시간을 수정한다
+     * 수정 후 해당 날짜(변경 시) 또는 오늘 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 특별근태시간을수정한다(
         command: IUpdateWorkTimeOverrideCommand,
     ): Promise<IUpdateWorkTimeOverrideResponse> {
-        return await this.settingsContextService.특별근태시간을수정한다(command);
+        const result = await this.settingsContextService.특별근태시간을수정한다(command);
+        const date = command.date ?? undefined;
+        if (date) {
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
+                date,
+                command.performedBy,
+            );
+        }
+        return result;
     }
 
     /**
      * 특별근태시간을 삭제한다
+     * 삭제 전 해당 특별근태시간의 적용 날짜를 조회한 뒤, 삭제 후 해당 날짜 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 특별근태시간을삭제한다(
         command: IDeleteWorkTimeOverrideCommand,
     ): Promise<IDeleteWorkTimeOverrideResponse> {
-        return await this.settingsContextService.특별근태시간을삭제한다(command);
+        const workTimeOverride = await this.settingsContextService.특별근태시간을조회한다({
+            id: command.id,
+        });
+        const date = workTimeOverride.workTimeOverride.date;
+        const result = await this.settingsContextService.특별근태시간을삭제한다(command);
+        if (date) {
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
+                date,
+                command.performedBy,
+            );
+        }
+        return result;
     }
 
     /**

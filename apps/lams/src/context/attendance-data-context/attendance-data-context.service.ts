@@ -3,6 +3,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
     GenerateDailySummariesCommand,
     GenerateMonthlySummariesCommand,
+    ReJudgeDailySummaryCommand,
     UpdateDailySummaryCommand,
     UpdateMonthlySummaryNoteCommand,
     GetMonthlySummariesQuery,
@@ -31,6 +32,7 @@ import {
     IUpdateMonthlySummaryNoteCommand,
     IUpdateMonthlySummaryNoteResponse,
     IGenerateDailySummariesCommand,
+    IReJudgeAndGenerateMonthlyResponse,
     IRestoreDailySummariesFromSnapshotCommand,
     IRestoreMonthlySummariesFromSnapshotCommand,
 } from './interfaces';
@@ -100,6 +102,50 @@ export class AttendanceDataContextService {
                 dailyEventSummaryCount: summaries.length,
                 attendanceIssueCount: issues.length,
             },
+        };
+    }
+
+    /**
+     * 일간 요약 재판정 후 월간 요약을 생성한다
+     *
+     * 해당 날짜의 모든 직원 일간요약에 대해 결근/지각/조퇴 재판정을 수행한 뒤,
+     * 해당 연월의 월간 요약을 다시 생성합니다.
+     *
+     * 오케스트레이션 로직:
+     * 1. ReJudgeDailySummaryCommand 실행 (해당 날짜 전체 일간요약 재판정)
+     * 2. GenerateMonthlySummariesCommand 실행 (해당 연월 월간 요약 생성)
+     * 3. 결과 반환
+     *
+     * @param date 일간 요약 날짜 (YYYY-MM-DD)
+     * @param performedBy 수행자 ID (선택)
+     * @returns 재판정된 일간 요약 목록 및 월간 요약 생성 결과
+     */
+    async 일간요약재판정후월간요약을생성한다(
+        date: string,
+        performedBy?: string,
+    ): Promise<IReJudgeAndGenerateMonthlyResponse> {
+        const [year, month] = date.split('-');
+        if (!year || !month) {
+            throw new Error(`날짜 형식이 올바르지 않습니다. (YYYY-MM-DD): ${date}`);
+        }
+
+        // 1. 해당 날짜의 모든 일간 요약 재판정
+        const reJudgeSummaries = await this.commandBus.execute(
+            new ReJudgeDailySummaryCommand({ date, performedBy }),
+        );
+
+        // 2. 해당 연월 월간 요약 생성
+        const monthlyResult = await this.commandBus.execute(
+            new GenerateMonthlySummariesCommand({
+                year,
+                month: month.padStart(2, '0'),
+                performedBy: performedBy ?? '',
+            }),
+        );
+
+        return {
+            reJudgeSummaries,
+            monthlyResult,
         };
     }
 

@@ -95,9 +95,17 @@ export class AttendanceDataBusinessService {
     async 스냅샷으로부터복원한다(command: IRestoreFromSnapshotCommand): Promise<IRestoreFromSnapshotResponse> {
         this.logger.log(`스냅샷으로부터 복원: snapshotId=${command.snapshotId}`);
 
+       
+
         const snapshotData = await this.dataSnapshotContextService.스냅샷을ID로조회한다({
             snapshotId: command.snapshotId,
         });
+
+        await this.dataSnapshotContextService.회사전체월간요약스냅샷을저장한다({
+            year: snapshotData.snapshot.yyyy,
+            month: snapshotData.snapshot.mm,
+            performedBy: command.performedBy,
+        }); 
 
         // 2. children의 rawData를 수집하여 전체 eventInfo와 usedAttendance 재구성
         if (!snapshotData.snapshot.children || snapshotData.snapshot.children.length === 0) {
