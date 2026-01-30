@@ -48,10 +48,11 @@ export class GetMonthlySummariesHandler implements IQueryHandler<
 
         // 1. 부서 및 모든 하위 부서에 속한 직원 ID 목록 조회 (해당 연월 기준, 재귀적)
         const monthEndDate = format(endDate, 'yyyy-MM-dd');
-        const employeeHistories = await this.employeeDepartmentPositionHistoryService.findByDepartmentWithChildrenAtDate(
-            departmentId,
-            monthEndDate,
-        );
+        const employeeHistories =
+            await this.employeeDepartmentPositionHistoryService.findByDepartmentWithChildrenAtDate(
+                departmentId,
+                monthEndDate,
+            );
         const employeeIds = employeeHistories.map((eh) => eh.employeeId).filter((id) => id);
 
         if (employeeIds.length === 0) {
@@ -94,12 +95,14 @@ export class GetMonthlySummariesHandler implements IQueryHandler<
             const dailySummariesWithHistory = dailySummaries.map((daily) => {
                 const dailyDTO = daily.DTO변환한다();
                 const history = historyMap.get(daily.id) || [];
-                const issues = issueMap.get(daily.id).filter((issue) => issue.status !== AttendanceIssueStatus.APPLIED) || [];
+                const issues = issueMap.get(daily.id) || [];
+                const issuesWithoutApplied =
+                    issues.filter((issue) => issue.status !== AttendanceIssueStatus.APPLIED) || [];
 
                 return {
                     ...dailyDTO,
                     history: history.length > 0 ? history : undefined,
-                    issues: issues.length > 0 ? issues : undefined,
+                    issues: issuesWithoutApplied.length > 0 ? issuesWithoutApplied : undefined,
                 };
             });
 
