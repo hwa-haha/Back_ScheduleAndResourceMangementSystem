@@ -43,7 +43,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         
         // payload가 없거나 employeeNumber가 없는 경우에도 기본값 반환 (테스트 환경 대응)
         // 프로덕션 환경에서는 엄격한 검증이 필요하지만, 테스트 환경에서는 유연하게 처리
-        if (!payload || !payload.employeeNumber) {
+        if (!payload || !payload.sub || !payload.employeeNumber) {
             // 테스트 환경에서는 기본값 반환 (환경 변수로 구분 가능)
             if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
                 this.logger.debug('테스트 환경: 기본 사용자 정보 반환');
@@ -58,12 +58,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             this.logger.warn(`토큰 검증 실패: employeeNumber가 없습니다. payload=${JSON.stringify(payload)}`);
             throw new UnauthorizedException('유효하지 않은 토큰입니다. employeeNumber가 없습니다.');
         }
-
         this.logger.debug(`✅ 토큰 검증 성공: employeeNumber=${payload.employeeNumber}`);
 
         // payload를 그대로 반환 (request.user에 저장됨)
         return {
-            id: payload.id || payload.employeeNumber,
+            id: payload.sub,
             employeeNumber: payload.employeeNumber,
             name: payload.name,
             email: payload.email,
