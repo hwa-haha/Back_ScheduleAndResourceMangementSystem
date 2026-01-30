@@ -5,7 +5,6 @@ export * from './update-daily-summary.command';
 export * from './update-monthly-summary-note.command';
 export * from './soft-delete-daily-summaries.command';
 export * from './soft-delete-monthly-summaries.command';
-export * from './create-attendance-issues.command';
 export * from './restore-daily-summaries-from-snapshot.command';
 export * from './restore-monthly-summaries-from-snapshot.command';
 export * from './re-judge-daily-summary.command';
@@ -17,7 +16,6 @@ export * from './update-daily-summary.handler';
 export * from './update-monthly-summary-note.handler';
 export * from './soft-delete-daily-summaries.handler';
 export * from './soft-delete-monthly-summaries.handler';
-export * from './create-attendance-issues.handler';
 export * from './restore-daily-summaries-from-snapshot.handler';
 export * from './restore-monthly-summaries-from-snapshot.handler';
 export * from './re-judge-daily-summary.handler';
@@ -29,7 +27,6 @@ import { UpdateDailySummaryHandler } from './update-daily-summary.handler';
 import { UpdateMonthlySummaryNoteHandler } from './update-monthly-summary-note.handler';
 import { SoftDeleteDailySummariesHandler } from './soft-delete-daily-summaries.handler';
 import { SoftDeleteMonthlySummariesHandler } from './soft-delete-monthly-summaries.handler';
-import { CreateAttendanceIssuesHandler } from './create-attendance-issues.handler';
 import { RestoreDailySummariesFromSnapshotHandler } from './restore-daily-summaries-from-snapshot.handler';
 import { RestoreMonthlySummariesFromSnapshotHandler } from './restore-monthly-summaries-from-snapshot.handler';
 import { ReJudgeDailySummaryHandler } from './re-judge-daily-summary.handler';
@@ -41,7 +38,6 @@ export const ATTENDANCE_DATA_COMMAND_HANDLERS = [
     UpdateMonthlySummaryNoteHandler,
     SoftDeleteDailySummariesHandler,
     SoftDeleteMonthlySummariesHandler,
-    CreateAttendanceIssuesHandler,
     RestoreDailySummariesFromSnapshotHandler,
     RestoreMonthlySummariesFromSnapshotHandler,
     ReJudgeDailySummaryHandler,

@@ -12,10 +12,10 @@ import {
     GetDailySummaryDetailQuery,
     SoftDeleteDailySummariesCommand,
     SoftDeleteMonthlySummariesCommand,
-    CreateAttendanceIssuesCommand,
     RestoreDailySummariesFromSnapshotCommand,
     RestoreMonthlySummariesFromSnapshotCommand,
 } from './handlers';
+import { CreateAttendanceIssuesCommand } from '../attendance-issue-context/handlers/attendance-issue/commands';
 import {
     IGenerateDailySummariesResponse,
     IGenerateMonthlySummariesResponse,

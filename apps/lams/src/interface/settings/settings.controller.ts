@@ -65,7 +65,7 @@ import { User } from '../../../libs/decorators/user.decorator';
  *
  * 부서에 대한 권한 관리 및 직원 설정 관리 API를 제공합니다.
  */
-@ApiTags('설정 관리')
+@ApiTags('4. 설정 관리')
 @ApiBearerAuth()
 @Controller('settings')
 export class SettingsController {

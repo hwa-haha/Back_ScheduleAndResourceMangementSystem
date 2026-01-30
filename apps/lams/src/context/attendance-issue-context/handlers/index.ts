@@ -4,6 +4,7 @@ import {
     GetAttendanceIssuesByDepartmentHandler,
 } from './attendance-issue/queries';
 import {
+    CreateAttendanceIssuesHandler,
     UpdateAttendanceIssueDescriptionHandler,
     UpdateAttendanceIssueCorrectionHandler,
     ApplyAttendanceIssueHandler,
@@ -18,6 +19,7 @@ export const QUERY_HANDLERS = [
 ];
 
 export const COMMAND_HANDLERS = [
+    CreateAttendanceIssuesHandler,
     UpdateAttendanceIssueDescriptionHandler,
     UpdateAttendanceIssueCorrectionHandler,
     ApplyAttendanceIssueHandler,

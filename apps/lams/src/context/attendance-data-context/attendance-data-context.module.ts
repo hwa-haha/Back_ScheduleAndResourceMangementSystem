@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { AttendanceDataContextService } from './attendance-data-context.service';
 import { COMMAND_HANDLERS, QUERY_HANDLERS } from './handlers';
+import { AttendanceIssueContextModule } from '../attendance-issue-context/attendance-issue-context.module';
 import { DomainHolidayInfoModule } from '../../domain/holiday-info/holiday-info.module';
 import { DomainUsedAttendanceModule } from '../../domain/used-attendance/used-attendance.module';
 import { DomainEventInfoModule } from '../../domain/event-info/event-info.module';
@@ -24,6 +25,7 @@ import { DomainAttendanceTypeModule } from '../../domain/attendance-type/attenda
 @Module({
     imports: [
         CqrsModule, // CommandBus/QueryBus 제공
+        AttendanceIssueContextModule, // 일일요약 생성 시 CreateAttendanceIssuesCommand 핸들러 등록
         DomainHolidayInfoModule,
         DomainUsedAttendanceModule,
         DomainEventInfoModule,

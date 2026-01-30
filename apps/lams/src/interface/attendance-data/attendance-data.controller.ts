@@ -32,7 +32,7 @@ import { IUpdateMonthlySummaryNoteResponse } from '../../context/attendance-data
  *
  * 출입/근태 데이터 조회 API를 제공합니다.
  */
-@ApiTags('출입/근태 데이터')
+@ApiTags('2. 출입/근태 데이터')
 @ApiBearerAuth()
 @Controller('attendance-data')
 export class AttendanceDataController {

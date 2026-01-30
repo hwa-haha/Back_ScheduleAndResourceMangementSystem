@@ -11,6 +11,7 @@ import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/em
 import { MonthlyEventSummary } from '../../../../../domain/monthly-event-summary/monthly-event-summary.entity';
 import { DailyEventSummary } from '../../../../../domain/daily-event-summary/daily-event-summary.entity';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { AttendanceIssueStatus } from '../../../../../domain/attendance-issue/attendance-issue.types';
 
 /**
  * 월간 요약 조회 Query Handler
@@ -93,7 +94,7 @@ export class GetMonthlySummariesHandler implements IQueryHandler<
             const dailySummariesWithHistory = dailySummaries.map((daily) => {
                 const dailyDTO = daily.DTO변환한다();
                 const history = historyMap.get(daily.id) || [];
-                const issues = issueMap.get(daily.id) || [];
+                const issues = issueMap.get(daily.id).filter((issue) => issue.status !== AttendanceIssueStatus.APPLIED) || [];
 
                 return {
                     ...dailyDTO,

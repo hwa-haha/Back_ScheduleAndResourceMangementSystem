@@ -1,3 +1,5 @@
+export * from './create-attendance-issues.command';
+export * from './create-attendance-issues.handler';
 export * from './update-attendance-issue-description.command';
 export * from './update-attendance-issue-description.handler';
 export * from './update-attendance-issue-correction.command';

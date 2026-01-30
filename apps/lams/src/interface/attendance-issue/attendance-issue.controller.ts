@@ -34,7 +34,7 @@ import { AttendanceIssueStatus } from '../../domain/attendance-issue/attendance-
  * - 직원: 사유 작성, 재요청
  * - 관리자: 이슈 조회, 반영/미반영 처리
  */
-@ApiTags('근태 이슈')
+@ApiTags('3. 근태 이슈')
 @ApiBearerAuth()
 @Controller('attendance-issues')
 export class AttendanceIssueController {

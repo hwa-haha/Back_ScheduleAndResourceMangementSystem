@@ -63,7 +63,7 @@ export class RestoreDailySummariesFromSnapshotHandler
                 issues?: AttendanceIssueDTO[];
                 history?: DailySummaryChangeHistoryDTO[];
             }> = [];
-
+            
             snapshotData.children?.forEach((child) => {
                 try {
                     // TypeORM의 JSON 컬럼은 자동으로 파싱되므로 JSON.parse() 불필요
@@ -166,7 +166,17 @@ export class RestoreDailySummariesFromSnapshotHandler
                 }
             });
 
-            // 4. 이슈 복원
+            // 4. 해당 연월의 기존 이슈 소프트 삭제 (복원 후 스냅샷과 동일한 상태 유지를 위해)
+            await manager
+                .createQueryBuilder()
+                .softDelete()
+                .from(AttendanceIssue)
+                .where('date >= :startDate', { startDate: startDateStr })
+                .andWhere('date <= :endDate', { endDate: endDateStr })
+                .andWhere('deleted_at IS NULL')
+                .execute();
+
+            // 5. 이슈 복원
             let restoredIssueCount = 0;
             for (const snapshotIssue of snapshotIssues) {
                 const key = `${snapshotIssue.date}_${snapshotIssue.employee_id}`;
@@ -239,7 +249,7 @@ export class RestoreDailySummariesFromSnapshotHandler
                 }
             }
 
-            // 5. 변경이력 복원
+            // 6. 변경이력 복원
             let restoredHistoryCount = 0;
             for (const snapshotHistory of snapshotHistories) {
                 const key = `${snapshotHistory.date}_${snapshotHistory.employee_id}`;

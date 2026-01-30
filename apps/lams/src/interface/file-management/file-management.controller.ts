@@ -44,7 +44,7 @@ import { IGetFileOrgDataResponse } from '../../context/file-management-context/i
  *
  * 파일 업로드 및 파일 내용 반영 API를 제공합니다.
  */
-@ApiTags('파일 관리')
+@ApiTags('1. 파일 관리')
 @ApiBearerAuth()
 @Controller('file-management')
 export class FileManagementController {

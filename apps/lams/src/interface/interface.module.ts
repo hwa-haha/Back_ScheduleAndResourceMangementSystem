@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { FileManagementInterfaceModule } from './file-management/file-management-interface.module';
-import { AuthInterfaceModule } from './auth/auth-interface.module';
 import { AttendanceDataInterfaceModule } from './attendance-data/attendance-data-interface.module';
 import { AttendanceIssueInterfaceModule } from './attendance-issue/attendance-issue-interface.module';
 import { OrganizationManagementInterfaceModule } from './organization-management/organization-management-interface.module';
@@ -16,7 +15,6 @@ import { DashboardInterfaceModule } from './dashboard/dashboard-interface.module
 @Module({
     imports: [
         FileManagementInterfaceModule,
-        AuthInterfaceModule,
         AttendanceDataInterfaceModule,
         AttendanceIssueInterfaceModule,
         OrganizationManagementInterfaceModule,
