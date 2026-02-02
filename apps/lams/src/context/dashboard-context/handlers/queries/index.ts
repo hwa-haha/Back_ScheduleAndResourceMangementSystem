@@ -1,5 +1,7 @@
 export * from './get-department-monthly-average-work-hours.query';
 export * from './get-department-monthly-average-work-hours.handler';
+export * from './get-department-monthly-employee-work-hours.query';
+export * from './get-department-monthly-employee-work-hours.handler';
 export * from './get-department-monthly-employee-attendance.query';
 export * from './get-department-monthly-employee-attendance.handler';
 export * from './get-department-weekly-top-employees.query';

@@ -1,21 +1,23 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { GetEmployeeAttendanceDetailQuery } from './get-employee-attendance-detail.query';
 import { IGetEmployeeAttendanceDetailResponse } from '../../interfaces';
 import { DomainDataSnapshotInfoService } from '../../../../domain/data-snapshot-info/data-snapshot-info.service';
 import { DomainMonthlyEventSummaryService } from '../../../../domain/monthly-event-summary/monthly-event-summary.service';
-import { SnapshotType } from '../../../../domain/data-snapshot-info/data-snapshot-info.types';
+import { SnapshotType, ApprovalStatus } from '../../../../domain/data-snapshot-info/data-snapshot-info.types';
 
 /**
  * 연도, 월별 직원 근태상세 조회 Query Handler
  *
  * 특정 직원의 연도, 월별 근태 상세 정보를 조회합니다.
- * 스냅샷 데이터를 우선 사용하고, 없으면 월간 요약에서 조회합니다.
+ * 부서 월별 직원 근무시간 목록과 동일한 기준으로, 동일 연월에 여러 스냅샷이 있으면
+ * 결재 상태 "제출됨"·제출 시간 최신 스냅샷을 사용하고, 없으면 생성 시간 최신 스냅샷을 사용합니다.
  */
 @QueryHandler(GetEmployeeAttendanceDetailQuery)
-export class GetEmployeeAttendanceDetailHandler
-    implements IQueryHandler<GetEmployeeAttendanceDetailQuery, IGetEmployeeAttendanceDetailResponse>
-{
+export class GetEmployeeAttendanceDetailHandler implements IQueryHandler<
+    GetEmployeeAttendanceDetailQuery,
+    IGetEmployeeAttendanceDetailResponse
+> {
     private readonly logger = new Logger(GetEmployeeAttendanceDetailHandler.name);
 
     constructor(
@@ -30,7 +32,7 @@ export class GetEmployeeAttendanceDetailHandler
 
         // 1. 스냅샷에서 직원 데이터 조회
         const yyyy = year;
-        const mm = month;
+        const mm = month.padStart(2, '0');
         const snapshots = await this.dataSnapshotInfoService.연월과타입으로목록조회_자식직원필터한다(
             yyyy,
             mm,
@@ -38,46 +40,84 @@ export class GetEmployeeAttendanceDetailHandler
             [employeeId],
         );
 
-        // 가장 최신 스냅샷의 child 데이터 사용
+        // 2. 직원별 최적 child 선택 (제출됨·최신 우선) — 부서 월별 직원 근무시간 목록과 동일 기준
+        const candidates: Array<{
+            parent: (typeof snapshots)[0];
+            child: NonNullable<(typeof snapshots)[0]['children']>[0];
+        }> = [];
+        for (const parent of snapshots) {
+            if (parent.children && parent.children.length > 0) {
+                for (const child of parent.children) {
+                    candidates.push({ parent, child });
+                }
+            }
+        }
+
         let snapshotData: any = null;
-        if (snapshots.length > 0 && snapshots[0].children && snapshots[0].children.length > 0) {
-            const child = snapshots[0].children[0];
+        if (candidates.length === 1) {
+            const { child } = candidates[0];
             snapshotData = typeof child.snapshotData === 'string' ? JSON.parse(child.snapshotData) : child.snapshotData;
+        } else if (candidates.length > 1) {
+            const submitted = candidates.filter(
+                (c) => c.parent.approvalStatus === ApprovalStatus.SUBMITTED && c.parent.submittedAt != null,
+            );
+            const toSort = submitted.length > 0 ? submitted : candidates;
+            const bySubmitted = submitted.length > 0;
+            toSort.sort((a, b) => {
+                const dateA = bySubmitted
+                    ? a.parent.submittedAt
+                        ? new Date(a.parent.submittedAt).getTime()
+                        : 0
+                    : a.parent.createdAt
+                      ? new Date(a.parent.createdAt).getTime()
+                      : 0;
+                const dateB = bySubmitted
+                    ? b.parent.submittedAt
+                        ? new Date(b.parent.submittedAt).getTime()
+                        : 0
+                    : b.parent.createdAt
+                      ? new Date(b.parent.createdAt).getTime()
+                      : 0;
+                return dateB - dateA;
+            });
+            const selected = toSort[0].child;
+            snapshotData =
+                typeof selected.snapshotData === 'string' ? JSON.parse(selected.snapshotData) : selected.snapshotData;
         }
 
         // 스냅샷 데이터가 없으면 월간 요약에서 조회
         if (!snapshotData) {
-            const yyyymm = `${year}-${month}`;
-            const monthlySummary = await this.monthlyEventSummaryService.일일요약포함조회한다(employeeId, yyyymm);
+            return null;
+            // const yyyymm = `${year}-${month}`;
+            // const monthlySummary = await this.monthlyEventSummaryService.일일요약포함조회한다(employeeId, yyyymm);
 
-            if (!monthlySummary) {
-                throw new NotFoundException('해당 기간의 근태 데이터를 찾을 수 없습니다.');
-            }
-
-            // 월간 요약 데이터를 스냅샷 형식으로 변환
-            snapshotData = {
-                monthlyEventSummaryId: monthlySummary.id,
-                employeeNumber: monthlySummary.employeeNumber,
-                employeeId: monthlySummary.employeeId,
-                employeeName: monthlySummary.employeeName || '',
-                yyyymm: monthlySummary.yyyymm,
-                note: monthlySummary.note || '',
-                additionalNote: monthlySummary.additionalNote || '',
-                workDaysCount: monthlySummary.workDaysCount,
-                totalWorkableTime: monthlySummary.totalWorkableTime,
-                totalWorkTime: monthlySummary.totalWorkTime,
-                avgWorkTimes: monthlySummary.avgWorkTimes,
-                attendanceTypeCount: monthlySummary.attendanceTypeCount || {},
-                dailyEventSummary: monthlySummary.dailyEventSummary || [],
-                weeklyWorkTimeSummary: monthlySummary.weeklyWorkTimeSummary || [],
-                lateDetails: monthlySummary.lateDetails || [],
-                absenceDetails: monthlySummary.absenceDetails || [],
-                earlyLeaveDetails: monthlySummary.earlyLeaveDetails || [],
-            };
+            // if (!monthlySummary) {
+            //     throw new NotFoundException('해당 기간의 근태 데이터를 찾을 수 없습니다.');
+            // }
+            // // 월간 요약 데이터를 스냅샷 형식으로 변환
+            // snapshotData = {
+            //     monthlyEventSummaryId: monthlySummary.id,
+            //     employeeNumber: monthlySummary.employeeNumber,
+            //     employeeId: monthlySummary.employeeId,
+            //     employeeName: monthlySummary.employeeName || '',
+            //     yyyymm: monthlySummary.yyyymm,
+            //     note: monthlySummary.note || '',
+            //     additionalNote: monthlySummary.additionalNote || '',
+            //     workDaysCount: monthlySummary.workDaysCount,
+            //     totalWorkableTime: monthlySummary.totalWorkableTime,
+            //     totalWorkTime: monthlySummary.totalWorkTime,
+            //     avgWorkTimes: monthlySummary.avgWorkTimes,
+            //     attendanceTypeCount: monthlySummary.attendanceTypeCount || {},
+            //     dailySummaries: monthlySummary.dailyEventSummary || [],
+            //     weeklyWorkTimeSummary: monthlySummary.weeklyWorkTimeSummary || [],
+            //     lateDetails: monthlySummary.lateDetails || [],
+            //     absenceDetails: monthlySummary.absenceDetails || [],
+            //     earlyLeaveDetails: monthlySummary.earlyLeaveDetails || [],
+            // };
         }
 
         // 2. DTO 변환
-        const dailyEventSummary = snapshotData.dailyEventSummary || [];
+        const dailyEventSummary = snapshotData.dailySummaries || [];
         const dailyAttendanceDetails = dailyEventSummary.map((daily: any) => ({
             dailyEventSummaryId: daily.dailyEventSummaryId || '',
             date: daily.date,
@@ -113,13 +153,21 @@ export class GetEmployeeAttendanceDetailHandler
 
         const annualLeaveData = snapshotData.annualLeaveData
             ? {
-                  totalAnnualLeave: snapshotData.annualLeaveData.fiscalYearTotalLeave || snapshotData.annualLeaveData.totalAnnualLeave || 0,
+                  totalAnnualLeave:
+                      snapshotData.annualLeaveData.fiscalYearTotalLeave ||
+                      snapshotData.annualLeaveData.totalAnnualLeave ||
+                      0,
                   usedAnnualLeave: snapshotData.annualLeaveData.usedAnnualLeave || 0,
-                  remainingAnnualLeave: snapshotData.annualLeaveData.remainedAnnualLeave || snapshotData.annualLeaveData.remainingAnnualLeave || 0,
-                  birthDayLeaveDetails: (snapshotData.annualLeaveData.birthDayLeaveDetails || []).map((detail: any) => ({
-                      usedAt: detail.usedAt,
-                      leaveType: detail.attendanceType?.title || detail.leaveType || '',
-                  })),
+                  remainingAnnualLeave:
+                      snapshotData.annualLeaveData.remainedAnnualLeave ||
+                      snapshotData.annualLeaveData.remainingAnnualLeave ||
+                      0,
+                  birthDayLeaveDetails: (snapshotData.annualLeaveData.birthDayLeaveDetails || []).map(
+                      (detail: any) => ({
+                          usedAt: detail.usedAt,
+                          leaveType: detail.attendanceType?.title || detail.leaveType || '',
+                      }),
+                  ),
                   createdAt: snapshotData.annualLeaveData.createdAt
                       ? new Date(snapshotData.annualLeaveData.createdAt).toISOString()
                       : new Date().toISOString(),

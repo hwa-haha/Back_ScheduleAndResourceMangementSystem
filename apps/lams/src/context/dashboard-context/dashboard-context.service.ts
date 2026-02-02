@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import {
     GetDepartmentMonthlyAverageWorkHoursQuery,
+    GetDepartmentMonthlyEmployeeWorkHoursQuery,
     GetDepartmentMonthlyEmployeeAttendanceQuery,
     GetDepartmentWeeklyTopEmployeesQuery,
     GetDepartmentSnapshotsQuery,
@@ -10,6 +11,8 @@ import {
 import {
     IGetDepartmentMonthlyAverageWorkHoursQuery,
     IGetDepartmentMonthlyAverageWorkHoursResponse,
+    IGetDepartmentMonthlyEmployeeWorkHoursQuery,
+    IGetDepartmentMonthlyEmployeeWorkHoursResponse,
     IGetDepartmentMonthlyEmployeeAttendanceQuery,
     IGetDepartmentMonthlyEmployeeAttendanceResponse,
     IGetDepartmentWeeklyTopEmployeesQuery,
@@ -30,12 +33,22 @@ export class DashboardContextService {
     constructor(private readonly queryBus: QueryBus) {}
 
     /**
-     * 부서별 월별 일평균 근무시간 조회
+     * 부서별 월별 일평균 근무시간 조회 (1~12월 연간)
      */
     async 부서별월별일평균근무시간을조회한다(
         query: IGetDepartmentMonthlyAverageWorkHoursQuery,
     ): Promise<IGetDepartmentMonthlyAverageWorkHoursResponse> {
         const queryInstance = new GetDepartmentMonthlyAverageWorkHoursQuery(query);
+        return await this.queryBus.execute(queryInstance);
+    }
+
+    /**
+     * 부서별 월별 직원별 근무시간 조회 (특정 연·월)
+     */
+    async 부서별월별직원별근무시간을조회한다(
+        query: IGetDepartmentMonthlyEmployeeWorkHoursQuery,
+    ): Promise<IGetDepartmentMonthlyEmployeeWorkHoursResponse> {
+        const queryInstance = new GetDepartmentMonthlyEmployeeWorkHoursQuery(query);
         return await this.queryBus.execute(queryInstance);
     }
 

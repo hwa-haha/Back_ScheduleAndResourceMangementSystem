@@ -5,6 +5,10 @@ import {
     GetDepartmentMonthlyAverageWorkHoursResponseDto,
 } from './dto/get-department-monthly-average-work-hours.dto';
 import {
+    GetDepartmentMonthlyEmployeeWorkHoursRequestDto,
+    GetDepartmentMonthlyEmployeeWorkHoursResponseDto,
+} from './dto/get-department-monthly-employee-work-hours.dto';
+import {
     GetDepartmentMonthlyEmployeeAttendanceRequestDto,
     GetDepartmentMonthlyEmployeeAttendanceResponseDto,
 } from './dto/get-department-monthly-employee-attendance.dto';
@@ -34,19 +38,21 @@ import { IGetEmployeeAttendanceDetailResponse } from '../../context/dashboard-co
 export class DashboardController {
     constructor(private readonly dashboardBusinessService: DashboardBusinessService) {}
     /**
-     * 부서별 월별 일평균 근무시간 조회
+     * 부서별 월별 일평균 근무시간 조회 (1~12월 연간)
      *
-     * 연도별로 1월부터 12월까지의 평균근무시간 목록과
-     * 월별 직원별 총 근무시간을 내림차순으로 조회합니다.
-     * 지각, 조퇴 정보를 포함합니다.
+     * 연도별로 1월부터 12월까지의 월별 일평균 근무시간만 조회합니다.
      */
     @Get('department/monthly-average-work-hours')
     @ApiOperation({
         summary: '부서별 월별 일평균 근무시간 조회',
-        description:
-            '연도별로 1월부터 12월까지의 평균근무시간 목록과 월별 직원별 총 근무시간을 내림차순으로 조회합니다. 지각, 조퇴 정보를 포함합니다.',
+        description: '연도별로 1월부터 12월까지의 월별 일평균 근무시간만 조회합니다.',
     })
-    @ApiQuery({ name: 'departmentId', description: '부서 ID', example: 'd2860a56-99e0-4e79-b70e-0461eef212ac', required: true })
+    @ApiQuery({
+        name: 'departmentId',
+        description: '부서 ID',
+        example: 'd2860a56-99e0-4e79-b70e-0461eef212ac',
+        required: true,
+    })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiResponse({
         status: 200,
@@ -56,9 +62,40 @@ export class DashboardController {
     async getDepartmentMonthlyAverageWorkHours(
         @Query() query: GetDepartmentMonthlyAverageWorkHoursRequestDto,
     ): Promise<GetDepartmentMonthlyAverageWorkHoursResponseDto> {
-        return await this.dashboardBusinessService.부서별월별일평균근무시간을조회한다(
+        return await this.dashboardBusinessService.부서별월별일평균근무시간을조회한다(query.departmentId, query.year);
+    }
+
+    /**
+     * 부서별 월별 직원별 근무시간 조회 (특정 연·월)
+     *
+     * 선택한 연·월에 해당 부서 직원들의 근무시간 상세(총 근무시간, 지각·조퇴, 주차별 근무시간)를 내림차순으로 조회합니다.
+     */
+    @Get('department/monthly-employee-work-hours')
+    @ApiOperation({
+        summary: '부서별 월별 직원별 근무시간 조회',
+        description:
+            '선택한 연·월에 해당 부서 직원들의 근무시간 상세(총 근무시간, 지각·조퇴, 주차별 근무시간)를 내림차순으로 조회합니다.',
+    })
+    @ApiQuery({
+        name: 'departmentId',
+        description: '부서 ID',
+        example: 'd2860a56-99e0-4e79-b70e-0461eef212ac',
+        required: true,
+    })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
+    @ApiQuery({ name: 'month', description: '월 (01-12)', example: '01', required: true })
+    @ApiResponse({
+        status: 200,
+        description: '부서별 월별 직원별 근무시간 조회 성공',
+        type: GetDepartmentMonthlyEmployeeWorkHoursResponseDto,
+    })
+    async getDepartmentMonthlyEmployeeWorkHours(
+        @Query() query: GetDepartmentMonthlyEmployeeWorkHoursRequestDto,
+    ): Promise<GetDepartmentMonthlyEmployeeWorkHoursResponseDto> {
+        return await this.dashboardBusinessService.부서별월별직원별근무시간을조회한다(
             query.departmentId,
             query.year,
+            query.month,
         );
     }
 
@@ -72,7 +109,12 @@ export class DashboardController {
         summary: '부서별 월별 직원별 근무내역 조회',
         description: '근태사용내역을 기준으로 출장, 연차, 결근, 지각에 대한 정보를 조회합니다.',
     })
-    @ApiQuery({ name: 'departmentId', description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
+    @ApiQuery({
+        name: 'departmentId',
+        description: '부서 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: true,
+    })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
@@ -100,7 +142,12 @@ export class DashboardController {
         summary: '부서별 월별 주차별 주간근무시간 상위 5명 조회',
         description: '각 주차별로 주간근무시간이 높은 상위 5명의 직원을 조회합니다.',
     })
-    @ApiQuery({ name: 'departmentId', description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
+    @ApiQuery({
+        name: 'departmentId',
+        description: '부서 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: true,
+    })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
@@ -128,7 +175,12 @@ export class DashboardController {
         summary: '부서별 연도, 월별 스냅샷 조회',
         description: '특정 부서의 연도, 월별 스냅샷 목록을 조회합니다.',
     })
-    @ApiQuery({ name: 'departmentId', description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
+    @ApiQuery({
+        name: 'departmentId',
+        description: '부서 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: true,
+    })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
@@ -156,14 +208,19 @@ export class DashboardController {
         summary: '연도, 월별 직원 근태상세 조회',
         description: '특정 직원의 연도, 월별 근태 상세 정보를 조회합니다.',
     })
-    @ApiQuery({ name: 'employeeId', description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: true })
+    @ApiQuery({
+        name: 'employeeId',
+        description: '직원 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+        required: true,
+    })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,
         description: '연도, 월별 직원 근태상세 조회 성공',
         type: GetEmployeeAttendanceDetailResponseDto,
-    })  
+    })
     async getEmployeeAttendanceDetail(
         @Query() query: GetEmployeeAttendanceDetailRequestDto,
     ): Promise<IGetEmployeeAttendanceDetailResponse> {

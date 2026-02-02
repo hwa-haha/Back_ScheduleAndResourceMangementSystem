@@ -1,20 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DashboardContextService } from '../../context/dashboard-context/dashboard-context.service';
-import {
-    GetDepartmentMonthlyAverageWorkHoursResponseDto,
-} from '../../interface/dashboard/dto/get-department-monthly-average-work-hours.dto';
-import {
-    GetDepartmentMonthlyEmployeeAttendanceResponseDto,
-} from '../../interface/dashboard/dto/get-department-monthly-employee-attendance.dto';
-import {
-    GetDepartmentWeeklyTopEmployeesResponseDto,
-} from '../../interface/dashboard/dto/get-department-weekly-top-employees.dto';
-import {
-    GetDepartmentSnapshotsResponseDto,
-} from '../../interface/dashboard/dto/get-department-snapshots.dto';
-import {
-    GetEmployeeAttendanceDetailResponseDto,
-} from '../../interface/dashboard/dto/get-employee-attendance-detail.dto';
+import { GetDepartmentMonthlyAverageWorkHoursResponseDto } from '../../interface/dashboard/dto/get-department-monthly-average-work-hours.dto';
+import { GetDepartmentMonthlyEmployeeWorkHoursResponseDto } from '../../interface/dashboard/dto/get-department-monthly-employee-work-hours.dto';
+import { GetDepartmentMonthlyEmployeeAttendanceResponseDto } from '../../interface/dashboard/dto/get-department-monthly-employee-attendance.dto';
+import { GetDepartmentWeeklyTopEmployeesResponseDto } from '../../interface/dashboard/dto/get-department-weekly-top-employees.dto';
+import { GetDepartmentSnapshotsResponseDto } from '../../interface/dashboard/dto/get-department-snapshots.dto';
+import { GetEmployeeAttendanceDetailResponseDto } from '../../interface/dashboard/dto/get-employee-attendance-detail.dto';
 import { IGetEmployeeAttendanceDetailResponse } from '../../context/dashboard-context/interfaces/response/get-employee-attendance-detail-response.interface';
 
 /**
@@ -29,11 +20,9 @@ export class DashboardBusinessService {
     constructor(private readonly dashboardContextService: DashboardContextService) {}
 
     /**
-     * 부서별 월별 일평균 근무시간 조회
+     * 부서별 월별 일평균 근무시간 조회 (1~12월 연간)
      *
-     * 연도별로 1월부터 12월까지의 평균근무시간 목록과
-     * 월별 직원별 총 근무시간을 내림차순으로 조회합니다.
-     * 지각, 조퇴 정보를 포함합니다.
+     * 연도별로 1월부터 12월까지의 월별 일평균 근무시간만 조회합니다.
      */
     async 부서별월별일평균근무시간을조회한다(
         departmentId: string,
@@ -41,6 +30,20 @@ export class DashboardBusinessService {
     ): Promise<GetDepartmentMonthlyAverageWorkHoursResponseDto> {
         this.logger.log(`부서별 월별 일평균 근무시간 조회: departmentId=${departmentId}, year=${year}`);
         return await this.dashboardContextService.부서별월별일평균근무시간을조회한다({ departmentId, year });
+    }
+
+    /**
+     * 부서별 월별 직원별 근무시간 조회 (특정 연·월)
+     *
+     * 선택한 연·월에 해당 부서 직원들의 근무시간 상세(총 근무시간, 지각·조퇴, 주차별 근무시간)를 내림차순으로 조회합니다.
+     */
+    async 부서별월별직원별근무시간을조회한다(
+        departmentId: string,
+        year: string,
+        month: string,
+    ): Promise<GetDepartmentMonthlyEmployeeWorkHoursResponseDto> {
+        this.logger.log(`부서별 월별 직원별 근무시간 조회: departmentId=${departmentId}, year=${year}, month=${month}`);
+        return await this.dashboardContextService.부서별월별직원별근무시간을조회한다({ departmentId, year, month });
     }
 
     /**
@@ -53,9 +56,7 @@ export class DashboardBusinessService {
         year: string,
         month: string,
     ): Promise<GetDepartmentMonthlyEmployeeAttendanceResponseDto> {
-        this.logger.log(
-            `부서별 월별 직원별 근무내역 조회: departmentId=${departmentId}, year=${year}, month=${month}`,
-        );
+        this.logger.log(`부서별 월별 직원별 근무내역 조회: departmentId=${departmentId}, year=${year}, month=${month}`);
         return await this.dashboardContextService.부서별월별직원별근무내역을조회한다({ departmentId, year, month });
     }
 
