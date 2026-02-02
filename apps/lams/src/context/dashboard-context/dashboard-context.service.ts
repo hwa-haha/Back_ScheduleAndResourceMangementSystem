@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import {
-    GetDepartmentMonthlyAverageWorkHoursQuery,
-    GetDepartmentMonthlyEmployeeWorkHoursQuery,
-    GetDepartmentMonthlyEmployeeAttendanceQuery,
-    GetDepartmentWeeklyTopEmployeesQuery,
+    GetDepartmentMonthlySnapshotChildrenQuery,
+    ComputeDepartmentMonthlyAveragesQuery,
+    ComputeDepartmentMonthlyEmployeeWorkHoursQuery,
+    ComputeDepartmentMonthlyEmployeeAttendanceQuery,
+    ComputeDepartmentWeeklyTopEmployeesQuery,
     GetDepartmentSnapshotsQuery,
     GetEmployeeAttendanceDetailQuery,
 } from './handlers';
@@ -26,7 +27,7 @@ import {
 /**
  * 대시보드 Context Service
  *
- * QueryBus를 통해 Handler를 호출하는 서비스 레이어입니다.
+ * QueryBus를 통해 Handler를 호출하며, 스냅샷 조회와 집계를 조합하여 사용합니다.
  */
 @Injectable()
 export class DashboardContextService {
@@ -34,42 +35,96 @@ export class DashboardContextService {
 
     /**
      * 부서별 월별 일평균 근무시간 조회 (1~12월 연간)
+     * 1~12월 각각 스냅샷 child 조회 후 월별 일평균 계산 Handler로 조합합니다.
      */
     async 부서별월별일평균근무시간을조회한다(
         query: IGetDepartmentMonthlyAverageWorkHoursQuery,
     ): Promise<IGetDepartmentMonthlyAverageWorkHoursResponse> {
-        const queryInstance = new GetDepartmentMonthlyAverageWorkHoursQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        const { departmentId, year } = query;
+        const monthlySelections: Array<{ month: string; selectedChildren: any[] }> = [];
+
+        for (let month = 1; month <= 12; month++) {
+            const monthStr = month.toString().padStart(2, '0');
+            const snapshotResult = await this.queryBus.execute(
+                new GetDepartmentMonthlySnapshotChildrenQuery({ departmentId, year, month: monthStr }),
+            );
+            monthlySelections.push({
+                month: monthStr,
+                selectedChildren: snapshotResult.selectedChildren,
+            });
+        }
+
+        return await this.queryBus.execute(
+            new ComputeDepartmentMonthlyAveragesQuery({
+                departmentId,
+                year,
+                monthlySelections,
+            }),
+        );
     }
 
     /**
      * 부서별 월별 직원별 근무시간 조회 (특정 연·월)
+     * 해당 연·월 스냅샷 child 조회 후 직원별 근무시간 계산 Handler로 조합합니다.
      */
     async 부서별월별직원별근무시간을조회한다(
         query: IGetDepartmentMonthlyEmployeeWorkHoursQuery,
     ): Promise<IGetDepartmentMonthlyEmployeeWorkHoursResponse> {
-        const queryInstance = new GetDepartmentMonthlyEmployeeWorkHoursQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        const { departmentId, year, month } = query;
+        const snapshotResult = await this.queryBus.execute(
+            new GetDepartmentMonthlySnapshotChildrenQuery({ departmentId, year, month }),
+        );
+        return await this.queryBus.execute(
+            new ComputeDepartmentMonthlyEmployeeWorkHoursQuery({
+                departmentId,
+                year,
+                month,
+                selectedChildren: snapshotResult.selectedChildren,
+            }),
+        );
     }
 
     /**
      * 부서별 월별 직원별 근무내역 조회
+     * 해당 연·월 스냅샷 child 조회 후 근무내역 계산 Handler로 조합합니다.
      */
     async 부서별월별직원별근무내역을조회한다(
         query: IGetDepartmentMonthlyEmployeeAttendanceQuery,
     ): Promise<IGetDepartmentMonthlyEmployeeAttendanceResponse> {
-        const queryInstance = new GetDepartmentMonthlyEmployeeAttendanceQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        const { departmentId, year, month } = query;
+        const monthStr = month.padStart(2, '0');
+        const snapshotResult = await this.queryBus.execute(
+            new GetDepartmentMonthlySnapshotChildrenQuery({ departmentId, year, month: monthStr }),
+        );
+        return await this.queryBus.execute(
+            new ComputeDepartmentMonthlyEmployeeAttendanceQuery({
+                departmentId,
+                year,
+                month: monthStr,
+                selectedChildren: snapshotResult.selectedChildren,
+            }),
+        );
     }
 
     /**
      * 부서별 월별 주차별 주간근무시간 상위 5명 조회
+     * 해당 연·월 스냅샷 child 조회 후 주차별 상위 5명 계산 Handler로 조합합니다.
      */
     async 부서별월별주차별주간근무시간상위5명을조회한다(
         query: IGetDepartmentWeeklyTopEmployeesQuery,
     ): Promise<IGetDepartmentWeeklyTopEmployeesResponse> {
-        const queryInstance = new GetDepartmentWeeklyTopEmployeesQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        const { departmentId, year, month } = query;
+        const snapshotResult = await this.queryBus.execute(
+            new GetDepartmentMonthlySnapshotChildrenQuery({ departmentId, year, month }),
+        );
+        return await this.queryBus.execute(
+            new ComputeDepartmentWeeklyTopEmployeesQuery({
+                departmentId,
+                year,
+                month,
+                selectedChildren: snapshotResult.selectedChildren,
+            }),
+        );
     }
 
     /**
