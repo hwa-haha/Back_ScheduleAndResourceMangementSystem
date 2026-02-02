@@ -18,7 +18,7 @@ import {
     ReplaceProjectAssignmentsResponseDto,
     AssignProjectResponseDto,
 } from './dto/assigned-project.dto';
-import { CreateWorkHoursRequestDto, CreateWorkHoursResponseDto } from './dto/work-hours.dto';
+import { CreateWorkHoursRequestDto, CreateWorkHoursResponseDto, UpdateWorkHoursRequestDto } from './dto/work-hours.dto';
 import {
     GetMonthlyWorkHoursRequestDto,
     GetMonthlyWorkHoursResponseDto,
@@ -144,8 +144,46 @@ export class WorkHoursController {
             dto.date,
             dto.startTime,
             dto.endTime,
-            dto.workMinutes,
-            dto.note,
+            undefined,
+            undefined,
+            userId,
+        );
+        return {
+            id: workHours.id,
+            assignedProjectId: workHours.assignedProjectId,
+            date: workHours.date,
+            startTime: workHours.startTime,
+            endTime: workHours.endTime,
+            workMinutes: workHours.workMinutes,
+            note: workHours.note,
+        };
+    }
+
+    /**
+     * 시수 수정 (ID 기준)
+     */
+    @Put('work-hours/:id')
+    @ApiOperation({
+        summary: '시수 수정',
+        description: '시수 엔티티 ID로 해당 시수를 수정합니다.',
+    })
+    @ApiParam({ name: 'id', description: '시수 ID (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @ApiResponse({
+        status: 200,
+        description: '시수 수정 성공',
+        type: CreateWorkHoursResponseDto,
+    })
+    async updateWorkHours(
+        @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: UpdateWorkHoursRequestDto,
+        @User('id') userId: string,
+    ): Promise<CreateWorkHoursResponseDto> {
+        const workHours = await this.workHoursBusinessService.시수수정한다(
+            id,
+            {
+                startTime: dto.startTime,
+                endTime: dto.endTime,
+            },
             userId,
         );
         return {
@@ -176,13 +214,32 @@ export class WorkHoursController {
         @Param('date') date: string,
         @User('id') userId: string,
     ): Promise<{ success: boolean }> {
-        // 날짜 형식 검증
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         if (!dateRegex.test(date)) {
             throw new BadRequestException('날짜는 yyyy-MM-dd 형식이어야 합니다.');
         }
-
         await this.workHoursBusinessService.날짜별시수삭제한다(date, userId);
+        return { success: true };
+    }
+
+    /**
+     * 시수 삭제 (ID 기준, 완전 삭제)
+     */
+    @Delete('work-hours/:id')
+    @ApiOperation({
+        summary: '시수 삭제',
+        description: '시수 엔티티 ID로 해당 시수를 완전 삭제합니다.',
+    })
+    @ApiParam({ name: 'id', description: '시수 ID (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @ApiResponse({
+        status: 200,
+        description: '시수 삭제 성공',
+    })
+    async deleteWorkHours(
+        @Param('id', ParseUUIDPipe) id: string,
+        @User('id') userId: string,
+    ): Promise<{ success: boolean }> {
+        await this.workHoursBusinessService.시수삭제한다(id, userId);
         return { success: true };
     }
 

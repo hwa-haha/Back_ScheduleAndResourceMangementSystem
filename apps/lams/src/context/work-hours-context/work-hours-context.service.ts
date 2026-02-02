@@ -2,23 +2,31 @@ import { Injectable } from '@nestjs/common';
 import { QueryBus, CommandBus } from '@nestjs/cqrs';
 import {
     IGetMonthlyWorkHoursQuery,
+    IGetDailyWorkHoursQuery,
     IGetProjectListQuery,
     IGetEmployeeWithAssignedProjectsQuery,
     IReplaceProjectAssignmentsCommand,
     ICreateWorkHoursCommand,
+    IUpdateWorkHoursCommand,
     IDeleteWorkHoursByDateCommand,
+    IDeleteWorkHoursByIdCommand,
     IReplaceProjectAssignmentsResponse,
     IGetEmployeeWithAssignedProjectsResponse,
     ICreateWorkHoursResponse,
+    IUpdateWorkHoursResponse,
     IGetMonthlyWorkHoursResponse,
+    IGetDailyWorkHoursResponse,
     IGetProjectListResponse,
 } from './interfaces';
 import { GetMonthlyWorkHoursQuery } from './handlers/monthly-work-hours/queries/get-monthly-work-hours.query';
+import { GetDailyWorkHoursQuery } from './handlers/daily-work-hours/queries/get-daily-work-hours.query';
 import { GetProjectListQuery } from './handlers/project/queries/get-project-list.query';
 import { GetEmployeeWithAssignedProjectsQuery } from './handlers/employee-assignments/queries/get-employee-with-assigned-projects.query';
 import { ReplaceProjectAssignmentsCommand } from './handlers/assigned-project/commands/replace-project-assignments.command';
 import { CreateWorkHoursCommand } from './handlers/work-hours/commands/create-work-hours.command';
+import { UpdateWorkHoursCommand } from './handlers/work-hours/commands/update-work-hours.command';
 import { DeleteWorkHoursByDateCommand } from './handlers/work-hours/commands/delete-work-hours-by-date.command';
+import { DeleteWorkHoursByIdCommand } from './handlers/work-hours/commands/delete-work-hours-by-id.command';
 
 /**
  * 시수 관리 Context 서비스
@@ -50,6 +58,13 @@ export class WorkHoursContextService {
     }
 
     /**
+     * 시수를 수정한다 (ID 기준)
+     */
+    async 시수수정한다(command: IUpdateWorkHoursCommand): Promise<IUpdateWorkHoursResponse> {
+        return await this.commandBus.execute(new UpdateWorkHoursCommand(command));
+    }
+
+    /**
      * 날짜별 시수를 삭제한다
      */
     async 날짜별시수삭제한다(command: IDeleteWorkHoursByDateCommand): Promise<void> {
@@ -57,10 +72,24 @@ export class WorkHoursContextService {
     }
 
     /**
+     * 시수를 ID로 삭제한다 (완전 삭제)
+     */
+    async 시수ID로삭제한다(command: IDeleteWorkHoursByIdCommand): Promise<void> {
+        return await this.commandBus.execute(new DeleteWorkHoursByIdCommand(command));
+    }
+
+    /**
      * 월별 시수 현황을 조회한다
      */
     async 월별시수현황조회한다(query: IGetMonthlyWorkHoursQuery): Promise<IGetMonthlyWorkHoursResponse> {
         return await this.queryBus.execute(new GetMonthlyWorkHoursQuery(query));
+    }
+
+    /**
+     * 일별 시수를 조회한다 (해당 날짜의 직원 시수 정보 전체)
+     */
+    async 일별시수조회한다(query: IGetDailyWorkHoursQuery): Promise<IGetDailyWorkHoursResponse> {
+        return await this.queryBus.execute(new GetDailyWorkHoursQuery(query));
     }
 
     /**

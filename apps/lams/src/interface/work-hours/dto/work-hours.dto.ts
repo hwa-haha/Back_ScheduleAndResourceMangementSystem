@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNumber, IsUUID, IsDateString, Min } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsDateString } from 'class-validator';
 
 /**
  * 시수 입력 요청 DTO
@@ -22,17 +22,21 @@ export class CreateWorkHoursRequestDto {
     @IsString()
     @IsOptional()
     endTime?: string;
+}
 
-    @ApiPropertyOptional({ description: '근무 시간 (분 단위)', example: 480 })
-    @IsNumber()
-    @Min(0)
-    @IsOptional()
-    workMinutes?: number;
-
-    @ApiPropertyOptional({ description: '비고' })
+/**
+ * 시수 수정 요청 DTO
+ */
+export class UpdateWorkHoursRequestDto {
+    @ApiPropertyOptional({ description: '근무 시작 시간', example: '09:00' })
     @IsString()
     @IsOptional()
-    note?: string;
+    startTime?: string;
+
+    @ApiPropertyOptional({ description: '근무 종료 시간', example: '18:00' })
+    @IsString()
+    @IsOptional()
+    endTime?: string;
 }
 
 /**

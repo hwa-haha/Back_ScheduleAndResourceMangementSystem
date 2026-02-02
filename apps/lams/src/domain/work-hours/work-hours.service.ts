@@ -30,39 +30,17 @@ export class DomainWorkHoursService {
     async 생성한다(data: CreateWorkHoursData, manager?: EntityManager): Promise<WorkHoursDTO> {
         const repository = this.getRepository(manager);
 
-        // 기존 시수 확인 (같은 assigned_project_id와 date 조합은 유일해야 함)
-        const existing = await repository.findOne({
-            where: {
-                assigned_project_id: data.assignedProjectId,
-                date: data.date,
-                deleted_at: IsNull(),
-            },
-        });
-        if (existing) {
-            throw new ConflictException('이미 해당 날짜의 시수가 존재합니다.');
-        }
-
-        // work_minutes가 없으면 start_time과 end_time으로 계산
-        let workMinutes = data.workMinutes || 0;
-        if (!workMinutes && data.startTime && data.endTime) {
-            try {
-                const startDateTime = new Date(`${data.date}T${data.startTime}`);
-                const endDateTime = new Date(`${data.date}T${data.endTime}`);
-                const diff = endDateTime.getTime() - startDateTime.getTime();
-                workMinutes = Math.floor(diff / (1000 * 60));
-            } catch (error) {
-                workMinutes = 0;
-            }
-        }
-
         const workHours = new WorkHours(
             data.assignedProjectId,
             data.date,
             data.startTime,
             data.endTime,
-            workMinutes,
+            data.workMinutes ?? 0,
             data.note,
         );
+        if (data.startTime && data.endTime && data.workMinutes == null) {
+            workHours.근무시간계산한다();
+        }
 
         const saved = await repository.save(workHours);
         return saved.DTO변환한다();
@@ -163,20 +141,10 @@ export class DomainWorkHoursService {
         });
 
         if (existing) {
-            // 기존 시수 업데이트
-            let workMinutes = data.workMinutes;
-            if (!workMinutes && data.startTime && data.endTime) {
-                try {
-                    const startDateTime = new Date(`${data.date}T${data.startTime}`);
-                    const endDateTime = new Date(`${data.date}T${data.endTime}`);
-                    const diff = endDateTime.getTime() - startDateTime.getTime();
-                    workMinutes = Math.floor(diff / (1000 * 60));
-                } catch (error) {
-                    workMinutes = existing.work_minutes;
-                }
+            existing.업데이트한다(data.startTime, data.endTime, data.workMinutes, data.note);
+            if (data.startTime && data.endTime && data.workMinutes == null) {
+                existing.근무시간계산한다();
             }
-
-            existing.업데이트한다(data.startTime, data.endTime, workMinutes, data.note);
             existing.수정자설정한다(userId);
             existing.메타데이터업데이트한다(userId);
 
@@ -226,20 +194,10 @@ export class DomainWorkHoursService {
             throw new NotFoundException(`시수를 찾을 수 없습니다. (id: ${id})`);
         }
 
-        // work_minutes가 없으면 start_time과 end_time으로 계산
-        let workMinutes = data.workMinutes;
-        if (workMinutes === undefined && data.startTime && data.endTime) {
-            try {
-                const startDateTime = new Date(`${workHours.date}T${data.startTime}`);
-                const endDateTime = new Date(`${workHours.date}T${data.endTime}`);
-                const diff = endDateTime.getTime() - startDateTime.getTime();
-                workMinutes = Math.floor(diff / (1000 * 60));
-            } catch (error) {
-                workMinutes = workHours.work_minutes;
-            }
+        workHours.업데이트한다(data.startTime, data.endTime, data.workMinutes, data.note);
+        if (data.startTime && data.endTime && data.workMinutes == null) {
+            workHours.근무시간계산한다();
         }
-
-        workHours.업데이트한다(data.startTime, data.endTime, workMinutes, data.note);
         workHours.수정자설정한다(userId);
         workHours.메타데이터업데이트한다(userId);
 

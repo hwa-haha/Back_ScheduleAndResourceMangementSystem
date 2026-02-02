@@ -7,7 +7,9 @@ import {
     IGetEmployeeWithAssignedProjectsQuery,
     IReplaceProjectAssignmentsCommand,
     ICreateWorkHoursCommand,
+    IUpdateWorkHoursCommand,
     IDeleteWorkHoursByDateCommand,
+    IDeleteWorkHoursByIdCommand,
 } from '../../context/work-hours-context/interfaces';
 import {
     IGetWageCalculationTypeListQuery,
@@ -72,6 +74,25 @@ export class WorkHoursBusinessService {
     }
 
     /**
+     * 시수를 수정한다 (ID 기준)
+     */
+    async 시수수정한다(
+        id: string,
+        data: { startTime?: string; endTime?: string },
+        userId: string,
+    ): Promise<WorkHoursDTO> {
+        this.logger.log(`시수 수정: id=${id}`);
+        const command: IUpdateWorkHoursCommand = {
+            id,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            performedBy: userId,
+        };
+        const result = await this.workHoursContextService.시수수정한다(command);
+        return result.workHours;
+    }
+
+    /**
      * 해당 날짜의 모든 시수를 삭제한다
      */
     async 날짜별시수삭제한다(date: string, userId: string): Promise<void> {
@@ -81,6 +102,18 @@ export class WorkHoursBusinessService {
             performedBy: userId,
         };
         await this.workHoursContextService.날짜별시수삭제한다(command);
+    }
+
+    /**
+     * 시수를 ID로 삭제한다 (Soft Delete)
+     */
+    async 시수삭제한다(id: string, userId: string): Promise<void> {
+        this.logger.log(`시수 삭제: id=${id}`);
+        const command: IDeleteWorkHoursByIdCommand = {
+            id,
+            performedBy: userId,
+        };
+        await this.workHoursContextService.시수ID로삭제한다(command);
     }
 
     /**
@@ -118,7 +151,7 @@ export class WorkHoursBusinessService {
     /**
      * 일별 시수 상세를 조회한다
      *
-     * 해당 날짜의 시수만 필터링하여 반환한다.
+     * 해당 날짜에 해당하는 직원의 시수 정보 전체를 반환한다.
      */
     async 일별시수상세조회한다(
         employeeId: string,
@@ -139,20 +172,7 @@ export class WorkHoursBusinessService {
         totalWorkMinutes: number;
     }> {
         this.logger.log(`일별 시수 상세 조회: employeeId=${employeeId}, date=${date}`);
-        const [year, month] = date.split('-');
-        const monthly = await this.workHoursContextService.월별시수현황조회한다({
-            employeeId,
-            year,
-            month: month!.padStart(2, '0'),
-        });
-        const dayItems = monthly.workHours.filter((w) => w.date === date);
-        const totalWorkMinutes = dayItems.reduce((sum, w) => sum + w.workMinutes, 0);
-        return {
-            employeeId: monthly.employeeId,
-            date,
-            workHours: dayItems,
-            totalWorkMinutes,
-        };
+        return await this.workHoursContextService.일별시수조회한다({ employeeId, date });
     }
 
     /**

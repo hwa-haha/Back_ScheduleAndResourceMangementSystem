@@ -9,9 +9,7 @@ import { DomainWorkHoursService } from '../../../../../domain/work-hours/work-ho
  * 시수 입력 Handler
  */
 @CommandHandler(CreateWorkHoursCommand)
-export class CreateWorkHoursHandler
-    implements ICommandHandler<CreateWorkHoursCommand, ICreateWorkHoursResponse>
-{
+export class CreateWorkHoursHandler implements ICommandHandler<CreateWorkHoursCommand, ICreateWorkHoursResponse> {
     private readonly logger = new Logger(CreateWorkHoursHandler.name);
 
     constructor(
@@ -20,39 +18,22 @@ export class CreateWorkHoursHandler
     ) {}
 
     async execute(command: CreateWorkHoursCommand): Promise<ICreateWorkHoursResponse> {
-        const { assignedProjectId, date, startTime, endTime, workMinutes, note, performedBy } = command.data;
+        const { assignedProjectId, date, startTime, endTime, workMinutes, note } = command.data;
 
         this.logger.log(`시수 입력 시작: assignedProjectId=${assignedProjectId}, date=${date}`);
 
         return await this.dataSource.transaction(async (manager) => {
-            let workHours;
-
-            if (performedBy) {
-                workHours = await this.workHoursService.생성또는수정한다(
-                    {
-                        assignedProjectId,
-                        date,
-                        startTime,
-                        endTime,
-                        workMinutes,
-                        note,
-                    },
-                    performedBy,
-                    manager,
-                );
-            } else {
-                workHours = await this.workHoursService.생성한다(
-                    {
-                        assignedProjectId,
-                        date,
-                        startTime,
-                        endTime,
-                        workMinutes,
-                        note,
-                    },
-                    manager,
-                );
-            }
+            const workHours = await this.workHoursService.생성한다(
+                {
+                    assignedProjectId,
+                    date,
+                    startTime,
+                    endTime,
+                    workMinutes,
+                    note,
+                },
+                manager,
+            );
 
             this.logger.log(`시수 입력 완료: workHoursId=${workHours.id}`);
 

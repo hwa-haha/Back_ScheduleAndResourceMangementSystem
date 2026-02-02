@@ -11,7 +11,7 @@ import { WorkHoursDTO } from './work-hours.types';
  * 할당된 프로젝트와 1:N 관계 (직원-프로젝트별로 1년 기준 365개의 시수 데이터)
  */
 @Entity('work_hours')
-@Index(['assigned_project_id', 'date'], { unique: true })
+@Index(['assigned_project_id', 'date'])
 @Index(['assigned_project_id'])
 @Index(['date'])
 export class WorkHours extends BaseEntity<WorkHoursDTO> {
@@ -172,12 +172,7 @@ export class WorkHours extends BaseEntity<WorkHoursDTO> {
     /**
      * 시수 정보를 업데이트한다
      */
-    업데이트한다(
-        start_time?: string,
-        end_time?: string,
-        work_minutes?: number,
-        note?: string,
-    ): void {
+    업데이트한다(start_time?: string, end_time?: string, work_minutes?: number, note?: string): void {
         if (start_time !== undefined) {
             this.start_time = start_time;
         }
@@ -209,14 +204,26 @@ export class WorkHours extends BaseEntity<WorkHoursDTO> {
 
     /**
      * 근무 시간 계산 (시작 시간과 종료 시간으로부터 자동 계산)
+     * 12:00~13:00 점심 시간은 분 계산에서 제외한다.
      */
     근무시간계산한다(): void {
         if (this.start_time && this.end_time && this.date) {
             try {
                 const startDateTime = new Date(`${this.date}T${this.start_time}`);
                 const endDateTime = new Date(`${this.date}T${this.end_time}`);
-                const diff = endDateTime.getTime() - startDateTime.getTime();
-                this.work_minutes = Math.floor(diff / (1000 * 60));
+                const lunchStart = new Date(`${this.date}T12:00`);
+                const lunchEnd = new Date(`${this.date}T13:00`);
+
+                let totalMinutes = Math.floor((endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60));
+                const overlapStart = startDateTime < lunchStart ? lunchStart : startDateTime;
+                const overlapEnd = endDateTime > lunchEnd ? lunchEnd : endDateTime;
+                if (overlapStart < overlapEnd) {
+                    const lunchOverlapMinutes = Math.floor(
+                        (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60),
+                    );
+                    totalMinutes -= lunchOverlapMinutes;
+                }
+                this.work_minutes = Math.max(0, totalMinutes);
             } catch (error) {
                 // 시간 형식이 잘못된 경우 계산하지 않음
                 this.work_minutes = 0;

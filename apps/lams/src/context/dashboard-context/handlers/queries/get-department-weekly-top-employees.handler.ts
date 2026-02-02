@@ -13,9 +13,10 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
  * 각 주차별로 주간근무시간이 높은 상위 5명의 직원을 조회합니다.
  */
 @QueryHandler(GetDepartmentWeeklyTopEmployeesQuery)
-export class GetDepartmentWeeklyTopEmployeesHandler
-    implements IQueryHandler<GetDepartmentWeeklyTopEmployeesQuery, IGetDepartmentWeeklyTopEmployeesResponse>
-{
+export class GetDepartmentWeeklyTopEmployeesHandler implements IQueryHandler<
+    GetDepartmentWeeklyTopEmployeesQuery,
+    IGetDepartmentWeeklyTopEmployeesResponse
+> {
     private readonly logger = new Logger(GetDepartmentWeeklyTopEmployeesHandler.name);
 
     constructor(private readonly dataSource: DataSource) {}
@@ -30,7 +31,7 @@ export class GetDepartmentWeeklyTopEmployeesHandler
         // 1. 부서별 직원 목록 조회 (해당 월 1일부터 말일까지의 범위)
         const startDate = format(startOfMonth(new Date(`${year}-${month}-01`)), 'yyyy-MM-dd');
         const endDate = format(endOfMonth(new Date(`${year}-${month}-01`)), 'yyyy-MM-dd');
-        
+
         const employeeHistories = await this.dataSource.manager
             .createQueryBuilder('EmployeeDepartmentPositionHistory', 'eh')
             .leftJoinAndSelect('eh.employee', 'emp')
@@ -40,7 +41,7 @@ export class GetDepartmentWeeklyTopEmployeesHandler
             .andWhere('eh.effectiveStartDate <= :endDate', { endDate })
             .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :startDate)', { startDate })
             .getMany();
-        
+
         const employeeIds = employeeHistories.map((eh) => eh.employeeId).filter((id) => id);
 
         if (employeeIds.length === 0) {
@@ -63,20 +64,29 @@ export class GetDepartmentWeeklyTopEmployeesHandler
             .getMany();
 
         // 3. 주차별로 그룹화하고 상위 5명 추출
-        const weeklyTopEmployees: Array<{ week: number; topEmployees: Array<{
-            employeeId: string;
-            employeeName: string;
-            employeeNumber: string;
-            weeklyWorkHours: number;
-        }> }> = [];
+        const weeklyTopEmployees: Array<{
+            week: number;
+            topEmployees: Array<{
+                employeeId: string;
+                employeeName: string;
+                employeeNumber: string;
+                weeklyWorkHours: number;
+            }>;
+        }> = [];
 
         // 주차별 데이터 수집
-        const weekDataMap = new Map<number, Map<string, {
-            employeeId: string;
-            employeeName: string;
-            employeeNumber: string;
-            weeklyWorkHours: number;
-        }>>();
+        const weekDataMap = new Map<
+            number,
+            Map<
+                string,
+                {
+                    employeeId: string;
+                    employeeName: string;
+                    employeeNumber: string;
+                    weeklyWorkHours: number;
+                }
+            >
+        >();
 
         summaries.forEach((summary) => {
             const weeklyWorkTimeSummary = summary.weekly_work_time_summary || [];
