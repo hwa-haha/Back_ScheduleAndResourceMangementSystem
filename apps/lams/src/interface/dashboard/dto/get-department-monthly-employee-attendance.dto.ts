@@ -50,6 +50,9 @@ export class AttendanceUsageDto {
 
     @ApiProperty({ description: '지각 횟수', example: 3 })
     late: number;
+
+    @ApiProperty({ description: '조퇴 횟수', example: 0 })
+    earlyLeave: number;
 }
 
 /**

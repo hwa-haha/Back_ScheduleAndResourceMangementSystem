@@ -128,6 +128,104 @@ export class DomainWorkHoursService {
     }
 
     /**
+     * 월별 직원별 시수 합계를 조회한다 (선택 직원·선택 프로젝트 필터 지원)
+     */
+    async 월별직원별시수합계조회한다(
+        employeeIds: string[],
+        startDate: string,
+        endDate: string,
+        projectIds?: string[],
+    ): Promise<{ employeeId: string; totalMinutes: number }[]> {
+        if (employeeIds.length === 0) {
+            return [];
+        }
+        const qb = this.repository
+            .createQueryBuilder('wh')
+            .innerJoin('wh.assignedProject', 'ap')
+            .select('ap.employee_id', 'employeeId')
+            .addSelect('SUM(wh.work_minutes)', 'totalMinutes')
+            .where('wh.deleted_at IS NULL')
+            .andWhere('wh.date >= :startDate', { startDate })
+            .andWhere('wh.date <= :endDate', { endDate })
+            .andWhere('ap.employee_id IN (:...employeeIds)', { employeeIds })
+            .groupBy('ap.employee_id');
+        if (projectIds?.length) {
+            qb.andWhere('ap.project_id IN (:...projectIds)', { projectIds });
+        }
+        const rows = await qb.getRawMany<{ employeeId: string; totalMinutes: string }>();
+        return rows.map((r) => ({
+            employeeId: r.employeeId,
+            totalMinutes: Number(r.totalMinutes) || 0,
+        }));
+    }
+
+    /**
+     * 월별 직원별 일별 시수 합계를 조회한다 (선택 직원·선택 프로젝트 필터 지원)
+     * 직원·날짜별 SUM(work_minutes) 반환
+     */
+    async 월별직원별일별시수합계조회한다(
+        employeeIds: string[],
+        startDate: string,
+        endDate: string,
+        projectIds?: string[],
+    ): Promise<{ employeeId: string; date: string; totalMinutes: number }[]> {
+        if (employeeIds.length === 0) {
+            return [];
+        }
+        const qb = this.repository
+            .createQueryBuilder('wh')
+            .innerJoin('wh.assignedProject', 'ap')
+            .select('ap.employee_id', 'employeeId')
+            .addSelect('wh.date', 'date')
+            .addSelect('SUM(wh.work_minutes)', 'totalMinutes')
+            .where('wh.deleted_at IS NULL')
+            .andWhere('wh.date >= :startDate', { startDate })
+            .andWhere('wh.date <= :endDate', { endDate })
+            .andWhere('ap.employee_id IN (:...employeeIds)', { employeeIds })
+            .groupBy('ap.employee_id')
+            .addGroupBy('wh.date');
+        if (projectIds?.length) {
+            qb.andWhere('ap.project_id IN (:...projectIds)', { projectIds });
+        }
+        const rows = await qb.getRawMany<{ employeeId: string; date: string; totalMinutes: string }>();
+        return rows.map((r) => ({
+            employeeId: r.employeeId,
+            date: r.date,
+            totalMinutes: Number(r.totalMinutes) || 0,
+        }));
+    }
+
+    /**
+     * 월별 프로젝트별 일별 시수 합계를 조회한다 (project_id 기준 그룹, 선택 프로젝트 필터 지원)
+     */
+    async 월별프로젝트별일별시수합계조회한다(
+        startDate: string,
+        endDate: string,
+        projectIds?: string[],
+    ): Promise<{ projectId: string; date: string; totalMinutes: number }[]> {
+        const qb = this.repository
+            .createQueryBuilder('wh')
+            .innerJoin('wh.assignedProject', 'ap')
+            .select('ap.project_id', 'projectId')
+            .addSelect('wh.date', 'date')
+            .addSelect('SUM(wh.work_minutes)', 'totalMinutes')
+            .where('wh.deleted_at IS NULL')
+            .andWhere('wh.date >= :startDate', { startDate })
+            .andWhere('wh.date <= :endDate', { endDate })
+            .groupBy('ap.project_id')
+            .addGroupBy('wh.date');
+        if (projectIds?.length) {
+            qb.andWhere('ap.project_id IN (:...projectIds)', { projectIds });
+        }
+        const rows = await qb.getRawMany<{ projectId: string; date: string; totalMinutes: string }>();
+        return rows.map((r) => ({
+            projectId: r.projectId,
+            date: r.date,
+            totalMinutes: Number(r.totalMinutes) || 0,
+        }));
+    }
+
+    /**
      * 시수를 생성하거나 업데이트한다 (upsert)
      */
     async 생성또는수정한다(data: CreateWorkHoursData, userId: string, manager?: EntityManager): Promise<WorkHoursDTO> {

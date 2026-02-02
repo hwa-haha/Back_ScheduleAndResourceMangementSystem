@@ -25,7 +25,17 @@ import {
     GetDailyWorkHoursRequestDto,
     GetDailyWorkHoursResponseDto,
 } from './dto/monthly-work-hours.dto';
-import { GetProjectListResponseDto, GetEmployeeWithAssignedProjectsResponseDto } from './dto/project.dto';
+import {
+    GetProjectListResponseDto,
+    GetEmployeeWithAssignedProjectsResponseDto,
+    GetEmployeeAssignedProjectsResponseDto,
+} from './dto/project.dto';
+import {
+    GetWorkHoursStatisticsRequestDto,
+    GetWorkHoursStatisticsResponseDto,
+    GetWorkHoursStatisticsByProjectRequestDto,
+    GetWorkHoursStatisticsByProjectResponseDto,
+} from './dto/work-hours-statistics.dto';
 import {
     CreateWageCalculationTypeRequestDto,
     CreateWageCalculationTypeResponseDto,
@@ -81,6 +91,84 @@ export class WorkHoursController {
     })
     async getEmployeeWithAssignedProjects(): Promise<GetEmployeeWithAssignedProjectsResponseDto> {
         return await this.workHoursBusinessService.직원목록및할당프로젝트조회한다({});
+    }
+
+    /**
+     * 직원별 할당 프로젝트 목록 조회
+     */
+    @Get('employees/:employeeId/assigned-projects')
+    @ApiOperation({
+        summary: '직원별 할당 프로젝트 목록 조회',
+        description: '직원 ID를 받아 해당 직원의 활성 할당 프로젝트 목록을 반환합니다.',
+    })
+    @ApiParam({ name: 'employeeId', description: '직원 ID (UUID)' })
+    @ApiResponse({
+        status: 200,
+        description: '직원별 할당 프로젝트 목록 조회 성공',
+        type: GetEmployeeAssignedProjectsResponseDto,
+    })
+    async getEmployeeAssignedProjects(
+        @Param('employeeId', ParseUUIDPipe) employeeId: string,
+    ): Promise<GetEmployeeAssignedProjectsResponseDto> {
+        return await this.workHoursBusinessService.직원별할당프로젝트목록을조회한다(employeeId);
+    }
+
+    /**
+     * 시수 통계 조회 (직원 기준)
+     *
+     * 월별·선택 부서(및 하위부서) 부서원 기준, 해당 월 일수별 입력 시수 총합.
+     * 직원명·부서명 검색, 직원·프로젝트 필터 지원.
+     */
+    @Get('statistics/by-employee')
+    @ApiOperation({
+        summary: '시수 통계 조회 (직원 기준)',
+        description:
+            '선택된 부서와 하위 부서의 부서원을 기준으로, 해당 월 일수별 입력된 시수의 총 시간을 직원별로 조회합니다. 직원명·부서명 검색, 직원별·프로젝트별 필터를 지원합니다.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: '시수 통계 조회 성공',
+        type: GetWorkHoursStatisticsResponseDto,
+    })
+    async getWorkHoursStatisticsByEmployee(
+        @Query() dto: GetWorkHoursStatisticsRequestDto,
+    ): Promise<GetWorkHoursStatisticsResponseDto> {
+        const monthStr = dto.month.length === 1 ? dto.month.padStart(2, '0') : dto.month;
+        return await this.workHoursBusinessService.시수통계를조회한다({
+            year: dto.year,
+            month: monthStr,
+            departmentIds: dto.departmentIds,
+            employeeNameSearch: dto.employeeNameSearch,
+            departmentNameSearch: dto.departmentNameSearch,
+            employeeIds: dto.employeeIds,
+        });
+    }
+
+    /**
+     * 시수 통계 조회 (프로젝트 기준)
+     *
+     * project_id 기준으로 시수를 그룹핑하여, 해당 월 일자별 시수와 총합을 조회.
+     */
+    @Get('statistics/by-project')
+    @ApiOperation({
+        summary: '시수 통계 조회 (프로젝트 기준)',
+        description:
+            '할당프로젝트의 project_id 기준으로 시수를 그룹핑하여, 해당 월 1일~말일 일자별 시수(시간)와 총합을 프로젝트별로 조회합니다.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: '프로젝트 기준 시수 통계 조회 성공',
+        type: GetWorkHoursStatisticsByProjectResponseDto,
+    })
+    async getWorkHoursStatisticsByProject(
+        @Query() dto: GetWorkHoursStatisticsByProjectRequestDto,
+    ): Promise<GetWorkHoursStatisticsByProjectResponseDto> {
+        const monthStr = dto.month.length === 1 ? dto.month.padStart(2, '0') : dto.month;
+        return await this.workHoursBusinessService.프로젝트기준시수통계를조회한다({
+            year: dto.year,
+            month: monthStr,
+            projectIds: dto.projectIds,
+        });
     }
 
     /**

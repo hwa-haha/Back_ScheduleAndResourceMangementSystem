@@ -37,6 +37,9 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                     startDate: string;
                     endDate: string;
                     weeklyWorkHours: number;
+                    lateCount: number;
+                    earlyLeaveCount: number;
+                    absentCount: number;
                 }>;
             }
         >();
@@ -48,6 +51,7 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                 const totalWorkTimeValue = snapshotData.totalWorkTime || 0;
                 const attendanceTypeCount = snapshotData.attendanceTypeCount || {};
                 const weeklyWorkTimeSummary = snapshotData.weeklyWorkTimeSummary || [];
+                const dailyWorkTimeSummary = snapshotData.dailySummaries || [];
 
                 const employeeId = child.employee_id;
                 if (!monthEmployeeWorkHoursMap.has(employeeId)) {
@@ -66,11 +70,29 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                 workHours.lateCount += attendanceTypeCount['지각'] || 0;
                 workHours.earlyLeaveCount += attendanceTypeCount['조퇴'] || 0;
                 weeklyWorkTimeSummary.forEach((week: any) => {
+                    const startDate = week.startDate || '';
+                    const endDate = week.endDate || '';
+                    const weekDailySummaries = dailyWorkTimeSummary.filter((d: any) => {
+                        const date = d.date ?? d.date_str ?? '';
+                        return date >= startDate && date <= endDate;
+                    });
+                    const lateCount = weekDailySummaries.filter(
+                        (d: any) => d.isLate === true || d.is_late === true,
+                    ).length;
+                    const earlyLeaveCount = weekDailySummaries.filter(
+                        (d: any) => d.isEarlyLeave === true || d.is_early_leave === true,
+                    ).length;
+                    const absentCount = weekDailySummaries.filter(
+                        (d: any) => d.isAbsent === true || d.is_absent === true,
+                    ).length;
                     workHours.weeklyWorkHours.push({
                         weekNumber: week.weekNumber || 0,
-                        startDate: week.startDate || '',
-                        endDate: week.endDate || '',
+                        startDate,
+                        endDate,
                         weeklyWorkHours: Math.round(((week.weeklyWorkTime || 0) / 60) * 100) / 100,
+                        lateCount,
+                        earlyLeaveCount,
+                        absentCount,
                     });
                 });
             } catch (error) {

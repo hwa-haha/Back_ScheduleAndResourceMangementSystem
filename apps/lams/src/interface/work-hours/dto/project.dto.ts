@@ -95,3 +95,11 @@ export class GetEmployeeWithAssignedProjectsResponseDto {
     @ApiProperty({ description: '전체 직원 수' })
     totalCount: number;
 }
+
+/**
+ * 직원별 할당 프로젝트 목록 조회 응답 DTO
+ */
+export class GetEmployeeAssignedProjectsResponseDto {
+    @ApiProperty({ description: '할당된 프로젝트 목록', type: [AssignedProjectSummaryDto] })
+    assignedProjects: AssignedProjectSummaryDto[];
+}

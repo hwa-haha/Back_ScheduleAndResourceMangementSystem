@@ -279,6 +279,38 @@ export class DomainEmployeeDepartmentPositionHistoryService {
     }
 
     /**
+     * 특정 연월에 유효한 전체 배치이력 목록을 조회한다 (직원·부서 관계 포함)
+     *
+     * 해당 월에 유효한 모든 배치 이력을 직원·부서 정보와 함께 반환합니다.
+     * 시수 통계 등에서 부서 미지정 시 전체 직원 기준 조회에 사용합니다.
+     *
+     * @param year 연도
+     * @param month 월
+     * @returns 배치이력 엔티티 목록 (employee, department 관계 포함)
+     */
+    async 특정연월의전체배치이력목록을조회한다(
+        year: string,
+        month: string,
+    ): Promise<EmployeeDepartmentPositionHistory[]> {
+        const repository = this.repository;
+
+        const yearNum = parseInt(year);
+        const monthNum = parseInt(month);
+        const monthStart = startOfMonth(new Date(yearNum, monthNum - 1, 1));
+        const monthEnd = endOfMonth(new Date(yearNum, monthNum - 1, 1));
+        const startDate = format(monthStart, 'yyyy-MM-dd');
+        const endDate = format(monthEnd, 'yyyy-MM-dd');
+
+        return await repository
+            .createQueryBuilder('eh')
+            .leftJoinAndSelect('eh.department', 'dept')
+            .leftJoinAndSelect('eh.employee', 'emp')
+            .where('eh.effectiveStartDate <= :endDate', { endDate })
+            .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :startDate)', { startDate })
+            .getMany();
+    }
+
+    /**
      * 특정 연월 및 부서에 유효한 배치이력 목록을 조회한다
      *
      * 해당 월의 범위(첫 날짜 ~ 마지막 날짜) 내에 유효한 배치 정보를 조회하여 배치이력 엔티티를 반환합니다.

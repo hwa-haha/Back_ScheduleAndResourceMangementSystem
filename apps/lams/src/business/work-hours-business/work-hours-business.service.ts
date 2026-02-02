@@ -5,6 +5,9 @@ import {
     IGetMonthlyWorkHoursQuery,
     IGetProjectListQuery,
     IGetEmployeeWithAssignedProjectsQuery,
+    IGetEmployeeAssignedProjectsQuery,
+    IGetWorkHoursStatisticsQuery,
+    IGetWorkHoursStatisticsByProjectQuery,
     IReplaceProjectAssignmentsCommand,
     ICreateWorkHoursCommand,
     IUpdateWorkHoursCommand,
@@ -200,6 +203,56 @@ export class WorkHoursBusinessService {
     }> {
         this.logger.log('직원 목록 및 할당 프로젝트 조회');
         return await this.workHoursContextService.직원목록및할당프로젝트조회한다(query);
+    }
+
+    /**
+     * 직원별 할당 프로젝트 목록을 조회한다
+     */
+    async 직원별할당프로젝트목록을조회한다(employeeId: string): Promise<{
+        assignedProjects: Array<{ id: string; projectId: string; projectName: string; projectCode: string }>;
+    }> {
+        this.logger.log(`직원별 할당 프로젝트 목록 조회: employeeId=${employeeId}`);
+        const query: IGetEmployeeAssignedProjectsQuery = { employeeId };
+        return await this.workHoursContextService.직원별할당프로젝트목록을조회한다(query);
+    }
+
+    /**
+     * 시수 통계를 조회한다 (월별·부서·하위부서 부서원 기준, 직원명·부서명 검색, 직원·프로젝트 필터)
+     */
+    async 시수통계를조회한다(query: IGetWorkHoursStatisticsQuery): Promise<{
+        year: string;
+        month: string;
+        items: Array<{
+            employeeId: string;
+            employeeName: string;
+            employeeNumber: string;
+            departmentName: string;
+            dailyWorkHours: Array<{ date: string; workHours: number }>;
+            totalWorkHours: number;
+        }>;
+    }> {
+        this.logger.log(
+            `시수 통계 조회: year=${query.year}, month=${query.month}, departmentIds=${query.departmentIds?.length ?? 0}`,
+        );
+        return await this.workHoursContextService.시수통계를조회한다(query);
+    }
+
+    /**
+     * 프로젝트 기준 시수 통계를 조회한다 (project_id 기준 일별·총합)
+     */
+    async 프로젝트기준시수통계를조회한다(query: IGetWorkHoursStatisticsByProjectQuery): Promise<{
+        year: string;
+        month: string;
+        items: Array<{
+            projectId: string;
+            projectName: string;
+            projectCode: string;
+            dailyWorkHours: Array<{ date: string; workHours: number }>;
+            totalWorkHours: number;
+        }>;
+    }> {
+        this.logger.log(`프로젝트 기준 시수 통계 조회: year=${query.year}, month=${query.month}`);
+        return await this.workHoursContextService.프로젝트기준시수통계를조회한다(query);
     }
 
     /**

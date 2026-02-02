@@ -6,6 +6,12 @@ export interface IWeeklyWorkHours {
     startDate: string;
     endDate: string;
     weeklyWorkHours: number; // 시간 단위
+    /** 주별 지각 횟수 */
+    lateCount: number;
+    /** 주별 조퇴 횟수 */
+    earlyLeaveCount: number;
+    /** 주별 결근 횟수 */
+    absentCount: number;
 }
 
 /**

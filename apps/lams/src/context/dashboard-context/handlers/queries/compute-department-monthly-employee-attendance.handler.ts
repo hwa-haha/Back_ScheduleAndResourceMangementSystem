@@ -58,6 +58,7 @@ export class ComputeDepartmentMonthlyEmployeeAttendanceHandler implements IQuery
                     annualLeave: number;
                     absence: number;
                     late: number;
+                    earlyLeave: number;
                 };
             }
         >();
@@ -65,12 +66,14 @@ export class ComputeDepartmentMonthlyEmployeeAttendanceHandler implements IQuery
         selectedChildren.forEach((child) => {
             let late = 0;
             let absence = 0;
+            let earlyLeave = 0;
             try {
                 const snapshotData =
                     typeof child.snapshot_data === 'string' ? JSON.parse(child.snapshot_data) : child.snapshot_data;
                 const attendanceTypeCount = snapshotData?.attendanceTypeCount || {};
                 late = attendanceTypeCount['지각'] || 0;
                 absence = attendanceTypeCount['결근'] || 0;
+                earlyLeave = attendanceTypeCount['조퇴'] || 0;
             } catch {
                 // 파싱 실패 시 0 유지
             }
@@ -83,6 +86,7 @@ export class ComputeDepartmentMonthlyEmployeeAttendanceHandler implements IQuery
                     annualLeave: 0,
                     absence,
                     late,
+                    earlyLeave,
                 },
             });
         });

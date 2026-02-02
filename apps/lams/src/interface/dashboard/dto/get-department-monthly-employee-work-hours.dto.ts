@@ -48,6 +48,15 @@ export class WeeklyWorkHoursDto {
 
     @ApiProperty({ description: '주간 근무시간 (시간)', example: 43.5 })
     weeklyWorkHours: number;
+
+    @ApiProperty({ description: '주별 지각 횟수', example: 0 })
+    lateCount: number;
+
+    @ApiProperty({ description: '주별 조퇴 횟수', example: 0 })
+    earlyLeaveCount: number;
+
+    @ApiProperty({ description: '주별 결근 횟수', example: 0 })
+    absentCount: number;
 }
 
 /**

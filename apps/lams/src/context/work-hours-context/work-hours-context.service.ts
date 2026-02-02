@@ -5,6 +5,9 @@ import {
     IGetDailyWorkHoursQuery,
     IGetProjectListQuery,
     IGetEmployeeWithAssignedProjectsQuery,
+    IGetEmployeeAssignedProjectsQuery,
+    IGetWorkHoursStatisticsQuery,
+    IGetWorkHoursStatisticsByProjectQuery,
     IReplaceProjectAssignmentsCommand,
     ICreateWorkHoursCommand,
     IUpdateWorkHoursCommand,
@@ -12,16 +15,24 @@ import {
     IDeleteWorkHoursByIdCommand,
     IReplaceProjectAssignmentsResponse,
     IGetEmployeeWithAssignedProjectsResponse,
+    IGetEmployeeAssignedProjectsResponse,
+    IGetWorkHoursStatisticsResponse,
+    IGetWorkHoursStatisticsByProjectResponse,
     ICreateWorkHoursResponse,
     IUpdateWorkHoursResponse,
     IGetMonthlyWorkHoursResponse,
     IGetDailyWorkHoursResponse,
     IGetProjectListResponse,
 } from './interfaces';
+import { IGetEmployeesForWorkHoursStatisticsQuery } from './interfaces/query/get-employees-for-work-hours-statistics-query.interface';
 import { GetMonthlyWorkHoursQuery } from './handlers/monthly-work-hours/queries/get-monthly-work-hours.query';
 import { GetDailyWorkHoursQuery } from './handlers/daily-work-hours/queries/get-daily-work-hours.query';
 import { GetProjectListQuery } from './handlers/project/queries/get-project-list.query';
 import { GetEmployeeWithAssignedProjectsQuery } from './handlers/employee-assignments/queries/get-employee-with-assigned-projects.query';
+import { GetEmployeeAssignedProjectsQuery } from './handlers/employee-assignments/queries/get-employee-assigned-projects.query';
+import { GetEmployeesForWorkHoursStatisticsQuery } from './handlers/statistics/queries/get-employees-for-work-hours-statistics.query';
+import { GetWorkHoursStatisticsQuery } from './handlers/statistics/queries/get-work-hours-statistics.query';
+import { GetWorkHoursStatisticsByProjectQuery } from './handlers/statistics/queries/get-work-hours-statistics-by-project.query';
 import { ReplaceProjectAssignmentsCommand } from './handlers/assigned-project/commands/replace-project-assignments.command';
 import { CreateWorkHoursCommand } from './handlers/work-hours/commands/create-work-hours.command';
 import { UpdateWorkHoursCommand } from './handlers/work-hours/commands/update-work-hours.command';
@@ -106,5 +117,46 @@ export class WorkHoursContextService {
         query: IGetEmployeeWithAssignedProjectsQuery,
     ): Promise<IGetEmployeeWithAssignedProjectsResponse> {
         return await this.queryBus.execute(new GetEmployeeWithAssignedProjectsQuery(query));
+    }
+
+    /**
+     * 직원별 할당 프로젝트 목록을 조회한다
+     */
+    async 직원별할당프로젝트목록을조회한다(
+        query: IGetEmployeeAssignedProjectsQuery,
+    ): Promise<IGetEmployeeAssignedProjectsResponse> {
+        return await this.queryBus.execute(new GetEmployeeAssignedProjectsQuery(query));
+    }
+
+    /**
+     * 시수 통계를 조회한다 (부서 ID·직원 ID 선택 시 해당 대상, 미지정 시 전체 직원 기준, 직원명·부서명 검색 적용)
+     */
+    async 시수통계를조회한다(query: IGetWorkHoursStatisticsQuery): Promise<IGetWorkHoursStatisticsResponse> {
+        const employeeQuery: IGetEmployeesForWorkHoursStatisticsQuery = {
+            year: query.year,
+            month: query.month,
+            departmentIds: query.departmentIds,
+            employeeNameSearch: query.employeeNameSearch,
+            departmentNameSearch: query.departmentNameSearch,
+            employeeIds: query.employeeIds,
+        };
+        const resolved = await this.queryBus.execute(new GetEmployeesForWorkHoursStatisticsQuery(employeeQuery));
+        return await this.queryBus.execute(
+            new GetWorkHoursStatisticsQuery({
+                year: query.year,
+                month: query.month,
+                employeeIds: resolved.employeeIds,
+                employeeInfoItems: resolved.items,
+            }),
+        );
+    }
+
+    /**
+     * 프로젝트 기준 시수 통계를 조회한다 (project_id 기준 일별·총합)
+     */
+    async 프로젝트기준시수통계를조회한다(
+        query: IGetWorkHoursStatisticsByProjectQuery,
+    ): Promise<IGetWorkHoursStatisticsByProjectResponse> {
+        return await this.queryBus.execute(new GetWorkHoursStatisticsByProjectQuery(query));
     }
 }

@@ -6,6 +6,7 @@ export interface IAttendanceUsage {
     annualLeave: number;
     absence: number;
     late: number;
+    earlyLeave: number;
 }
 
 /**
