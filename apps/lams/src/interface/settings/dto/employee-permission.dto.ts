@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsUUID, IsBoolean, IsNotEmpty, IsArray, ArrayMinSize, ValidateNested, IsOptional } from 'class-validator';
+import {
+    IsString,
+    IsUUID,
+    IsBoolean,
+    IsNotEmpty,
+    IsArray,
+    ArrayMinSize,
+    ValidateNested,
+    IsOptional,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
@@ -143,6 +152,20 @@ export class EmployeeDepartmentPermissionInfoDto {
 }
 
 /**
+ * 직원 추가정보 요약 DTO (권한 목록 응답용)
+ */
+export class EmployeeExtraInfoSummaryDto {
+    @ApiProperty({ description: '추가정보 ID' })
+    id: string;
+
+    @ApiProperty({ description: '직원 ID' })
+    employeeId: string;
+
+    @ApiProperty({ description: '대시보드 요약에서 제외 여부' })
+    isExcludedFromSummary: boolean;
+}
+
+/**
  * 직원 권한 정보 DTO
  */
 export class EmployeeWithPermissionsDto {
@@ -157,6 +180,13 @@ export class EmployeeWithPermissionsDto {
 
     @ApiProperty({ description: '부서별 권한 목록', type: [EmployeeDepartmentPermissionInfoDto] })
     permissions: EmployeeDepartmentPermissionInfoDto[];
+
+    @ApiPropertyOptional({
+        description: '직원 추가정보 (없을 수 있음)',
+        type: EmployeeExtraInfoSummaryDto,
+        nullable: true,
+    })
+    extraInfo?: EmployeeExtraInfoSummaryDto | null;
 }
 
 /**

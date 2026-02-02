@@ -15,6 +15,8 @@ import {
     IGetPermissionRelatedEmployeeListResponse,
     IGetEmployeePermissionListQuery,
     IGetEmployeePermissionListResponse,
+    IGetEmployeeExtraInfoListQuery,
+    IGetEmployeeExtraInfoListResponse,
     IGetHolidayListResponse,
     IGetHolidayResponse,
     IGetWorkTimeOverrideListResponse,
@@ -47,6 +49,7 @@ import {
 import { GetDepartmentListForPermissionQuery } from './handlers/department/queries/get-department-list-for-permission.query';
 import { GetPermissionRelatedEmployeeListQuery } from './handlers/permission/queries/get-permission-related-employee-list.query';
 import { GetEmployeePermissionListQuery } from './handlers/permission/queries/get-employee-permission-list.query';
+import { GetEmployeeExtraInfoListQuery } from './handlers/employee-extra-info/queries/get-employee-extra-info-list.query';
 import { GetHolidayListQuery } from './handlers/holiday-info/queries/get-holiday-list.query';
 import { GetHolidayQuery } from './handlers/holiday-info/queries/get-holiday.query';
 import { GetWorkTimeOverrideListQuery } from './handlers/work-time-override/queries/get-work-time-override-list.query';
@@ -81,22 +84,52 @@ export class SettingsContextService {
     /**
      * 권한 관련 부서 목록을 조회한다
      */
-    async 권한관련부서목록을조회한다(query: IGetDepartmentListForPermissionQuery): Promise<IGetDepartmentListForPermissionResponse> {
+    async 권한관련부서목록을조회한다(
+        query: IGetDepartmentListForPermissionQuery,
+    ): Promise<IGetDepartmentListForPermissionResponse> {
         return await this.queryBus.execute(new GetDepartmentListForPermissionQuery(query));
     }
 
     /**
-     * 권한 관련 직원 목록을 조회한다
+     * 권한 관련 직원 목록을 조회한다 (추가정보 포함, 두 조회 결과 병합)
      */
-    async 권한관련직원목록을조회한다(query: IGetPermissionRelatedEmployeeListQuery): Promise<IGetPermissionRelatedEmployeeListResponse> {
-        return await this.queryBus.execute(new GetPermissionRelatedEmployeeListQuery(query));
+    async 권한관련직원목록을조회한다(
+        query: IGetPermissionRelatedEmployeeListQuery,
+    ): Promise<IGetPermissionRelatedEmployeeListResponse> {
+        const [permissionResult, extraInfoResult] = await Promise.all([
+            this.queryBus.execute(new GetPermissionRelatedEmployeeListQuery(query)),
+            this.queryBus.execute(new GetEmployeeExtraInfoListQuery({})),
+        ]);
+
+        const extraInfoByEmployeeId = new Map(extraInfoResult.employees.map((e) => [e.id, e.extraInfo]));
+
+        const employees = permissionResult.employees.map((emp) => ({
+            ...emp,
+            extraInfo: extraInfoByEmployeeId.get(emp.id) ?? null,
+        }));
+
+        return {
+            employees,
+            totalCount: permissionResult.totalCount,
+        };
     }
 
     /**
      * 직원의 권한 목록을 조회한다
      */
-    async 직원의권한목록을조회한다(query: IGetEmployeePermissionListQuery): Promise<IGetEmployeePermissionListResponse> {
+    async 직원의권한목록을조회한다(
+        query: IGetEmployeePermissionListQuery,
+    ): Promise<IGetEmployeePermissionListResponse> {
         return await this.queryBus.execute(new GetEmployeePermissionListQuery(query));
+    }
+
+    /**
+     * 직원 목록 및 추가정보를 조회한다
+     */
+    async 직원목록및추가정보를조회한다(
+        query: IGetEmployeeExtraInfoListQuery,
+    ): Promise<IGetEmployeeExtraInfoListResponse> {
+        return await this.queryBus.execute(new GetEmployeeExtraInfoListQuery(query));
     }
 
     /**
@@ -123,9 +156,7 @@ export class SettingsContextService {
     /**
      * 특별근태시간을 조회한다 (id 또는 date로 단건 조회)
      */
-    async 특별근태시간을조회한다(
-        query: IGetWorkTimeOverrideQuery,
-    ): Promise<IGetWorkTimeOverrideResponse> {
+    async 특별근태시간을조회한다(query: IGetWorkTimeOverrideQuery): Promise<IGetWorkTimeOverrideResponse> {
         return await this.queryBus.execute(new GetWorkTimeOverrideQuery(query));
     }
 

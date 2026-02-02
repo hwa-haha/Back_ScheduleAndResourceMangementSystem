@@ -16,4 +16,10 @@ export interface IEmployeeWithPermissions {
     employeeNumber: string;
     employeeName: string;
     permissions: IEmployeeDepartmentPermissionInfo[];
+    /** 직원 추가 정보 (없을 수 있음) */
+    extraInfo?: {
+        id: string;
+        employeeId: string;
+        isExcludedFromSummary: boolean;
+    } | null;
 }

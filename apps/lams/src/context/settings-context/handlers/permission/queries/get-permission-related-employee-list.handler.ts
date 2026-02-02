@@ -16,17 +16,20 @@ import { IEmployeeWithPermissions } from '../../../interfaces/response/employee-
  * 직원명과 부서명으로 검색이 가능합니다.
  */
 @QueryHandler(GetPermissionRelatedEmployeeListQuery)
-export class GetPermissionRelatedEmployeeListHandler implements IQueryHandler<GetPermissionRelatedEmployeeListQuery, IGetPermissionRelatedEmployeeListResponse> {
+export class GetPermissionRelatedEmployeeListHandler implements IQueryHandler<
+    GetPermissionRelatedEmployeeListQuery,
+    IGetPermissionRelatedEmployeeListResponse
+> {
     private readonly logger = new Logger(GetPermissionRelatedEmployeeListHandler.name);
 
-    constructor(
-        private readonly dataSource: DataSource,
-    ) {}
+    constructor(private readonly dataSource: DataSource) {}
 
     async execute(query: GetPermissionRelatedEmployeeListQuery): Promise<IGetPermissionRelatedEmployeeListResponse> {
         const { employeeName, departmentName } = query.data;
 
-        this.logger.log(`권한 관련 직원 목록 조회 시작: employeeName=${employeeName}, departmentName=${departmentName}`);
+        this.logger.log(
+            `권한 관련 직원 목록 조회 시작: employeeName=${employeeName}, departmentName=${departmentName}`,
+        );
 
         // 1. 현재 조직도에 재직 중인 직원 조회 (employee-department-position 기반, 퇴사자 제외, 검색 조건 적용)
         const employeeQueryBuilder = this.dataSource.manager

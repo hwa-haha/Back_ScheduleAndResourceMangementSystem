@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { DomainAttendanceTypeService } from '../../domain/attendance-type/attendance-type.service';
 import { DomainHolidayInfoService } from '../../domain/holiday-info/holiday-info.service';
 import { DomainProjectService } from '../../domain/project/project.service';
+import { DomainEmployeeExtraInfoService } from '../../domain/employee-extra-info/employee-extra-info.service';
 import { OrganizationMigrationService } from '../migration/migration.service';
 import { UploadFileHandler } from '../../context/file-management-context/handlers/file-upload/commands/upload-file.handler';
 import { UploadFileCommand } from '../../context/file-management-context/handlers/file-upload/commands/upload-file.command';
@@ -10,6 +11,7 @@ import { DomainFileService } from '../../domain/file/file.service';
 import { AttendanceType } from '../../domain/attendance-type/attendance-type.entity';
 import { HolidayInfo } from '../../domain/holiday-info/holiday-info.entity';
 import { Project } from '../../domain/project/project.entity';
+import { EmployeeExtraInfo } from '../../domain/employee-extra-info/employee-extra-info.entity';
 import { Employee } from '@libs/modules/employee/employee.entity';
 import { IsNull } from 'typeorm';
 import * as fs from 'fs';
@@ -21,6 +23,7 @@ import * as path from 'path';
  * 애플리케이션 시작 시 필수 기본 데이터가 없으면 자동으로 생성합니다.
  * - 근태 유형 (AttendanceType): 연차, 반차, 출장, 병가, 경조사 등
  * - 휴일 정보 (HolidayInfo): 공휴일 정보
+ * - 직원 추가 정보 (EmployeeExtraInfo): 직원별 추가정보 레코드
  */
 @Injectable()
 export class InitService implements OnApplicationBootstrap {
@@ -31,6 +34,7 @@ export class InitService implements OnApplicationBootstrap {
         private readonly attendanceTypeService: DomainAttendanceTypeService,
         private readonly holidayInfoService: DomainHolidayInfoService,
         private readonly projectService: DomainProjectService,
+        private readonly employeeExtraInfoService: DomainEmployeeExtraInfoService,
         private readonly organizationMigrationService: OrganizationMigrationService,
         private readonly uploadFileHandler: UploadFileHandler,
         private readonly fileService: DomainFileService,
@@ -57,7 +61,10 @@ export class InitService implements OnApplicationBootstrap {
             // 4. 조직 데이터 마이그레이션 (직원 데이터가 없으면 실행)
             await this.조직데이터마이그레이션();
 
-            // 5. 초기 파일 업로드 (2026년 1월 더미 데이터)
+            // 5. 직원 추가정보 기본 데이터 생성 (추가정보 없는 직원에 대해 레코드 생성)
+            await this.직원추가정보기본데이터생성();
+
+            // 6. 초기 파일 업로드 (2026년 1월 더미 데이터)
             await this.초기파일업로드();
 
             this.logger.log('✅ 기본 데이터 초기화 완료');
@@ -470,7 +477,9 @@ export class InitService implements OnApplicationBootstrap {
         let createdCount = 0;
         for (const projectData of defaultProjects) {
             if (existingCodes.has(projectData.projectCode)) {
-                this.logger.log(`프로젝트 "${projectData.projectName} (${projectData.projectCode})"이 이미 존재합니다.`);
+                this.logger.log(
+                    `프로젝트 "${projectData.projectName} (${projectData.projectCode})"이 이미 존재합니다.`,
+                );
                 continue;
             }
 
@@ -484,7 +493,9 @@ export class InitService implements OnApplicationBootstrap {
                 createdCount++;
                 this.logger.log(`프로젝트 "${projectData.projectName} (${projectData.projectCode})" 생성 완료`);
             } catch (error) {
-                this.logger.warn(`프로젝트 "${projectData.projectName} (${projectData.projectCode})" 생성 실패: ${error.message}`);
+                this.logger.warn(
+                    `프로젝트 "${projectData.projectName} (${projectData.projectCode})" 생성 실패: ${error.message}`,
+                );
             }
         }
 
@@ -492,6 +503,48 @@ export class InitService implements OnApplicationBootstrap {
             this.logger.log(`프로젝트 기본 데이터 생성 완료: ${createdCount}개 생성됨`);
         } else {
             this.logger.log('프로젝트 기본 데이터가 모두 존재합니다.');
+        }
+    }
+
+    /**
+     * 직원 추가정보 기본 데이터를 생성한다
+     * 추가정보(EmployeeExtraInfo)가 없는 모든 직원에 대해 is_excluded_from_summary=false 로 생성한다.
+     */
+    private async 직원추가정보기본데이터생성(): Promise<void> {
+        this.logger.log('직원 추가정보 기본 데이터 확인 중...');
+
+        const employees = await this.dataSource.manager.find(Employee);
+        if (employees.length === 0) {
+            this.logger.log('직원이 없어 직원 추가정보 초기화를 건너뜁니다.');
+            return;
+        }
+
+        const existingExtraInfos = await this.dataSource.manager.find(EmployeeExtraInfo, {
+            where: { deleted_at: IsNull() },
+        });
+        const employeeIdsWithExtraInfo = new Set(existingExtraInfos.map((eei) => eei.employee_id));
+
+        let createdCount = 0;
+        for (const emp of employees) {
+            if (employeeIdsWithExtraInfo.has(emp.id)) {
+                continue;
+            }
+            try {
+                await this.employeeExtraInfoService.생성한다({
+                    employeeId: emp.id,
+                    isExcludedFromSummary: false,
+                });
+                employeeIdsWithExtraInfo.add(emp.id);
+                createdCount++;
+            } catch (error) {
+                this.logger.warn(`직원 추가정보 생성 실패 (employeeId: ${emp.id}): ${error.message}`);
+            }
+        }
+
+        if (createdCount > 0) {
+            this.logger.log(`직원 추가정보 기본 데이터 생성 완료: ${createdCount}개 생성됨`);
+        } else {
+            this.logger.log('직원 추가정보가 모두 존재합니다.');
         }
     }
 
@@ -542,9 +595,7 @@ export class InitService implements OnApplicationBootstrap {
             const INITIAL_FILE_NAMES = ['출입내역_2026년1월.xlsx', '근태신청내역_2026년1월.xlsx'] as const;
 
             const existingFiles = await this.fileService.연도월별목록조회한다(INITIAL_YEAR, INITIAL_MONTH);
-            const existingNames = new Set(
-                existingFiles.map((f) => f.fileOriginalName ?? f.fileName).filter(Boolean),
-            );
+            const existingNames = new Set(existingFiles.map((f) => f.fileOriginalName ?? f.fileName).filter(Boolean));
             const allUploaded = INITIAL_FILE_NAMES.every((name) => existingNames.has(name));
             if (allUploaded) {
                 this.logger.log(

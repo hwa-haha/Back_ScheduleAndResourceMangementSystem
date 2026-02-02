@@ -11,6 +11,7 @@ export * from './wage-calculation-type/queries/get-wage-calculation-type-list.ha
 export * from './wage-calculation-type/commands/create-wage-calculation-type.handler';
 export * from './permission/commands/update-employee-department-permission.handler';
 export * from './employee-extra-info/commands/update-employee-extra-info.handler';
+export * from './employee-extra-info/queries/get-employee-extra-info-list.handler';
 export * from './holiday-info/commands/create-holiday-info.handler';
 export * from './holiday-info/commands/update-holiday-info.handler';
 export * from './holiday-info/commands/delete-holiday-info.handler';
@@ -33,6 +34,7 @@ import { GetAttendanceTypeListHandler } from './attendance-type/queries/get-atte
 import { GetWageCalculationTypeListHandler } from './wage-calculation-type/queries/get-wage-calculation-type-list.handler';
 import { UpdateEmployeeDepartmentPermissionHandler } from './permission/commands/update-employee-department-permission.handler';
 import { UpdateEmployeeExtraInfoHandler } from './employee-extra-info/commands/update-employee-extra-info.handler';
+import { GetEmployeeExtraInfoListHandler } from './employee-extra-info/queries/get-employee-extra-info-list.handler';
 import { CreateHolidayInfoHandler } from './holiday-info/commands/create-holiday-info.handler';
 import { UpdateHolidayInfoHandler } from './holiday-info/commands/update-holiday-info.handler';
 import { DeleteHolidayInfoHandler } from './holiday-info/commands/delete-holiday-info.handler';
@@ -49,6 +51,7 @@ export const QUERY_HANDLERS = [
     GetPermissionRelatedDepartmentListHandler,
     GetPermissionRelatedEmployeeListHandler,
     GetEmployeePermissionListHandler,
+    GetEmployeeExtraInfoListHandler,
     GetHolidayListHandler,
     GetHolidayHandler,
     GetWorkTimeOverrideListHandler,
