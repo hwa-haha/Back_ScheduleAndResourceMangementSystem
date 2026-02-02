@@ -69,15 +69,31 @@ export class DomainAssignedProjectService {
     }
 
     /**
-     * 직원 ID로 할당된 프로젝트 목록을 조회한다
+     * 직원 ID로 활성화된 할당된 프로젝트 목록을 조회한다
      */
     async 직원ID로조회한다(employeeId: string): Promise<AssignedProjectDTO[]> {
         const assignedProjects = await this.repository.find({
-            where: { employee_id: employeeId, deleted_at: IsNull() },
+            where: { employee_id: employeeId, deleted_at: IsNull(), is_active: true },
             relations: ['project'],
             order: { created_at: 'DESC' },
         });
         return assignedProjects.map((ap) => ap.DTO변환한다());
+    }
+
+    /**
+     * 활성화된 할당 전체를 조회한다 (프로젝트 정보 포함)
+     */
+    async 활성할당전체조회한다(): Promise<(AssignedProjectDTO & { projectName: string; projectCode: string })[]> {
+        const list = await this.repository.find({
+            where: { deleted_at: IsNull(), is_active: true },
+            relations: ['project'],
+            order: { employee_id: 'ASC', created_at: 'DESC' },
+        });
+        return list.map((ap) => ({
+            ...ap.DTO변환한다(),
+            projectName: ap.project?.project_name ?? '',
+            projectCode: ap.project?.project_code ?? '',
+        }));
     }
 
     /**
@@ -171,6 +187,51 @@ export class DomainAssignedProjectService {
         assignedProject.수정자설정한다(userId);
         assignedProject.메타데이터업데이트한다(userId);
         await repository.save(assignedProject);
+    }
+
+    /**
+     * 해당 직원의 할당을 전부 비활성화한다 (is_active = false)
+     * 시수(work_hours)가 같은 할당 행에 연결되어 있으므로 삭제하지 않고 비활성화만 한다.
+     */
+    async 직원별할당전체비활성화한다(employeeId: string, userId: string, manager?: EntityManager): Promise<void> {
+        const repository = this.getRepository(manager);
+        const list = await repository.find({
+            where: { employee_id: employeeId, deleted_at: IsNull(), is_active: true },
+        });
+        for (const ap of list) {
+            ap.업데이트한다(undefined, undefined, false);
+            ap.수정자설정한다(userId);
+            ap.메타데이터업데이트한다(userId);
+        }
+        if (list.length > 0) {
+            await repository.save(list);
+        }
+    }
+
+    /**
+     * 직원-프로젝트 할당이 있으면 활성화하고 날짜를 갱신하고, 없으면 새로 생성한다
+     */
+    async 직원프로젝트할당활성화또는생성한다(
+        employeeId: string,
+        projectId: string,
+        startDate: string | undefined,
+        endDate: string | undefined,
+        userId: string,
+        manager?: EntityManager,
+    ): Promise<AssignedProjectDTO> {
+        const repository = this.getRepository(manager);
+        const existing = await repository.findOne({
+            where: { employee_id: employeeId, project_id: projectId, deleted_at: IsNull() },
+        });
+        if (existing) {
+            existing.업데이트한다(startDate ?? existing.start_date, endDate ?? existing.end_date, true);
+            existing.수정자설정한다(userId);
+            existing.메타데이터업데이트한다(userId);
+            const saved = await repository.save(existing);
+            return saved.DTO변환한다();
+        }
+        const created = await this.생성한다({ employeeId, projectId, startDate, endDate, isActive: true }, manager);
+        return created;
     }
 
     /**

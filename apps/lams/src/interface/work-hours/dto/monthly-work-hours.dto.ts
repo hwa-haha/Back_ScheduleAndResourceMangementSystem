@@ -3,13 +3,9 @@ import { IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 /**
- * 월별 시수 현황 조회 요청 DTO
+ * 월별 시수 현황 조회 요청 DTO (토큰 사용 시 로그인 사용자 본인 시수 조회)
  */
 export class GetMonthlyWorkHoursRequestDto {
-    @ApiProperty({ description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    @IsUUID()
-    employeeId: string;
-
     @ApiProperty({ description: '연도', example: '2026' })
     @IsString()
     year: string;
@@ -66,5 +62,31 @@ export class GetMonthlyWorkHoursResponseDto {
     workHours: MonthlyWorkHoursItemDto[];
 
     @ApiProperty({ description: '총 근무 시간 (분 단위)' })
+    totalWorkMinutes: number;
+}
+
+/**
+ * 일별 시수 상세 조회 요청 DTO
+ */
+export class GetDailyWorkHoursRequestDto {
+    @ApiProperty({ description: '조회할 날짜 (yyyy-MM-dd)', example: '2026-01-15' })
+    @IsString()
+    date: string;
+}
+
+/**
+ * 일별 시수 상세 조회 응답 DTO
+ */
+export class GetDailyWorkHoursResponseDto {
+    @ApiProperty({ description: '직원 ID' })
+    employeeId: string;
+
+    @ApiProperty({ description: '조회 날짜 (yyyy-MM-dd)' })
+    date: string;
+
+    @ApiProperty({ description: '해당 날짜 시수 상세 목록', type: [MonthlyWorkHoursItemDto] })
+    workHours: MonthlyWorkHoursItemDto[];
+
+    @ApiProperty({ description: '해당 날짜 총 근무 시간 (분 단위)' })
     totalWorkMinutes: number;
 }
