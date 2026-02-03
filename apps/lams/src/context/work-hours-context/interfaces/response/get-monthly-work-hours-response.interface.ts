@@ -6,6 +6,7 @@ export interface IGetMonthlyWorkHoursResponse {
     year: string;
     month: string;
     workHours: Array<{
+        id: string;
         projectId: string;
         projectName: string;
         projectCode: string;

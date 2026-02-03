@@ -11,9 +11,10 @@ import { DomainProjectService } from '../../../../../domain/project/project.serv
  * 월별 시수 현황 조회 Query Handler
  */
 @QueryHandler(GetMonthlyWorkHoursQuery)
-export class GetMonthlyWorkHoursHandler
-    implements IQueryHandler<GetMonthlyWorkHoursQuery, IGetMonthlyWorkHoursResponse>
-{
+export class GetMonthlyWorkHoursHandler implements IQueryHandler<
+    GetMonthlyWorkHoursQuery,
+    IGetMonthlyWorkHoursResponse
+> {
     private readonly logger = new Logger(GetMonthlyWorkHoursHandler.name);
 
     constructor(
@@ -37,6 +38,7 @@ export class GetMonthlyWorkHoursHandler
         const endDate = format(endOfMonth(new Date(yearNum, monthNum - 1, 1)), 'yyyy-MM-dd');
 
         const allWorkHours: Array<{
+            id: string;
             projectId: string;
             projectName: string;
             projectCode: string;
@@ -61,6 +63,7 @@ export class GetMonthlyWorkHoursHandler
 
             for (const workHours of workHoursList) {
                 allWorkHours.push({
+                    id: workHours.id,
                     projectId: project.id,
                     projectName: project.projectName,
                     projectCode: project.projectCode,
@@ -77,7 +80,9 @@ export class GetMonthlyWorkHoursHandler
         // 날짜순으로 정렬
         allWorkHours.sort((a, b) => a.date.localeCompare(b.date));
 
-        this.logger.log(`월별 시수 현황 조회 완료: totalWorkHours=${allWorkHours.length}, totalWorkMinutes=${totalWorkMinutes}`);
+        this.logger.log(
+            `월별 시수 현황 조회 완료: totalWorkHours=${allWorkHours.length}, totalWorkMinutes=${totalWorkMinutes}`,
+        );
 
         return {
             employeeId,
