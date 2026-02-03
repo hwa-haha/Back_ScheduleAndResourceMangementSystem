@@ -4,6 +4,7 @@ import {
     SaveCompanyMonthlySnapshotCommand,
     GetSnapshotListQuery,
     GetSnapshotByIdQuery,
+    CheckEmployeeSnapshotExistsQuery,
 } from './handlers';
 import {
     ISaveAttendanceSnapshotResponse,
@@ -12,6 +13,8 @@ import {
     IGetSnapshotListResponse,
     IGetSnapshotByIdQuery,
     IGetSnapshotByIdResponse,
+    ICheckEmployeeSnapshotExistsQuery,
+    ICheckEmployeeSnapshotExistsResponse,
 } from './interfaces';
 
 /**
@@ -36,7 +39,6 @@ export class DataSnapshotContextService {
         return await this.commandBus.execute(commandInstance);
     }
 
-
     /**
      * 스냅샷 목록을 조회한다
      *
@@ -60,5 +62,16 @@ export class DataSnapshotContextService {
     async 스냅샷을ID로조회한다(query: IGetSnapshotByIdQuery): Promise<IGetSnapshotByIdResponse> {
         const queryInstance = new GetSnapshotByIdQuery(query);
         return await this.queryBus.execute(queryInstance);
+    }
+
+    /**
+     * 해당 직원의 해당 연월 스냅샷 데이터 존재 여부를 조회한다
+     *
+     * 근태 상세 조회와 동일한 기준(연월·MONTHLY 타입·해당 직원 child)으로 존재 여부만 반환합니다.
+     */
+    async 해당직원해당연월스냅샷존재여부를조회한다(
+        query: ICheckEmployeeSnapshotExistsQuery,
+    ): Promise<ICheckEmployeeSnapshotExistsResponse> {
+        return await this.queryBus.execute(new CheckEmployeeSnapshotExistsQuery(query));
     }
 }

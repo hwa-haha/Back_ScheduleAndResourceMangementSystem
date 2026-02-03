@@ -13,9 +13,7 @@ import { RestoreFromSnapshotRequestDto, RestoreFromSnapshotResponseDto } from '.
 import { GetSnapshotListRequestDto, GetSnapshotListResponseDto } from './dto/get-snapshot-list.dto';
 import { IGetSnapshotListResponse } from '../../context/data-snapshot-context/interfaces/response/get-snapshot-list-response.interface';
 import { IGetSnapshotByIdResponse } from '../../context/data-snapshot-context/interfaces/response/get-snapshot-by-id-response.interface';
-import {
-    GetDailySummaryHistoryResponseDto,
-} from './dto/get-daily-summary-history.dto';
+import { GetDailySummaryHistoryResponseDto } from './dto/get-daily-summary-history.dto';
 import { IGetDailySummaryHistoryResponse } from '../../context/attendance-data-context/interfaces/response/get-daily-summary-history-response.interface';
 import { GetDailySummaryDetailResponseDto } from './dto/get-daily-summary-detail.dto';
 import { IGetDailySummaryDetailResponse } from '../../context/attendance-data-context/interfaces/response/get-daily-summary-detail-response.interface';
@@ -26,6 +24,8 @@ import {
     UpdateMonthlySummaryNoteResponseDto,
 } from './dto/update-monthly-summary-note.dto';
 import { IUpdateMonthlySummaryNoteResponse } from '../../context/attendance-data-context/interfaces/response/update-monthly-summary-note-response.interface';
+import { CheckEmployeeSnapshotExistsResponseDto } from './dto/check-employee-snapshot-exists.dto';
+import { ICheckEmployeeSnapshotExistsResponse } from '../../context/data-snapshot-context/interfaces/response/check-employee-snapshot-exists-response.interface';
 
 /**
  * 출입/근태 데이터 컨트롤러
@@ -163,7 +163,6 @@ export class AttendanceDataController {
         return result;
     }
 
-    
     /**
      * 일간 요약 수정이력 조회
      *
@@ -172,7 +171,8 @@ export class AttendanceDataController {
     @Get('daily-summaries/:id/history')
     @ApiOperation({
         summary: '일간 요약 수정이력 조회',
-        description: '일간 요약 ID를 기준으로 해당 일간 요약의 수정이력을 조회합니다. 변경 시간 내림차순으로 정렬되어 반환됩니다.',
+        description:
+            '일간 요약 ID를 기준으로 해당 일간 요약의 수정이력을 조회합니다. 변경 시간 내림차순으로 정렬되어 반환됩니다.',
     })
     @ApiParam({ name: 'id', description: '일간 요약 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
     @ApiResponse({
@@ -180,9 +180,7 @@ export class AttendanceDataController {
         description: '일간 요약 수정이력 조회 성공',
         type: GetDailySummaryHistoryResponseDto,
     })
-    async getDailySummaryHistory(
-        @Param('id', ParseUUIDPipe) id: string,
-    ): Promise<IGetDailySummaryHistoryResponse> {
+    async getDailySummaryHistory(@Param('id', ParseUUIDPipe) id: string): Promise<IGetDailySummaryHistoryResponse> {
         const result = await this.attendanceDataBusinessService.일간요약수정이력을조회한다({
             dailyEventSummaryId: id,
         });
@@ -206,9 +204,7 @@ export class AttendanceDataController {
         description: '일간 요약 상세 조회 성공',
         type: GetDailySummaryDetailResponseDto,
     })
-    async getDailySummaryDetail(
-        @Param('id', ParseUUIDPipe) id: string,
-    ): Promise<IGetDailySummaryDetailResponse> {
+    async getDailySummaryDetail(@Param('id', ParseUUIDPipe) id: string): Promise<IGetDailySummaryDetailResponse> {
         const result = await this.attendanceDataBusinessService.일간요약상세를조회한다({
             dailySummaryId: id,
         });
@@ -235,7 +231,7 @@ export class AttendanceDataController {
             throw new BadRequestException('사용자 정보를 찾을 수 없습니다.');
         }
 
-        if (!dto.year || !dto.month ) {
+        if (!dto.year || !dto.month) {
             throw new BadRequestException('연도, 월은 필수입니다.');
         }
 
@@ -280,6 +276,46 @@ export class AttendanceDataController {
             year: result.year,
             month: result.month,
         };
+    }
+
+    /**
+     * 해당 직원 해당 연월 스냅샷 존재 여부 조회
+     *
+     * 근태 상세 조회와 동일한 기준으로, 해당 연월에 해당 직원에 대한 스냅샷 데이터가 있는지 여부만 반환합니다.
+     */
+    @Get('employees/:employeeId/snapshot-exists')
+    @ApiOperation({
+        summary: '직원 연월 스냅샷 존재 여부 조회',
+        description:
+            '해당 직원의 해당 연월에 조회되는 스냅샷 데이터가 있는지 여부를 반환합니다. 근태 상세 조회와 동일한 기준(연월·MONTHLY 타입·해당 직원 child)으로 판별합니다.',
+    })
+    @ApiParam({
+        name: 'employeeId',
+        description: '직원 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
+    @ApiQuery({ name: 'month', description: '월 (01-12)', example: '01', required: true })
+    @ApiResponse({
+        status: 200,
+        description: '스냅샷 존재 여부 조회 성공',
+        type: CheckEmployeeSnapshotExistsResponseDto,
+    })
+    async checkEmployeeSnapshotExists(
+        @Param('employeeId', ParseUUIDPipe) employeeId: string,
+        @Query('year') year: string,
+        @Query('month') month: string,
+    ): Promise<ICheckEmployeeSnapshotExistsResponse> {
+        if (!year || !month) {
+            throw new BadRequestException('연도와 월은 필수입니다.');
+        }
+
+        const monthStr = typeof month === 'string' && month.length === 1 ? month.padStart(2, '0') : month;
+        return await this.attendanceDataBusinessService.해당직원해당연월스냅샷존재여부를조회한다({
+            employeeId,
+            year,
+            month: monthStr,
+        });
     }
 
     /**
@@ -378,9 +414,7 @@ export class AttendanceDataController {
         description: '월간 요약 노트 조회 성공',
         type: GetMonthlySummaryNoteResponseDto,
     })
-    async getMonthlySummaryNote(
-        @Param('id', ParseUUIDPipe) id: string,
-    ): Promise<IGetMonthlySummaryNoteResponse> {
+    async getMonthlySummaryNote(@Param('id', ParseUUIDPipe) id: string): Promise<IGetMonthlySummaryNoteResponse> {
         const result = await this.attendanceDataBusinessService.월간요약노트를조회한다({
             monthlySummaryId: id,
         });
@@ -421,5 +455,4 @@ export class AttendanceDataController {
 
         return result;
     }
-
 }

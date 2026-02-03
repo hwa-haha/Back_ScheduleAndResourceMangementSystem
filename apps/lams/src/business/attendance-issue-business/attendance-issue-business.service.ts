@@ -143,7 +143,7 @@ export class AttendanceIssueBusinessService {
                 enter: updatedIssue.correctedEnterTime || undefined,
                 leave: updatedIssue.correctedLeaveTime || undefined,
                 attendanceTypeIds: updatedIssue.correctedAttendanceTypeIds || undefined,
-                note: `근태 이슈 반영: ${updatedIssue.description || '사유 없음'}`,
+                note: '근태 이슈 반영',
                 performedBy: userId,
             });
         }
@@ -175,10 +175,7 @@ export class AttendanceIssueBusinessService {
     /**
      * 근태 이슈를 재요청한다 (직원용)
      */
-    async 근태이슈를재요청한다(
-        id: string,
-        userId: string,
-    ): Promise<IReRequestAttendanceIssueResponse> {
+    async 근태이슈를재요청한다(id: string, userId: string): Promise<IReRequestAttendanceIssueResponse> {
         this.logger.log(`근태 이슈 재요청: id=${id}`);
         return await this.attendanceIssueContextService.근태이슈를재요청한다({
             id,

@@ -24,10 +24,10 @@ import {
     IGetSnapshotListResponse,
     IGetSnapshotByIdQuery,
     IGetSnapshotByIdResponse,
+    ICheckEmployeeSnapshotExistsQuery,
+    ICheckEmployeeSnapshotExistsResponse,
 } from '../../context/data-snapshot-context/interfaces';
 import { FileManagementContextService } from '../../context/file-management-context/file-management-context.service';
-
-
 
 /**
  * 출입/근태 데이터 비즈니스 서비스
@@ -95,8 +95,6 @@ export class AttendanceDataBusinessService {
     async 스냅샷으로부터복원한다(command: IRestoreFromSnapshotCommand): Promise<IRestoreFromSnapshotResponse> {
         this.logger.log(`스냅샷으로부터 복원: snapshotId=${command.snapshotId}`);
 
-       
-
         const snapshotData = await this.dataSnapshotContextService.스냅샷을ID로조회한다({
             snapshotId: command.snapshotId,
         });
@@ -105,7 +103,7 @@ export class AttendanceDataBusinessService {
             year: snapshotData.snapshot.yyyy,
             month: snapshotData.snapshot.mm,
             performedBy: command.performedBy,
-        }); 
+        });
 
         // 2. children의 rawData를 수집하여 전체 eventInfo와 usedAttendance 재구성
         if (!snapshotData.snapshot.children || snapshotData.snapshot.children.length === 0) {
@@ -136,7 +134,6 @@ export class AttendanceDataBusinessService {
                 snapshot: snapshotData.snapshot,
             },
             command.performedBy,
-         
         );
 
         // 3. 일일요약 복원 (스냅샷 데이터에서 내부적으로 추출)
@@ -146,7 +143,7 @@ export class AttendanceDataBusinessService {
             month: snapshotData.snapshot.mm,
             performedBy: command.performedBy,
         });
-    
+
         this.logger.log(`일일요약 복원 완료`);
 
         // 4. 월간요약 복원 (스냅샷 데이터에서 내부적으로 추출)
@@ -189,6 +186,20 @@ export class AttendanceDataBusinessService {
     async 스냅샷을ID로조회한다(query: IGetSnapshotByIdQuery): Promise<IGetSnapshotByIdResponse> {
         this.logger.log(`스냅샷 ID로 조회: snapshotId=${query.snapshotId}, departmentId=${query.departmentId}`);
         return await this.dataSnapshotContextService.스냅샷을ID로조회한다(query);
+    }
+
+    /**
+     * 해당 직원의 해당 연월 스냅샷 존재 여부를 조회한다
+     *
+     * 근태 상세 조회와 동일한 기준으로 해당 연월·해당 직원에 대한 스냅샷 데이터가 있는지 여부만 반환합니다.
+     */
+    async 해당직원해당연월스냅샷존재여부를조회한다(
+        query: ICheckEmployeeSnapshotExistsQuery,
+    ): Promise<ICheckEmployeeSnapshotExistsResponse> {
+        this.logger.log(
+            `직원 스냅샷 존재 여부 조회: employeeId=${query.employeeId}, year=${query.year}, month=${query.month}`,
+        );
+        return await this.dataSnapshotContextService.해당직원해당연월스냅샷존재여부를조회한다(query);
     }
 
     /**
@@ -238,7 +249,9 @@ export class AttendanceDataBusinessService {
      * @param command 수정 명령
      * @returns 월간 요약 노트 수정 결과
      */
-    async 월간요약노트를수정한다(command: IUpdateMonthlySummaryNoteCommand): Promise<IUpdateMonthlySummaryNoteResponse> {
+    async 월간요약노트를수정한다(
+        command: IUpdateMonthlySummaryNoteCommand,
+    ): Promise<IUpdateMonthlySummaryNoteResponse> {
         this.logger.log(`월간 요약 노트 수정: monthlySummaryId=${command.monthlySummaryId}`);
         return await this.attendanceDataContextService.월간요약노트를수정한다(command);
     }
