@@ -85,6 +85,7 @@ export class DataSnapshotInfo extends BaseEntity<DataSnapshotInfoDTO> {
         name: 'approval_status',
         type: 'varchar',
         length: 10,
+        default: ApprovalStatus.NOT_SUBMITTED,
         nullable: true,
         comment: '결재 상태 (미제출, 제출됨)',
     })

@@ -81,7 +81,10 @@ export class DomainEmployeeDepartmentPermissionService {
     /**
      * 직원 ID로 권한 목록을 조회한다
      */
-    async 직원으로목록조회한다(employeeId: string, manager?: EntityManager): Promise<EmployeeDepartmentPermissionDTO[]> {
+    async 직원으로목록조회한다(
+        employeeId: string,
+        manager?: EntityManager,
+    ): Promise<EmployeeDepartmentPermissionDTO[]> {
         const repository = this.getRepository(manager);
         const permissions = await repository.find({
             where: { employee_id: employeeId, deleted_at: IsNull() },
@@ -133,6 +136,41 @@ export class DomainEmployeeDepartmentPermissionService {
             },
         });
         return permissions.map((permission) => permission.DTO변환한다());
+    }
+
+    /**
+     * 검토 권한이 있는 전체 목록을 조회한다 (부서별 그룹핑용)
+     *
+     * has_review_permission = true 인 모든 권한을 직원·부서 정보와 함께 반환합니다.
+     */
+    async 검토권한목록전체조회한다(
+        manager?: EntityManager,
+    ): Promise<
+        Array<{
+            departmentId: string;
+            departmentName: string;
+            employeeId: string;
+            employeeName: string;
+            employeeNumber: string;
+        }>
+    > {
+        const repository = this.getRepository(manager);
+        const permissions = await repository.find({
+            where: { has_review_permission: true, deleted_at: IsNull() },
+            relations: ['employee', 'department'],
+            order: { department_id: 'ASC', created_at: 'DESC' },
+        });
+        return permissions.map((p) => {
+            const emp = p.employee as { name?: string; employeeNumber?: string } | undefined;
+            const dept = p.department as { departmentName?: string } | undefined;
+            return {
+                departmentId: p.department_id,
+                departmentName: dept?.departmentName ?? '',
+                employeeId: p.employee_id,
+                employeeName: emp?.name ?? '',
+                employeeNumber: emp?.employeeNumber ?? '',
+            };
+        });
     }
 
     /**
