@@ -3,6 +3,7 @@ import { OrganizationManagementContextService } from '../../context/organization
 import {
     IGetDepartmentListQuery,
     IGetDepartmentListResponse,
+    IGetDepartmentListWithEmployeesResponse,
 } from '../../context/organization-management-context/interfaces';
 
 /**
@@ -28,5 +29,17 @@ export class OrganizationManagementBusinessService {
     async 부서목록을조회한다(query: IGetDepartmentListQuery): Promise<IGetDepartmentListResponse> {
         this.logger.log(`부서 목록 조회: year=${query.year}, month=${query.month}`);
         return await this.organizationManagementContextService.부서목록을조회한다(query);
+    }
+
+    /**
+     * 부서 목록과 부서별 소속 직원 정보를 조회한다 (시점 기준)
+     *
+     * 요청 연월을 기준으로 해당 시점에 유효했던 부서 목록과 각 부서별 소속 직원 목록을 반환합니다.
+     */
+    async 부서목록및부서별직원목록을조회한다(
+        query: IGetDepartmentListQuery,
+    ): Promise<IGetDepartmentListWithEmployeesResponse> {
+        this.logger.log(`부서 목록+부서별 직원 조회: year=${query.year}, month=${query.month}`);
+        return await this.organizationManagementContextService.부서목록및부서별직원목록을조회한다(query);
     }
 }

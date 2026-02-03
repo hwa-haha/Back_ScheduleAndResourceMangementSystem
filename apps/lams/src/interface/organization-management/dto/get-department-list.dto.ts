@@ -106,3 +106,112 @@ export class GetDepartmentListResponseDto {
     @ApiProperty({ description: '전체 직원 수' })
     totalEmployees: number;
 }
+
+// --- 부서 목록 + 부서별 직원 조회 (시점 기준) ---
+
+/**
+ * 부서 소속 직원 응답 DTO (시점 기준)
+ */
+export class EmployeeInDepartmentResponseDto {
+    @ApiProperty({ description: '직원 ID' })
+    employeeId: string;
+
+    @ApiProperty({ description: '이름' })
+    name: string;
+
+    @ApiProperty({ description: '사번' })
+    employeeNumber: string;
+}
+
+/**
+ * 부서 정보 + 소속 직원 목록 응답 DTO (1차원 배열용)
+ */
+export class DepartmentInfoWithEmployeesResponseDto {
+    @ApiProperty({ description: '부서 ID' })
+    id: string;
+
+    @ApiProperty({ description: '부서 코드' })
+    departmentCode: string;
+
+    @ApiProperty({ description: '부서 이름' })
+    departmentName: string;
+
+    @ApiProperty({ description: '상위 부서 ID', nullable: true })
+    parentDepartmentId: string | null;
+
+    @ApiProperty({ description: '부서 유형' })
+    type: string;
+
+    @ApiProperty({ description: '정렬 순서' })
+    order: number;
+
+    @ApiProperty({ description: '직원 수' })
+    employeeCount: number;
+
+    @ApiProperty({
+        description: '해당 시점 부서 소속 직원 목록',
+        type: [EmployeeInDepartmentResponseDto],
+    })
+    employees: EmployeeInDepartmentResponseDto[];
+}
+
+/**
+ * 부서 노드 + 소속 직원 목록 응답 DTO (계층구조용)
+ */
+export class DepartmentNodeWithEmployeesResponseDto {
+    @ApiProperty({ description: '부서 ID' })
+    id: string;
+
+    @ApiProperty({ description: '부서 코드' })
+    departmentCode: string;
+
+    @ApiProperty({ description: '부서 이름' })
+    departmentName: string;
+
+    @ApiProperty({ description: '상위 부서 ID', nullable: true })
+    parentDepartmentId: string | null;
+
+    @ApiProperty({ description: '부서 유형' })
+    type: string;
+
+    @ApiProperty({ description: '정렬 순서' })
+    order: number;
+
+    @ApiProperty({ description: '직원 수' })
+    employeeCount: number;
+
+    @ApiProperty({
+        description: '해당 시점 부서 소속 직원 목록',
+        type: [EmployeeInDepartmentResponseDto],
+    })
+    employees: EmployeeInDepartmentResponseDto[];
+
+    @ApiProperty({
+        description: '하위 부서 목록',
+        type: [DepartmentNodeWithEmployeesResponseDto],
+    })
+    children: DepartmentNodeWithEmployeesResponseDto[];
+}
+
+/**
+ * 부서 목록 + 부서별 직원 조회 응답 DTO (시점 기준)
+ */
+export class GetDepartmentListWithEmployeesResponseDto {
+    @ApiProperty({
+        description: '부서 계층구조 (부서별 직원 포함)',
+        type: [DepartmentNodeWithEmployeesResponseDto],
+    })
+    hierarchy: DepartmentNodeWithEmployeesResponseDto[];
+
+    @ApiProperty({
+        description: '부서 1차원 배열 (부서별 직원 포함)',
+        type: [DepartmentInfoWithEmployeesResponseDto],
+    })
+    flatList: DepartmentInfoWithEmployeesResponseDto[];
+
+    @ApiProperty({ description: '전체 부서 수' })
+    totalDepartments: number;
+
+    @ApiProperty({ description: '전체 직원 수' })
+    totalEmployees: number;
+}

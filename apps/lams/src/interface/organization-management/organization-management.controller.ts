@@ -1,8 +1,13 @@
 import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OrganizationManagementBusinessService } from '../../business/organization-management-business/organization-management-business.service';
-import { GetDepartmentListRequestDto, GetDepartmentListResponseDto } from './dto/get-department-list.dto';
+import {
+    GetDepartmentListRequestDto,
+    GetDepartmentListResponseDto,
+    GetDepartmentListWithEmployeesResponseDto,
+} from './dto/get-department-list.dto';
 import { IGetDepartmentListResponse } from '../../context/organization-management-context/interfaces/response/get-department-list-response.interface';
+import { IGetDepartmentListWithEmployeesResponse } from '../../context/organization-management-context/interfaces/response/get-department-list-with-employees-response.interface';
 
 /**
  * 조직 관리 컨트롤러
@@ -45,5 +50,36 @@ export class OrganizationManagementController {
         });
 
         return result;
+    }
+
+    /**
+     * 부서 목록 + 부서별 소속 직원 조회 (시점 기준)
+     *
+     * 요청 연월을 기준으로 해당 시점에 유효했던 부서 목록과 각 부서별 소속 직원 정보를 반환합니다.
+     */
+    @Get('departments/with-employees')
+    @ApiOperation({
+        summary: '부서 목록 + 부서별 직원 조회',
+        description:
+            '요청 연월을 기준으로 해당 시점에 유효했던 부서 목록과 각 부서별 소속 직원 정보를 반환합니다. 계층구조와 1차원 배열 모두 부서별 직원 목록을 포함합니다.',
+    })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
+    @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
+    @ApiResponse({
+        status: 200,
+        description: '부서 목록 + 부서별 직원 조회 성공',
+        type: GetDepartmentListWithEmployeesResponseDto,
+    })
+    async getDepartmentListWithEmployees(
+        @Query() dto: GetDepartmentListRequestDto,
+    ): Promise<IGetDepartmentListWithEmployeesResponse> {
+        if (!dto.year || !dto.month) {
+            throw new BadRequestException('연도와 월은 필수입니다.');
+        }
+
+        return await this.organizationManagementBusinessService.부서목록및부서별직원목록을조회한다({
+            year: dto.year,
+            month: dto.month,
+        });
     }
 }

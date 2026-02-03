@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { GetDepartmentListQuery } from './handlers/department/queries';
+import { GetDepartmentListQuery, GetDepartmentListWithEmployeesQuery } from './handlers/department/queries';
 import { GetEmployeeIdsByNumbersQuery } from './handlers/employee/queries';
 import {
     IGetDepartmentListQuery,
     IGetDepartmentListResponse,
+    IGetDepartmentListWithEmployeesResponse,
     IGetEmployeeIdsByNumbersResponse,
 } from './interfaces';
 
@@ -29,6 +30,17 @@ export class OrganizationManagementContextService {
     async 부서목록을조회한다(query: IGetDepartmentListQuery): Promise<IGetDepartmentListResponse> {
         const queryInstance = new GetDepartmentListQuery(query);
         return await this.queryBus.execute(queryInstance);
+    }
+
+    /**
+     * 부서 목록과 부서별 소속 직원 정보를 조회한다 (시점 기준)
+     *
+     * 요청 연월을 기준으로 해당 시점에 유효했던 부서 목록과 각 부서별 소속 직원 목록을 반환합니다.
+     */
+    async 부서목록및부서별직원목록을조회한다(
+        query: IGetDepartmentListQuery,
+    ): Promise<IGetDepartmentListWithEmployeesResponse> {
+        return await this.queryBus.execute(new GetDepartmentListWithEmployeesQuery(query));
     }
 
     async 직원번호목록을ID목록으로조회한다(employeeNumbers: string[]): Promise<string[]> {
