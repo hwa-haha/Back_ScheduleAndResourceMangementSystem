@@ -42,6 +42,27 @@ export class PrvDbMgrService implements OnModuleInit {
         this.logger.log('✅ 라이브 DB 연결 확인 완료');
     }
 
+    /**
+     * 스냅샷 데이터만 조회한다 (테스트용)
+     *
+     * PRV DB에서 data_snapshot_info, data_snapshot_child 를 relation 과 함께 조회합니다.
+     */
+    async 스냅샷데이터를조회한다(): Promise<{
+        snapshots: PrvDataSnapshotInfoEntity[];
+        children: PrvDataSnapshotChildInfoEntity[];
+    }> {
+        const prvSnapshots = await this.prvDataSource
+            .getRepository(PrvDataSnapshotInfoEntity)
+            .find({ relations: ['department'] });
+        const prvChildren = await this.prvDataSource
+            .getRepository(PrvDataSnapshotChildInfoEntity)
+            .find({ relations: ['parentSnapshot'] });
+
+        this.logger.log(`스냅샷 데이터 조회: snapshots=${prvSnapshots.length}건, children=${prvChildren.length}건`);
+
+        return { snapshots: prvSnapshots, children: prvChildren };
+    }
+
     async 테이블별데이터를조회한다(): Promise<Record<string, unknown[]>> {
         const results: Record<string, unknown[]> = {};
         const entries = Object.entries(EntityList);
@@ -217,13 +238,7 @@ export class PrvDbMgrService implements OnModuleInit {
         const chunkSize = 1000;
         for (let index = 0; index < filteredEvents.length; index += chunkSize) {
             const chunk = filteredEvents.slice(index, index + chunkSize);
-            await this.dataSource
-                .createQueryBuilder()
-                .insert()
-                .into(EventInfo)
-                .values(chunk)
-                .orIgnore()
-                .execute();
+            await this.dataSource.createQueryBuilder().insert().into(EventInfo).values(chunk).orIgnore().execute();
         }
 
         this.logger.log(
@@ -231,9 +246,7 @@ export class PrvDbMgrService implements OnModuleInit {
         );
     }
 
-    private async 월간요약을마이그레이션한다(
-        employeeIdByNumber: Map<string, string>,
-    ): Promise<Map<string, string>> {
+    private async 월간요약을마이그레이션한다(employeeIdByNumber: Map<string, string>): Promise<Map<string, string>> {
         const prvMonthlySummaries = await this.prvDataSource.getRepository(PrvMonthlySummaryEntity).find();
         const latestByEmployeeMonth = new Map<string, PrvMonthlySummaryEntity>();
 
@@ -420,18 +433,10 @@ export class PrvDbMgrService implements OnModuleInit {
         const chunkSize = 1000;
         for (let index = 0; index < uniquePayloads.length; index += chunkSize) {
             const chunk = uniquePayloads.slice(index, index + chunkSize);
-            await this.dataSource
-                .createQueryBuilder()
-                .insert()
-                .into(UsedAttendance)
-                .values(chunk)
-                .orIgnore()
-                .execute();
+            await this.dataSource.createQueryBuilder().insert().into(UsedAttendance).values(chunk).orIgnore().execute();
         }
 
-        this.logger.log(
-            `사용 근태 마이그레이션 완료: 전체 ${payloads.length}건, 중복 제거 ${uniquePayloads.length}건`,
-        );
+        this.logger.log(`사용 근태 마이그레이션 완료: 전체 ${payloads.length}건, 중복 제거 ${uniquePayloads.length}건`);
     }
 
     /**
@@ -508,8 +513,7 @@ export class PrvDbMgrService implements OnModuleInit {
             snapshots
                 .sort(
                     (a, b) =>
-                        this.생성일자를파싱한다(a.createdAt).getTime() -
-                        this.생성일자를파싱한다(b.createdAt).getTime(),
+                        this.생성일자를파싱한다(a.createdAt).getTime() - this.생성일자를파싱한다(b.createdAt).getTime(),
                 )
                 .forEach((snapshot, index) => {
                     versionBySnapshotId.set(snapshot.dataSnapshotId, this.스냅샷버전을계산한다(index));
@@ -525,11 +529,11 @@ export class PrvDbMgrService implements OnModuleInit {
             const batchEntities = await Promise.all(
                 batch.map(async (snapshot) => {
                     const departmentCode = snapshot.department?.departmentCode;
-                    const departmentId = departmentCode ? departmentIdByCode.get(departmentCode) ?? null : null;
+                    const departmentId = departmentCode ? (departmentIdByCode.get(departmentCode) ?? null) : null;
 
                     const approval = approvalBySnapshotId.get(snapshot.dataSnapshotId);
                     const snapshotVersion = departmentId
-                        ? versionBySnapshotId.get(snapshot.dataSnapshotId) ?? null
+                        ? (versionBySnapshotId.get(snapshot.dataSnapshotId) ?? null)
                         : null;
 
                     // 출입기록과 근태사용내역 조회 (prvDataSource에서 조회)
@@ -565,7 +569,9 @@ export class PrvDbMgrService implements OnModuleInit {
                             }
 
                             // 직원별로 rawData 분리
-                            const eventInfo = rawData.eventInfo.filter((e) => e.employee_number === child.employeeNumber);
+                            const eventInfo = rawData.eventInfo.filter(
+                                (e) => e.employee_number === child.employeeNumber,
+                            );
                             const usedAttendance = rawData.usedAttendance.filter((ua) => {
                                 // employee_id를 employeeNumber로 변환하여 비교
                                 const employeeIdForAttendance = employeeIdByNumber.get(child.employeeNumber);
@@ -604,7 +610,9 @@ export class PrvDbMgrService implements OnModuleInit {
             // 배치 단위로 즉시 저장하여 메모리 해제 (cascade로 자식도 함께 저장됨)
             const saved = await repository.save(validBatchEntities, { chunk: 50 });
             totalSaved += saved.length;
-            this.logger.log(`스냅샷 및 자식 배치 저장 완료: ${i + batch.length}/${prvSnapshots.length}건 (저장: ${saved.length}건)`);
+            this.logger.log(
+                `스냅샷 및 자식 배치 저장 완료: ${i + batch.length}/${prvSnapshots.length}건 (저장: ${saved.length}건)`,
+            );
         }
 
         this.logger.log(`스냅샷 정보 및 자식 마이그레이션 완료: 총 ${totalSaved}건`);
@@ -782,6 +790,4 @@ export class PrvDbMgrService implements OnModuleInit {
             usedAttendance: attendanceData,
         };
     }
-
-
 }

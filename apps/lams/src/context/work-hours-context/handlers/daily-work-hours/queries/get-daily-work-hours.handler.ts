@@ -29,6 +29,7 @@ export class GetDailyWorkHoursHandler implements IQueryHandler<GetDailyWorkHours
         const assignedProjects = await this.assignedProjectService.직원ID로조회한다(employeeId);
 
         const allWorkHours: Array<{
+            id: string;
             projectId: string;
             projectName: string;
             projectCode: string;
@@ -48,6 +49,7 @@ export class GetDailyWorkHoursHandler implements IQueryHandler<GetDailyWorkHours
 
             for (const workHours of workHoursList) {
                 allWorkHours.push({
+                    id: workHours.id,
                     projectId: project.id,
                     projectName: project.projectName,
                     projectCode: project.projectCode,

@@ -20,6 +20,9 @@ export class GetMonthlyWorkHoursRequestDto {
  * 월별 시수 현황 항목 DTO
  */
 export class MonthlyWorkHoursItemDto {
+    @ApiPropertyOptional({ description: '시수 ID (일별 조회 시 포함)' })
+    id?: string;
+
     @ApiProperty({ description: '프로젝트 ID' })
     projectId: string;
 

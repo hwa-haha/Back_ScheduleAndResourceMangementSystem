@@ -1,4 +1,4 @@
-import { Controller, Post } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../../libs/decorators/public.decorator';
 import { PrvDbMgrService } from './prv-db-mgr.service';
@@ -7,6 +7,13 @@ import { PrvDbMgrService } from './prv-db-mgr.service';
 @Controller('prv-db-mgr')
 export class PrvDbMgrController {
     constructor(private readonly prvDbMgrService: PrvDbMgrService) {}
+
+    @Public()
+    @Get('test/snapshots')
+    @ApiOperation({ summary: '스냅샷 데이터 조회 (테스트용)' })
+    async 스냅샷데이터를조회한다() {
+        return await this.prvDbMgrService.스냅샷데이터를조회한다();
+    }
 
     @Public()
     @Post('migrate')

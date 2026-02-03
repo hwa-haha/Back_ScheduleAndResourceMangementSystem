@@ -5,6 +5,7 @@ export interface IGetDailyWorkHoursResponse {
     employeeId: string;
     date: string;
     workHours: Array<{
+        id: string;
         projectId: string;
         projectName: string;
         projectCode: string;
