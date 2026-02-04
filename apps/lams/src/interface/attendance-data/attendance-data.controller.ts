@@ -132,25 +132,6 @@ export class AttendanceDataController {
             throw new BadRequestException('사용자 정보를 찾을 수 없습니다.');
         }
 
-        // 출퇴근 시간 수정 또는 근태유형 수정 중 하나만 가능
-        const isTimeUpdate = dto.enter !== undefined || dto.leave !== undefined;
-        const isAttendanceTypeUpdate = dto.attendanceTypeIds !== undefined && dto.attendanceTypeIds.length > 0;
-
-        if (!isTimeUpdate && !isAttendanceTypeUpdate) {
-            throw new BadRequestException(
-                '출퇴근 시간(enter 또는 leave) 또는 근태유형(attendanceTypeIds) 중 하나는 필수입니다.',
-            );
-        }
-
-        if (isTimeUpdate && isAttendanceTypeUpdate) {
-            throw new BadRequestException('출퇴근 시간 수정과 근태유형 수정은 동시에 할 수 없습니다.');
-        }
-
-        // 근태유형은 최대 2개까지
-        if (isAttendanceTypeUpdate && dto.attendanceTypeIds!.length > 2) {
-            throw new BadRequestException('근태유형은 최대 2개까지 설정 가능합니다.');
-        }
-
         const result = await this.attendanceDataBusinessService.일간요약을수정한다({
             dailySummaryId: id,
             enter: dto.enter,

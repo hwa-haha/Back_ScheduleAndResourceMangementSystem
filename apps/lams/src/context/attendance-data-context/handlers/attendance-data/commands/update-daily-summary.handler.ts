@@ -39,7 +39,7 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
 
         // 출퇴근 시간 수정 또는 근태유형 수정 중 하나만 가능
         const isTimeUpdate = enter !== undefined || leave !== undefined;
-        const isAttendanceTypeUpdate = attendanceTypeIds !== undefined && attendanceTypeIds.length > 0;
+        const isAttendanceTypeUpdate = attendanceTypeIds !== undefined;
 
         if (!isTimeUpdate && !isAttendanceTypeUpdate) {
             throw new BadRequestException(
@@ -153,10 +153,13 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
 
             // 2-2. 근태유형 수정인 경우
             if (isAttendanceTypeUpdate) {
+                // 근태유형이 빈 배열인 경우 처리
+                const isEmptyAttendanceTypeIds = attendanceTypeIds!.length === 0;
+
                 // 근태 유형 조회 (최대 2개)
-                const attendanceTypes = await Promise.all(
-                    attendanceTypeIds!.map((id) => this.attendanceTypeService.ID로조회한다(id)),
-                );
+                const attendanceTypes = isEmptyAttendanceTypeIds
+                    ? []
+                    : await Promise.all(attendanceTypeIds!.map((id) => this.attendanceTypeService.ID로조회한다(id)));
 
                 // used_attendances 업데이트
                 usedAttendances = attendanceTypes.map((attendanceType) => ({
@@ -189,41 +192,57 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                 workTime = this.근무시간을계산한다(updatedEnter, updatedLeave, recognizedAttendances);
 
                 // 변경 내용 생성
-                const newAttendanceTypeTitles = attendanceTypes.map((at) => at.title).join(', ');
                 const changeParts: string[] = [];
 
-                // 기존에 출퇴근 시간이 있었다면 출퇴근시간 → 근태유형으로 변경 표시
-                if (dailySummary.enter || dailySummary.leave) {
-                    const existingTime = `${dailySummary.enter || '미설정'} ~ ${dailySummary.leave || '미설정'}`;
-                    changeParts.push(`출퇴근시간(${existingTime}) → 근태유형`);
-                }
+                // 빈 배열인 경우: 근태유형 제거
+                if (isEmptyAttendanceTypeIds) {
+                    // 기존에 출퇴근 시간이 있었다면 출퇴근시간 → 근태유형 제거로 변경 표시
+                    if (dailySummary.enter || dailySummary.leave) {
+                        const existingTime = `${dailySummary.enter || '미설정'} ~ ${dailySummary.leave || '미설정'}`;
+                        changeParts.push(`출퇴근시간(${existingTime}) → 근태유형 제거`);
+                    }
 
-                // 근태유형 변경 표시
-                if (hasExistingAttendanceTypes) {
-                    // 기존 근태유형과 새 근태유형 비교
-                    const existingIds = new Set(dailySummary.used_attendances!.map((ua) => ua.attendanceTypeId));
-                    const newIds = new Set(attendanceTypes.map((at) => at.id));
-
-                    // 변경된 근태유형만 표시
-                    const addedTypes = attendanceTypes.filter((at) => !existingIds.has(at.id));
-                    const removedTypes = dailySummary.used_attendances!.filter(
-                        (ua) => !newIds.has(ua.attendanceTypeId),
-                    );
-
-                    if (removedTypes.length > 0 || addedTypes.length > 0) {
-                        const removedTitles = removedTypes.map((ua) => ua.title).join(', ');
-                        const addedTitles = addedTypes.map((at) => at.title).join(', ');
-                        if (removedTitles && addedTitles) {
-                            changeParts.push(`근태유형: ${removedTitles} → ${addedTitles}`);
-                        } else if (removedTitles) {
-                            changeParts.push(`근태유형: ${removedTitles} → 제거`);
-                        } else if (addedTitles) {
-                            changeParts.push(`근태유형: 추가 → ${addedTitles}`);
-                        }
+                    // 기존 근태유형이 있었다면 제거 표시
+                    if (hasExistingAttendanceTypes) {
+                        changeParts.push(`근태유형: ${existingAttendanceTypeTitles} → 제거`);
                     }
                 } else {
-                    // 기존 근태유형이 없었던 경우
-                    changeParts.push(`근태유형: 추가 → ${newAttendanceTypeTitles}`);
+                    // 근태유형이 있는 경우
+                    const newAttendanceTypeTitles = attendanceTypes.map((at) => at.title).join(', ');
+
+                    // 기존에 출퇴근 시간이 있었다면 출퇴근시간 → 근태유형으로 변경 표시
+                    if (dailySummary.enter || dailySummary.leave) {
+                        const existingTime = `${dailySummary.enter || '미설정'} ~ ${dailySummary.leave || '미설정'}`;
+                        changeParts.push(`출퇴근시간(${existingTime}) → 근태유형`);
+                    }
+
+                    // 근태유형 변경 표시
+                    if (hasExistingAttendanceTypes) {
+                        // 기존 근태유형과 새 근태유형 비교
+                        const existingIds = new Set(dailySummary.used_attendances!.map((ua) => ua.attendanceTypeId));
+                        const newIds = new Set(attendanceTypes.map((at) => at.id));
+
+                        // 변경된 근태유형만 표시
+                        const addedTypes = attendanceTypes.filter((at) => !existingIds.has(at.id));
+                        const removedTypes = dailySummary.used_attendances!.filter(
+                            (ua) => !newIds.has(ua.attendanceTypeId),
+                        );
+
+                        if (removedTypes.length > 0 || addedTypes.length > 0) {
+                            const removedTitles = removedTypes.map((ua) => ua.title).join(', ');
+                            const addedTitles = addedTypes.map((at) => at.title).join(', ');
+                            if (removedTitles && addedTitles) {
+                                changeParts.push(`근태유형: ${removedTitles} → ${addedTitles}`);
+                            } else if (removedTitles) {
+                                changeParts.push(`근태유형: ${removedTitles} → 제거`);
+                            } else if (addedTitles) {
+                                changeParts.push(`근태유형: 추가 → ${addedTitles}`);
+                            }
+                        }
+                    } else {
+                        // 기존 근태유형이 없었던 경우
+                        changeParts.push(`근태유형: 추가 → ${newAttendanceTypeTitles}`);
+                    }
                 }
 
                 changeContent = changeParts.join(', ');
