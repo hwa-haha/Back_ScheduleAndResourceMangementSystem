@@ -77,7 +77,6 @@ export class UpdateDailySummaryRequestDto {
     @ValidateIf((o) => !o.enter && !o.leave)
     @IsOptional()
     @IsArray()
-    @ArrayMinSize(1, { message: '근태유형은 최소 1개 이상 필요합니다.' })
     @ArrayMaxSize(2, { message: '근태유형은 최대 2개까지 설정 가능합니다.' })
     @IsUUID(undefined, { each: true })
     attendanceTypeIds?: string[];

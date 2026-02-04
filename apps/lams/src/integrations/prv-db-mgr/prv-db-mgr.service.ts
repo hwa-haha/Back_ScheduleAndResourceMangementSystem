@@ -45,11 +45,14 @@ export class PrvDbMgrService implements OnModuleInit {
     /**
      * 스냅샷 데이터만 조회한다 (테스트용)
      *
-     * PRV DB에서 data_snapshot_info, data_snapshot_child 를 relation 과 함께 조회합니다.
+     * PRV DB에서 data_snapshot_info, data_snapshot_child, 결재요청 정보를 relation 과 함께 조회하고,
+     * yyyy-mm으로 그룹핑하여 스냅샷별로 children와 결재요청 정보를 매핑합니다.
      */
     async 스냅샷데이터를조회한다(): Promise<{
-        snapshots: PrvDataSnapshotInfoEntity[];
-        children: PrvDataSnapshotChildInfoEntity[];
+        employeesByYearMonthAndDepartment: Record<
+            string,
+            Record<string, Array<{ employeeName: string; employeeNumber: string }>>
+        >;
     }> {
         const prvSnapshots = await this.prvDataSource
             .getRepository(PrvDataSnapshotInfoEntity)
@@ -58,9 +61,240 @@ export class PrvDbMgrService implements OnModuleInit {
             .getRepository(PrvDataSnapshotChildInfoEntity)
             .find({ relations: ['parentSnapshot'] });
 
-        this.logger.log(`스냅샷 데이터 조회: snapshots=${prvSnapshots.length}건, children=${prvChildren.length}건`);
+        const approvalRequests = await this.prvDataSource
+            .getRepository(PrvDataSnapshotApprovalRequestInfoEntity)
+            .find({ relations: ['dataSnapshot', 'steps', 'steps.approver'] });
 
-        return { snapshots: prvSnapshots, children: prvChildren };
+        // 스냅샷별로 자식들을 그룹화
+        const childrenBySnapshotId = new Map<string, PrvDataSnapshotChildInfoEntity[]>();
+        prvChildren.forEach((child) => {
+            const snapshotId = child.parentSnapshot?.dataSnapshotId;
+            if (!snapshotId) {
+                return;
+            }
+            if (!childrenBySnapshotId.has(snapshotId)) {
+                childrenBySnapshotId.set(snapshotId, []);
+            }
+            childrenBySnapshotId.get(snapshotId)!.push(child);
+        });
+
+        // 스냅샷별로 결재요청 정보 매핑
+        const approvalBySnapshotId = new Map<
+            string,
+            {
+                requestId: string;
+                requestTitle: string;
+                requestContent: string;
+                status: string;
+                submittedAt: Date | null;
+                approverName: string | null;
+                approvalStatus: string | null;
+            }
+        >();
+
+        approvalRequests.forEach((request) => {
+            const snapshotId = request.dataSnapshot?.dataSnapshotId;
+            if (!snapshotId) {
+                return;
+            }
+            const steps = request.steps ?? [];
+            const sortedSteps = steps.slice().sort((a, b) => a.stepOrder - b.stepOrder);
+            const lastStep = sortedSteps[sortedSteps.length - 1];
+            approvalBySnapshotId.set(snapshotId, {
+                requestId: request.requestId,
+                requestTitle: request.requestTitle,
+                requestContent: request.requestContent,
+                status: request.status,
+                submittedAt: request.createdAt ?? null,
+                approverName: lastStep?.approver?.username ?? null,
+                approvalStatus: lastStep?.status ?? null,
+            });
+        });
+
+        // 스냅샷별로 children와 결재요청 정보 매핑
+        const snapshotsWithDetails = prvSnapshots
+            .map((snapshot) => ({
+                snapshot,
+                children: childrenBySnapshotId.get(snapshot.dataSnapshotId) ?? [],
+                approvalRequest: approvalBySnapshotId.get(snapshot.dataSnapshotId) ?? null,
+            }))
+            .filter((snapshot) => snapshot.approvalRequest);
+
+        // yyyy-mm으로 그룹핑
+        const groupedByYearMonth = new Map<
+            string,
+            Array<{
+                snapshot: PrvDataSnapshotInfoEntity;
+                children: PrvDataSnapshotChildInfoEntity[];
+                approvalRequest: {
+                    requestId: string;
+                    requestTitle: string;
+                    requestContent: string;
+                    status: string;
+                    submittedAt: Date | null;
+                    approverName: string | null;
+                    approvalStatus: string | null;
+                } | null;
+            }>
+        >();
+
+        snapshotsWithDetails.forEach((item) => {
+            const key = `${item.snapshot.yyyy}-${item.snapshot.mm}`;
+            if (!groupedByYearMonth.has(key)) {
+                groupedByYearMonth.set(key, []);
+            }
+            groupedByYearMonth.get(key)!.push(item);
+        });
+
+        // 배열 형태로 변환 (yyyy-mm 순서대로 정렬)
+        const result = Array.from(groupedByYearMonth.entries())
+            .map(([key, snapshots]) => {
+                const [year, month] = key.split('-');
+                return {
+                    year,
+                    month,
+                    snapshots,
+                };
+            })
+            .sort((a, b) => {
+                const yearCompare = a.year.localeCompare(b.year);
+                if (yearCompare !== 0) return yearCompare;
+                return a.month.localeCompare(b.month);
+            });
+
+        const departments = await this.부서코드매핑을생성한다();
+        // console.log(departments);
+
+        // 날짜-부서-부서원 계층 구조화 (조직도 변화 추적용)
+        const employeesByYearMonthAndDepartment: Record<
+            string,
+            Record<string, Array<{ employeeName: string; employeeNumber: string }>>
+        > = {};
+
+        result.forEach((group) => {
+            const yearMonthKey = `${group.year}-${group.month}`;
+
+            if (!employeesByYearMonthAndDepartment[yearMonthKey]) {
+                employeesByYearMonthAndDepartment[yearMonthKey] = {};
+            }
+
+            group.snapshots.forEach((item) => {
+                const departmentName = item.approvalRequest?.requestTitle.split(' ')[0];
+                if (!departmentName) {
+                    return;
+                }
+
+                if (!employeesByYearMonthAndDepartment[yearMonthKey][departmentName]) {
+                    employeesByYearMonthAndDepartment[yearMonthKey][departmentName] = [];
+                }
+
+                // 해당 스냅샷의 children에서 직원 정보 추출
+                item.children.forEach((child) => {
+                    const employeeInfo = {
+                        employeeName: child.employeeName,
+                        employeeNumber: child.employeeNumber,
+                    };
+
+                    // 해당 연월의 해당 부서에서 중복 제거 (employeeNumber 기준)
+                    const exists = employeesByYearMonthAndDepartment[yearMonthKey][departmentName].some(
+                        (emp) => emp.employeeNumber === employeeInfo.employeeNumber,
+                    );
+                    if (!exists) {
+                        employeesByYearMonthAndDepartment[yearMonthKey][departmentName].push(employeeInfo);
+                    }
+                });
+            });
+        });
+
+        // 각 연월별, 각 부서별 직원 목록 정렬 (사번 기준)
+        Object.keys(employeesByYearMonthAndDepartment).forEach((yearMonth) => {
+            Object.keys(employeesByYearMonthAndDepartment[yearMonth]).forEach((deptName) => {
+                employeesByYearMonthAndDepartment[yearMonth][deptName].sort((a, b) =>
+                    a.employeeNumber.localeCompare(b.employeeNumber),
+                );
+            });
+        });
+
+        // 2025-01의 부서 구성을 2025-02와 동일하게 맞추기
+        const jan2025Key = '2025-01';
+        const feb2025Key = '2025-02';
+
+        if (employeesByYearMonthAndDepartment[jan2025Key] && employeesByYearMonthAndDepartment[feb2025Key]) {
+            // 2025-02의 부서 구조를 기준으로 가져오기
+            const feb2025Departments = Object.keys(employeesByYearMonthAndDepartment[feb2025Key]);
+            const feb2025EmployeesByDept = new Map<string, Set<string>>();
+            Object.keys(employeesByYearMonthAndDepartment[feb2025Key]).forEach((deptName) => {
+                const employeeNumbers = new Set(
+                    employeesByYearMonthAndDepartment[feb2025Key][deptName].map((emp) => emp.employeeNumber),
+                );
+                feb2025EmployeesByDept.set(deptName, employeeNumbers);
+            });
+
+            // 2025-01의 모든 직원 수집 (부서 구분 없이)
+            const jan2025AllEmployees = new Map<string, { employeeName: string; employeeNumber: string }>();
+            Object.values(employeesByYearMonthAndDepartment[jan2025Key]).forEach((employees) => {
+                employees.forEach((emp) => {
+                    jan2025AllEmployees.set(emp.employeeNumber, emp);
+                });
+            });
+
+            // 2025-01의 부서 구조를 2025-02와 동일하게 재구성
+            const jan2025Reorganized: Record<string, Array<{ employeeName: string; employeeNumber: string }>> = {};
+            const jan2025Exceptions: Array<{ employeeName: string; employeeNumber: string }> = [];
+
+            // 2025-02의 부서 구조를 기준으로 2025-01 직원 배치
+            feb2025Departments.forEach((deptName) => {
+                jan2025Reorganized[deptName] = [];
+                const feb2025DeptEmployees = feb2025EmployeesByDept.get(deptName) ?? new Set();
+
+                feb2025DeptEmployees.forEach((employeeNumber) => {
+                    const jan2025Employee = jan2025AllEmployees.get(employeeNumber);
+                    if (jan2025Employee) {
+                        jan2025Reorganized[deptName].push(jan2025Employee);
+                    }
+                });
+            });
+
+            // 2025-01에만 있는 직원 (2025-02에 없는 직원)을 예외로 표시
+            const feb2025AllEmployeeNumbers = new Set<string>();
+            Object.values(employeesByYearMonthAndDepartment[feb2025Key]).forEach((employees) => {
+                employees.forEach((emp) => {
+                    feb2025AllEmployeeNumbers.add(emp.employeeNumber);
+                });
+            });
+
+            jan2025AllEmployees.forEach((emp, employeeNumber) => {
+                if (!feb2025AllEmployeeNumbers.has(employeeNumber)) {
+                    jan2025Exceptions.push(emp);
+                }
+            });
+
+            // 각 부서별 직원 목록 정렬
+            Object.keys(jan2025Reorganized).forEach((deptName) => {
+                jan2025Reorganized[deptName].sort((a, b) => a.employeeNumber.localeCompare(b.employeeNumber));
+            });
+            jan2025Exceptions.sort((a, b) => a.employeeNumber.localeCompare(b.employeeNumber));
+
+            // 2025-01의 구조를 재구성된 구조로 교체
+            employeesByYearMonthAndDepartment[jan2025Key] = jan2025Reorganized;
+
+            // 예외 직원 정보를 별도로 추가
+            if (jan2025Exceptions.length > 0) {
+                employeesByYearMonthAndDepartment[jan2025Key]['[예외] 2025-01에만 존재하는 직원'] = jan2025Exceptions;
+            }
+        }
+
+        console.log(
+            '날짜-부서-부서원 계층 구조 (조직도 변화 추적, 2025-01은 2025-02 기준으로 재구성):',
+            employeesByYearMonthAndDepartment,
+        );
+
+        this.logger.log(
+            `스냅샷 데이터 조회: snapshots=${prvSnapshots.length}건, children=${prvChildren.length}건, approvalRequests=${approvalRequests.length}건, groups=${result.length}개`,
+        );
+
+        // return { snapshots: prvSnapshots, snapshotsWithDetails };
+        return { employeesByYearMonthAndDepartment };
     }
 
     async 테이블별데이터를조회한다(): Promise<Record<string, unknown[]>> {
