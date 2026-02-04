@@ -9,7 +9,6 @@ export interface ISnapshotChildInfo {
     yyyy: string;
     mm: string;
     snapshotData: string;
-    rawData?: Record<string, any> | null;
 }
 
 /**
@@ -27,9 +26,4 @@ export interface ISnapshotInfo {
 /**
  * 부서별 연도, 월별 스냅샷 조회 응답 인터페이스
  */
-export interface IGetDepartmentSnapshotsResponse {
-    departmentId: string;
-    year: string;
-    month: string;
-    snapshots: ISnapshotInfo[];
-}
+export type IGetDepartmentSnapshotsResponse = ISnapshotInfo | null;

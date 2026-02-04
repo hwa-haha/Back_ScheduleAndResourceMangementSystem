@@ -19,6 +19,7 @@ import {
 import {
     GetDepartmentSnapshotsRequestDto,
     GetDepartmentSnapshotsResponseDto,
+    SnapshotInfoDto,
 } from './dto/get-department-snapshots.dto';
 import {
     GetEmployeeAttendanceDetailRequestDto,
@@ -185,8 +186,8 @@ export class DashboardController {
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
     @ApiResponse({
         status: 200,
-        description: '부서별 연도, 월별 스냅샷 조회 성공',
-        type: GetDepartmentSnapshotsResponseDto,
+        description: '부서별 연도, 월별 스냅샷 조회 성공 (스냅샷이 없으면 null)',
+        type: SnapshotInfoDto,
     })
     async getDepartmentSnapshots(
         @Query() query: GetDepartmentSnapshotsRequestDto,

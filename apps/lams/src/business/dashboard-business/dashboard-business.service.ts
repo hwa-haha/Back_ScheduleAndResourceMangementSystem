@@ -4,7 +4,12 @@ import { GetDepartmentMonthlyAverageWorkHoursResponseDto } from '../../interface
 import { GetDepartmentMonthlyEmployeeWorkHoursResponseDto } from '../../interface/dashboard/dto/get-department-monthly-employee-work-hours.dto';
 import { GetDepartmentMonthlyEmployeeAttendanceResponseDto } from '../../interface/dashboard/dto/get-department-monthly-employee-attendance.dto';
 import { GetDepartmentWeeklyTopEmployeesResponseDto } from '../../interface/dashboard/dto/get-department-weekly-top-employees.dto';
-import { GetDepartmentSnapshotsResponseDto } from '../../interface/dashboard/dto/get-department-snapshots.dto';
+import {
+    GetDepartmentSnapshotsResponseDto,
+    SnapshotInfoDto,
+    SnapshotChildInfoDto,
+} from '../../interface/dashboard/dto/get-department-snapshots.dto';
+import { IGetDepartmentSnapshotsResponse } from '../../context/dashboard-context/interfaces/response/get-department-snapshots-response.interface';
 import { GetEmployeeAttendanceDetailResponseDto } from '../../interface/dashboard/dto/get-employee-attendance-detail.dto';
 import { IGetEmployeeAttendanceDetailResponse } from '../../context/dashboard-context/interfaces/response/get-employee-attendance-detail-response.interface';
 
@@ -91,7 +96,31 @@ export class DashboardBusinessService {
         month: string,
     ): Promise<GetDepartmentSnapshotsResponseDto> {
         this.logger.log(`부서별 연도, 월별 스냅샷 조회: departmentId=${departmentId}, year=${year}, month=${month}`);
-        return await this.dashboardContextService.부서별연도월별스냅샷을조회한다({ departmentId, year, month });
+        const result = await this.dashboardContextService.부서별연도월별스냅샷을조회한다({ departmentId, year, month });
+
+        // 인터페이스를 DTO로 변환
+        if (!result) {
+            return null;
+        }
+
+        const snapshotDto: SnapshotInfoDto = {
+            id: result.id,
+            snapshotName: result.snapshotName,
+            year: result.year,
+            month: result.month,
+            createdAt: result.createdAt,
+            children: result.children?.map((child) => ({
+                id: child.id,
+                employeeId: child.employeeId,
+                employeeName: child.employeeName,
+                employeeNumber: child.employeeNumber,
+                yyyy: child.yyyy,
+                mm: child.mm,
+                snapshotData: child.snapshotData,
+            })),
+        };
+
+        return snapshotDto;
     }
 
     /**

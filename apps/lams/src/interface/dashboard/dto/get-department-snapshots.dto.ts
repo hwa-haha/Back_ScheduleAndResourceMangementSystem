@@ -59,13 +59,6 @@ export class SnapshotChildInfoDto {
 
     @ApiProperty({ description: '스냅샷 데이터 (JSON 문자열)', example: '{"key": "value"}' })
     snapshotData: string;
-
-    @ApiProperty({
-        description: '원본 데이터 (eventInfo, usedAttendance 등)',
-        example: { eventInfo: [], usedAttendance: [] },
-        nullable: true,
-    })
-    rawData?: Record<string, any> | null;
 }
 
 /**
@@ -98,19 +91,4 @@ export class SnapshotInfoDto {
 /**
  * 부서별 연도, 월별 스냅샷 조회 응답 DTO
  */
-export class GetDepartmentSnapshotsResponseDto {
-    @ApiProperty({ description: '부서 ID' })
-    departmentId: string;
-
-    @ApiProperty({ description: '연도' })
-    year: string;
-
-    @ApiProperty({ description: '월' })
-    month: string;
-
-    @ApiProperty({
-        description: '스냅샷 목록',
-        type: [SnapshotInfoDto],
-    })
-    snapshots: SnapshotInfoDto[];
-}
+export type GetDepartmentSnapshotsResponseDto = SnapshotInfoDto | null;
