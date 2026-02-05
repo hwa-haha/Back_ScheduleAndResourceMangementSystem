@@ -6,6 +6,7 @@ import {
     ReJudgeDailySummaryCommand,
     UpdateDailySummaryCommand,
     UpdateMonthlySummaryNoteCommand,
+    UpdateMonthlySummaryForEmployeeCommand,
     GetMonthlySummariesQuery,
     GetMonthlySummaryNoteQuery,
     GetDailySummaryHistoryQuery,
@@ -130,9 +131,7 @@ export class AttendanceDataContextService {
         }
 
         // 1. 해당 날짜의 모든 일간 요약 재판정
-        const reJudgeSummaries = await this.commandBus.execute(
-            new ReJudgeDailySummaryCommand({ date, performedBy }),
-        );
+        const reJudgeSummaries = await this.commandBus.execute(new ReJudgeDailySummaryCommand({ date, performedBy }));
 
         // 2. 해당 연월 월간 요약 생성
         const monthlyResult = await this.commandBus.execute(
@@ -196,9 +195,7 @@ export class AttendanceDataContextService {
      * @param command 일일 요약 복원 명령
      * @returns 복원된 일일 요약 목록
      */
-    async 일일요약을복원한다(
-        command: IRestoreDailySummariesFromSnapshotCommand,
-    ): Promise<DailyEventSummary[]> {
+    async 일일요약을복원한다(command: IRestoreDailySummariesFromSnapshotCommand): Promise<DailyEventSummary[]> {
         return await this.commandBus.execute(new RestoreDailySummariesFromSnapshotCommand(command));
     }
 
@@ -210,9 +207,7 @@ export class AttendanceDataContextService {
      * @param command 월간 요약 복원 명령
      * @returns 복원된 월간 요약 목록
      */
-    async 월간요약을복원한다(
-        command: IRestoreMonthlySummariesFromSnapshotCommand,
-    ): Promise<MonthlyEventSummary[]> {
+    async 월간요약을복원한다(command: IRestoreMonthlySummariesFromSnapshotCommand): Promise<MonthlyEventSummary[]> {
         return await this.commandBus.execute(new RestoreMonthlySummariesFromSnapshotCommand(command));
     }
 
@@ -233,13 +228,47 @@ export class AttendanceDataContextService {
      * 일간 요약을 수정한다
      *
      * 일간 요약의 출근시간, 퇴근시간, 근태유형을 수정하고 수정이력을 생성합니다.
+     * 수정 후 해당 직원의 해당 연월 월간 요약도 업데이트합니다.
+     *
+     * 오케스트레이션 로직:
+     * 1. UpdateDailySummaryCommand 실행 (일간 요약 수정)
+     * 2. 수정된 일간 요약의 직원 ID와 연월 정보 추출
+     * 3. UpdateMonthlySummaryForEmployeeCommand 실행 (해당 직원의 해당 연월 월간 요약만 업데이트)
+     * 4. 결과 반환
      *
      * @param command 수정 명령
      * @returns 일간 요약 수정 결과
      */
     async 일간요약을수정한다(command: IUpdateDailySummaryCommand): Promise<IUpdateDailySummaryResponse> {
+        // 1. 일간 요약 수정
         const commandInstance = new UpdateDailySummaryCommand(command);
-        return await this.commandBus.execute(commandInstance);
+        const result = await this.commandBus.execute(commandInstance);
+
+        // 2. 수정된 일간 요약의 직원 ID와 연월 정보 추출
+        const dateStr = result.dailySummary.date; // YYYY-MM-DD 형식
+        const employeeId = result.dailySummary.employeeId;
+        const [year, month] = dateStr.split('-');
+
+        if (!year || !month) {
+            throw new Error(`날짜 형식이 올바르지 않습니다. (YYYY-MM-DD): ${dateStr}`);
+        }
+
+        if (!employeeId) {
+            throw new Error(`일간 요약에 직원 ID가 없습니다. dailySummaryId=${command.dailySummaryId}`);
+        }
+
+        // 3. 해당 직원의 해당 연월 월간 요약만 업데이트
+        await this.commandBus.execute(
+            new UpdateMonthlySummaryForEmployeeCommand({
+                employeeId,
+                year,
+                month: month.padStart(2, '0'),
+                performedBy: command.performedBy,
+            }),
+        );
+
+        // 4. 결과 반환
+        return result;
     }
 
     /**
@@ -289,7 +318,9 @@ export class AttendanceDataContextService {
      * @param command 수정 명령
      * @returns 월간 요약 노트 수정 결과
      */
-    async 월간요약노트를수정한다(command: IUpdateMonthlySummaryNoteCommand): Promise<IUpdateMonthlySummaryNoteResponse> {
+    async 월간요약노트를수정한다(
+        command: IUpdateMonthlySummaryNoteCommand,
+    ): Promise<IUpdateMonthlySummaryNoteResponse> {
         const commandInstance = new UpdateMonthlySummaryNoteCommand(command);
         return await this.commandBus.execute(commandInstance);
     }

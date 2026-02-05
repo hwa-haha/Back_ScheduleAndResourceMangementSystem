@@ -41,12 +41,6 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
         const isTimeUpdate = enter !== undefined || leave !== undefined;
         const isAttendanceTypeUpdate = attendanceTypeIds !== undefined;
 
-        if (!isTimeUpdate && !isAttendanceTypeUpdate) {
-            throw new BadRequestException(
-                '출퇴근 시간(enter 또는 leave) 또는 근태유형(attendanceTypeIds) 중 하나는 필수입니다.',
-            );
-        }
-
         if (isTimeUpdate && isAttendanceTypeUpdate) {
             throw new BadRequestException('출퇴근 시간 수정과 근태유형 수정은 동시에 할 수 없습니다.');
         }
@@ -175,8 +169,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                 // 근태유형 기반으로 enter, leave 계산
                 // 근태유형 변경 시에는 real_enter, real_leave를 고려하지 않고 근태유형만으로 계산
                 const finalTimes = this.출입기록과근태기반출입시간을계산한다(
-                    null, // real_enter: 근태유형 변경 시 null
-                    null, // real_leave: 근태유형 변경 시 null
+                    dailySummary.real_enter,
+                    dailySummary.real_leave,
                     attendanceTypes,
                 );
 
@@ -262,8 +256,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                     undefined, // is_holiday
                     updatedEnter,
                     updatedLeave,
-                    null, // real_enter: 근태유형 변경 시 null로 설정
-                    null, // real_leave: 근태유형 변경 시 null로 설정
+                    undefined, // real_enter
+                    undefined, // real_leave
                     undefined, // is_checked
                     판정결과.isLate, // is_late
                     판정결과.isEarlyLeave, // is_early_leave
@@ -278,7 +272,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
 
             dailySummary.수정자설정한다(performedBy);
             dailySummary.메타데이터업데이트한다(performedBy);
-
+            dailySummary.비고업데이트한다(note ?? '');
+            console.log('dailySummary', dailySummary);
             const updatedSummary = await manager.save(dailySummary);
 
             // 3. 수정이력 생성 (reason에는 note 값을 넣음)
