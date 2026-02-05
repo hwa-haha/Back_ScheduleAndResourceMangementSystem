@@ -219,6 +219,8 @@ export class AttendanceDataController {
         const result = await this.attendanceDataBusinessService.근태스냅샷을저장한다({
             year: dto.year,
             month: dto.month,
+            snapshotName: dto.snapshotName,
+            description: dto.description,
             performedBy,
         });
 

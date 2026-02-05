@@ -18,17 +18,17 @@ export class SaveAttendanceSnapshotRequestDto {
     @IsNotEmpty()
     month: string;
 
-    @ApiProperty({ description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @ApiProperty({ description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000', required: false })
     @IsUUID()
     @IsOptional()
     departmentId?: string;
 
-    @ApiPropertyOptional({ description: '스냅샷 이름', example: '2024년 1월 근태 스냅샷' })
+    @ApiPropertyOptional({ description: '스냅샷 이름', example: '2024년 1월 근태 스냅샷', required: false })
     @IsString()
     @IsOptional()
     snapshotName?: string;
 
-    @ApiPropertyOptional({ description: '스냅샷 설명', example: '월간 요약 데이터 백업' })
+    @ApiPropertyOptional({ description: '스냅샷 설명', example: '월간 요약 데이터 백업', required: false })
     @IsString()
     @IsOptional()
     description?: string;

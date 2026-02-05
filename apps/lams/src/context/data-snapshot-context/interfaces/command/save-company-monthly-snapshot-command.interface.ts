@@ -5,4 +5,6 @@ export interface ISaveCompanyMonthlySnapshotCommand {
     year: string;
     month: string;
     performedBy: string;
+    snapshotName?: string;
+    description?: string;
 }

@@ -37,7 +37,7 @@ export class SaveCompanyMonthlySnapshotHandler implements ICommandHandler<
     ) {}
 
     async execute(command: SaveCompanyMonthlySnapshotCommand): Promise<ISaveAttendanceSnapshotResponse> {
-        const { year, month, performedBy } = command.data;
+        const { year, month, performedBy, snapshotName, description } = command.data;
 
         return await this.dataSource.transaction(async (manager) => {
             try {
@@ -107,7 +107,7 @@ export class SaveCompanyMonthlySnapshotHandler implements ICommandHandler<
                     };
                 });
 
-                const finalSnapshotName = `${year}년 ${month}월 근태 스냅샷 (회사 전체)`;
+                const finalSnapshotName = snapshotName || `${year}년 ${month}월 근태 스냅샷 (회사 전체)`;
                 const finalSnapshotVersion = await this.다음버전을결정한다(year, month, manager);
 
                 // 파일 반영 데이터 조회 (EventInfo, UsedAttendance)
@@ -119,7 +119,7 @@ export class SaveCompanyMonthlySnapshotHandler implements ICommandHandler<
                     year,
                     month,
                     null as unknown as string,
-                    '회사 전체 월간 요약 스냅샷',
+                    description || '회사 전체 월간 요약 스냅샷', // description이 제공되면 사용, 없으면 기본값
                     finalSnapshotVersion,
                     null,
                     null,
@@ -197,7 +197,10 @@ export class SaveCompanyMonthlySnapshotHandler implements ICommandHandler<
         reflectionData: { year: string; month: string; eventInfo: any[]; usedAttendance: any[] },
         monthlySummaries: IMonthlyEventSummaryWithDailySummaries[],
     ): Map<string, { year: string; month: string; eventInfo: any[]; usedAttendance: any[] }> {
-        const employeeRawDataMap = new Map<string, { year: string; month: string; eventInfo: any[]; usedAttendance: any[] }>();
+        const employeeRawDataMap = new Map<
+            string,
+            { year: string; month: string; eventInfo: any[]; usedAttendance: any[] }
+        >();
 
         // monthlySummaries에서 employeeId와 employeeNumber 매핑 생성
         const employeeIdToNumberMap = new Map<string, string>();
