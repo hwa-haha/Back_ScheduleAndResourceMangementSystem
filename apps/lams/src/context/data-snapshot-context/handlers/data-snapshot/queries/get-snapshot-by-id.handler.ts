@@ -33,20 +33,21 @@ export class GetSnapshotByIdHandler implements IQueryHandler<GetSnapshotByIdQuer
         // 부서 ID가 제공된 경우, 해당 부서의 해당 연월에 소속되었던 직원들의 child 데이터만 필터링
         if (departmentId && snapshot.children) {
             // 해당 부서의 해당 연월에 소속되었던 직원 리스트 조회
-            const departmentEmployees = await this.employeeDepartmentPositionHistoryService.특정연월부서와하위부서의배치이력목록을조회한다(
-                snapshot.yyyy,
-                snapshot.mm,
-                departmentId,
-            );
+            const departmentEmployees =
+                await this.employeeDepartmentPositionHistoryService.특정연월부서와하위부서의배치이력목록을조회한다(
+                    snapshot.yyyy,
+                    snapshot.mm,
+                    departmentId,
+                );
 
             // 직원 ID 목록 추출
             const employeeIds = departmentEmployees.map((history) => history.employeeId);
-            this.logger.log(
-                `부서별 직원 조회 완료: departmentId=${departmentId}, employeeCount=${employeeIds.length}`,
-            );
+            this.logger.log(`부서별 직원 조회 완료: departmentId=${departmentId}, employeeCount=${employeeIds.length}`);
 
             // 해당 직원들의 child 데이터만 필터링
-            const filteredChildren = snapshot.children.filter((child) => employeeIds.includes(child.employeeId));
+            const filteredChildren = snapshot.children
+                .filter((child) => employeeIds.includes(child.employeeId))
+                .sort((a, b) => a.employeeNumber.localeCompare(b.employeeNumber));
 
             this.logger.log(
                 `스냅샷 조회 완료: snapshotId=${snapshotId}, totalChildren=${snapshot.children.length}, filteredChildren=${filteredChildren.length}`,
