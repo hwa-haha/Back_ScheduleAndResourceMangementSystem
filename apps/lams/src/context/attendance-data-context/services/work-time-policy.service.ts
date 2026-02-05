@@ -187,14 +187,12 @@ export class WorkTimePolicyService {
             return false;
         }
 
-        // 오전 근무가 인정되면 지각 아님
-        if (hasMorningRecognized) {
-            return false;
-        }
-
         // HHMMSS 형식을 HH:MM:SS 형식으로 변환하여 비교
         const enterTimeFormatted = this.HHMMSS를HHMMSS로변환(enterTime);
-        const workStartTime = this.getWorkStartTime(date, workTimeOverride);
+
+        // 오전 근무가 인정되면 workStartTime을 14시로 설정
+        const workStartTime = hasMorningRecognized ? '14:00:00' : this.getWorkStartTime(date, workTimeOverride);
+
         return enterTimeFormatted > workStartTime;
     }
 
@@ -224,14 +222,12 @@ export class WorkTimePolicyService {
             return false;
         }
 
-        // 오후 근무가 인정되면 조퇴 아님
-        if (hasAfternoonRecognized) {
-            return false;
-        }
-
         // HHMMSS 형식을 HH:MM:SS 형식으로 변환하여 비교
         const leaveTimeFormatted = this.HHMMSS를HHMMSS로변환(leaveTime);
-        const workEndTime = this.getWorkEndTime(date, workTimeOverride);
+
+        // 오후 근무가 인정되면 workEndTime을 14시로 설정
+        const workEndTime = hasAfternoonRecognized ? '14:00:00' : this.getWorkEndTime(date, workTimeOverride);
+
         return leaveTimeFormatted < workEndTime;
     }
 

@@ -140,7 +140,7 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                     판정결과.hasAttendanceConflict, // has_attendance_conflict
                     판정결과.hasAttendanceOverlap, // has_attendance_overlap
                     workTime,
-                    note ?? undefined, // note: 요청에서 받은 메모
+                    undefined, // note: 요청에서 받은 메모
                     undefined, // used_attendances (기존 값 유지)
                 );
             }
@@ -265,15 +265,24 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                     판정결과.hasAttendanceConflict, // has_attendance_conflict
                     판정결과.hasAttendanceOverlap, // has_attendance_overlap
                     workTime,
-                    note ?? undefined, // note: 요청에서 받은 메모
+                    undefined, // note
                     usedAttendances,
                 );
             }
 
             dailySummary.수정자설정한다(performedBy);
             dailySummary.메타데이터업데이트한다(performedBy);
-            dailySummary.비고업데이트한다(note ?? '');
-            console.log('dailySummary', dailySummary);
+
+            // 비고 업데이트 (모든 경우에 대해)
+            if (note !== undefined) {
+                const oldNote = dailySummary.note;
+                const newNote = note;
+                if (oldNote !== newNote) {
+                    changeContent += `, 비고: ${oldNote} → ${newNote}`;
+                }
+                dailySummary.비고업데이트한다(note ?? '');
+            }
+
             const updatedSummary = await manager.save(dailySummary);
 
             // 3. 수정이력 생성 (reason에는 note 값을 넣음)
