@@ -16,6 +16,7 @@ import { EventInfo } from '../../../../../domain/event-info/event-info.entity';
 import { UsedAttendance } from '../../../../../domain/used-attendance/used-attendance.entity';
 import { DailyEventSummary } from '../../../../../domain/daily-event-summary/daily-event-summary.entity';
 import { Employee } from '@libs/modules/employee/employee.entity';
+import { EmployeeExtraInfo } from '../../../../../domain/employee-extra-info/employee-extra-info.entity';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 /**
@@ -129,9 +130,9 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
         });
     }
 
-
     /**
      * 조회된 데이터에서 직원 정보를 추출한다
+     * is_excluded_from_summary가 true인 직원은 제외한다
      */
     private async 직원정보를추출한다(
         events: EventInfo[],
@@ -178,7 +179,24 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
         employeesByNumber.forEach((emp) => employeeMap.set(emp.id, emp));
         employeesById.forEach((emp) => employeeMap.set(emp.id, emp));
 
-        const employees = Array.from(employeeMap.values());
+        const allEmployees = Array.from(employeeMap.values());
+
+        // 6. is_excluded_from_summary가 true인 직원 ID 조회
+        const employeeIdsToCheck = allEmployees.map((emp) => emp.id);
+        const excludedEmployeeInfos =
+            employeeIdsToCheck.length > 0
+                ? await manager.find(EmployeeExtraInfo, {
+                      where: {
+                          employee_id: In(employeeIdsToCheck),
+                          is_excluded_from_summary: true,
+                      },
+                  })
+                : [];
+
+        const excludedEmployeeIds = new Set(excludedEmployeeInfos.map((info) => info.employee_id));
+
+        // 7. 제외 대상 직원 필터링
+        const employees = allEmployees.filter((emp) => !excludedEmployeeIds.has(emp.id));
         const employeeNumberMap = new Map(employees.map((emp) => [emp.employeeNumber, emp]));
 
         return { employees, employeeNumberMap };
@@ -403,7 +421,6 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
 
         return toSave;
     }
-
 
     /**
      * 날짜 범위 생성
@@ -631,5 +648,4 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
             summary.note = '';
         }
     }
-
 }

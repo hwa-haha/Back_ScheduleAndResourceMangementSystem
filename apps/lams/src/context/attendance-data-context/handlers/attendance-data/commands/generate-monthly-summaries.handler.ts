@@ -133,12 +133,7 @@ export class GenerateMonthlySummariesHandler implements ICommandHandler<
                                 absenceDetails: monthlySummary.absenceDetails || [],
                                 earlyLeaveDetails: monthlySummary.earlyLeaveDetails || [],
                             };
-                            const note = this.월간요약노트를생성한다(
-                                employee,
-                                year,
-                                month,
-                                attendanceResult,
-                            );
+                            const note = this.월간요약노트를생성한다(employee, year, month, attendanceResult);
                             if (note) {
                                 // DTO가 아닌 엔티티를 조회하여 수정
                                 const monthlySummaryEntity = await manager.findOne(MonthlyEventSummary, {
@@ -206,11 +201,7 @@ export class GenerateMonthlySummariesHandler implements ICommandHandler<
         const endDate = endOfMonth(new Date(parseInt(year), parseInt(month) - 1));
 
         // 입사가 시작과 종료사이 범위에 있는 직원의 월간 근태 요약에 메모 추가
-        if (
-            employee.hireDate &&
-            isBefore(employee.hireDate, endDate) &&
-            isAfter(employee.hireDate, startDate)
-        ) {
+        if (employee.hireDate && isBefore(employee.hireDate, endDate) && isAfter(employee.hireDate, startDate)) {
             newNote += `${format(employee.hireDate, 'yyyy-MM-dd')} 입사\n`;
         }
 
@@ -236,5 +227,4 @@ export class GenerateMonthlySummariesHandler implements ICommandHandler<
 
         return newNote.trim();
     }
-
 }

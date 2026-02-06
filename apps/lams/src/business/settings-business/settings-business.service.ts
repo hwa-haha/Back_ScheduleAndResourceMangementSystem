@@ -54,21 +54,27 @@ export class SettingsBusinessService {
     /**
      * 권한 관련 부서 목록을 조회한다
      */
-    async 권한관련부서목록을조회한다(query: IGetDepartmentListForPermissionQuery): Promise<IGetDepartmentListForPermissionResponse> {
+    async 권한관련부서목록을조회한다(
+        query: IGetDepartmentListForPermissionQuery,
+    ): Promise<IGetDepartmentListForPermissionResponse> {
         return await this.settingsContextService.권한관련부서목록을조회한다(query);
     }
 
     /**
      * 권한 관련 직원 목록을 조회한다
      */
-    async 권한관련직원목록을조회한다(query: IGetPermissionRelatedEmployeeListQuery): Promise<IGetPermissionRelatedEmployeeListResponse> {
+    async 권한관련직원목록을조회한다(
+        query: IGetPermissionRelatedEmployeeListQuery,
+    ): Promise<IGetPermissionRelatedEmployeeListResponse> {
         return await this.settingsContextService.권한관련직원목록을조회한다(query);
     }
 
     /**
      * 직원의 권한 목록을 조회한다
      */
-    async 직원의권한목록을조회한다(query: IGetEmployeePermissionListQuery): Promise<IGetEmployeePermissionListResponse> {
+    async 직원의권한목록을조회한다(
+        query: IGetEmployeePermissionListQuery,
+    ): Promise<IGetEmployeePermissionListResponse> {
         return await this.settingsContextService.직원의권한목록을조회한다(query);
     }
 
@@ -91,18 +97,14 @@ export class SettingsBusinessService {
     /**
      * 특별근태시간 목록을 조회한다
      */
-    async 특별근태시간목록을조회한다(
-        query: IGetWorkTimeOverrideListQuery,
-    ): Promise<IGetWorkTimeOverrideListResponse> {
+    async 특별근태시간목록을조회한다(query: IGetWorkTimeOverrideListQuery): Promise<IGetWorkTimeOverrideListResponse> {
         return await this.settingsContextService.특별근태시간목록을조회한다(query);
     }
 
     /**
      * 직원 추가 정보를 변경한다
      */
-    async 직원추가정보를변경한다(
-        command: IUpdateEmployeeExtraInfoCommand,
-    ): Promise<IUpdateEmployeeExtraInfoResponse> {
+    async 직원추가정보를변경한다(command: IUpdateEmployeeExtraInfoCommand): Promise<IUpdateEmployeeExtraInfoResponse> {
         return await this.settingsContextService.직원추가정보를변경한다(command);
     }
 
@@ -121,17 +123,33 @@ export class SettingsBusinessService {
 
     /**
      * 휴일 정보를 수정한다
-     * 수정 후 해당 휴일 날짜(변경 시) 또는 오늘 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
+     * 수정 후 기존 날짜와 변경된 날짜 양쪽 모두에 대해 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
     async 휴일정보를수정한다(command: IUpdateHolidayInfoCommand): Promise<IUpdateHolidayInfoResponse> {
+        // 수정 전 기존 휴일 정보 조회
+        const existingHoliday = await this.settingsContextService.휴일정보를조회한다({
+            id: command.id,
+        });
+        const oldDate = existingHoliday.holiday.holidayDate;
+
+        // 수정 실행
         const result = await this.settingsContextService.휴일정보를수정한다(command);
-        const date = command.holidayDate ?? undefined;
-        if (date) {
-            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
-                date,
-                command.performedBy,
-            );
+        const newDate = command.holidayDate ?? undefined;
+
+        // 기존 날짜와 변경된 날짜 모두 재판정
+        const datesToReprocess = new Set<string>();
+        if (oldDate) {
+            datesToReprocess.add(oldDate);
         }
+        if (newDate) {
+            datesToReprocess.add(newDate);
+        }
+
+        // 각 날짜에 대해 재판정 실행
+        for (const date of datesToReprocess) {
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(date, command.performedBy);
+        }
+
         return result;
     }
 
@@ -146,10 +164,7 @@ export class SettingsBusinessService {
         const date = holidayInfo.holiday.holidayDate;
         const result = await this.settingsContextService.휴일정보를삭제한다(command);
         if (date) {
-            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
-                date,
-                command.performedBy,
-            );
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(date, command.performedBy);
         }
         return result;
     }
@@ -158,32 +173,41 @@ export class SettingsBusinessService {
      * 특별근태시간을 생성한다
      * 생성 후 해당 날짜 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
-    async 특별근태시간을생성한다(
-        command: ICreateWorkTimeOverrideCommand,
-    ): Promise<ICreateWorkTimeOverrideResponse> {
+    async 특별근태시간을생성한다(command: ICreateWorkTimeOverrideCommand): Promise<ICreateWorkTimeOverrideResponse> {
         const result = await this.settingsContextService.특별근태시간을생성한다(command);
-        await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
-            command.date,
-            command.performedBy,
-        );
+        await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(command.date, command.performedBy);
         return result;
     }
 
     /**
      * 특별근태시간을 수정한다
-     * 수정 후 해당 날짜(변경 시) 또는 오늘 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
+     * 수정 후 기존 날짜와 변경된 날짜 양쪽 모두에 대해 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
-    async 특별근태시간을수정한다(
-        command: IUpdateWorkTimeOverrideCommand,
-    ): Promise<IUpdateWorkTimeOverrideResponse> {
+    async 특별근태시간을수정한다(command: IUpdateWorkTimeOverrideCommand): Promise<IUpdateWorkTimeOverrideResponse> {
+        // 수정 전 기존 특별근태시간 정보 조회
+        const existingWorkTimeOverride = await this.settingsContextService.특별근태시간을조회한다({
+            id: command.id,
+        });
+        const oldDate = existingWorkTimeOverride.workTimeOverride.date;
+
+        // 수정 실행
         const result = await this.settingsContextService.특별근태시간을수정한다(command);
-        const date = command.date ?? undefined;
-        if (date) {
-            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
-                date,
-                command.performedBy,
-            );
+        const newDate = command.date ?? undefined;
+
+        // 기존 날짜와 변경된 날짜 모두 재판정
+        const datesToReprocess = new Set<string>();
+        if (oldDate) {
+            datesToReprocess.add(oldDate);
         }
+        if (newDate) {
+            datesToReprocess.add(newDate);
+        }
+
+        // 각 날짜에 대해 재판정 실행
+        for (const date of datesToReprocess) {
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(date, command.performedBy);
+        }
+
         return result;
     }
 
@@ -191,19 +215,14 @@ export class SettingsBusinessService {
      * 특별근태시간을 삭제한다
      * 삭제 전 해당 특별근태시간의 적용 날짜를 조회한 뒤, 삭제 후 해당 날짜 기준으로 일간 요약 재판정 및 월간 요약 생성을 실행한다.
      */
-    async 특별근태시간을삭제한다(
-        command: IDeleteWorkTimeOverrideCommand,
-    ): Promise<IDeleteWorkTimeOverrideResponse> {
+    async 특별근태시간을삭제한다(command: IDeleteWorkTimeOverrideCommand): Promise<IDeleteWorkTimeOverrideResponse> {
         const workTimeOverride = await this.settingsContextService.특별근태시간을조회한다({
             id: command.id,
         });
         const date = workTimeOverride.workTimeOverride.date;
         const result = await this.settingsContextService.특별근태시간을삭제한다(command);
         if (date) {
-            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(
-                date,
-                command.performedBy,
-            );
+            await this.attendanceDataContextService.일간요약재판정후월간요약을생성한다(date, command.performedBy);
         }
         return result;
     }
