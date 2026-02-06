@@ -6,6 +6,7 @@ export * from './command/update-monthly-summary-note-command.interface';
 export * from './command/update-monthly-summary-for-employee-command.interface';
 export * from './command/soft-delete-daily-summaries-command.interface';
 export * from './command/soft-delete-monthly-summaries-command.interface';
+export * from './command/soft-delete-employee-summaries-command.interface';
 export * from './command/restore-daily-summaries-from-snapshot-command.interface';
 export * from './command/restore-monthly-summaries-from-snapshot-command.interface';
 

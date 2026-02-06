@@ -6,6 +6,7 @@ export * from './update-monthly-summary-note.command';
 export * from './update-monthly-summary-for-employee.command';
 export * from './soft-delete-daily-summaries.command';
 export * from './soft-delete-monthly-summaries.command';
+export * from './soft-delete-employee-summaries.command';
 export * from './restore-daily-summaries-from-snapshot.command';
 export * from './restore-monthly-summaries-from-snapshot.command';
 export * from './re-judge-daily-summary.command';
@@ -18,6 +19,7 @@ export * from './update-monthly-summary-note.handler';
 export * from './update-monthly-summary-for-employee.handler';
 export * from './soft-delete-daily-summaries.handler';
 export * from './soft-delete-monthly-summaries.handler';
+export * from './soft-delete-employee-summaries.handler';
 export * from './restore-daily-summaries-from-snapshot.handler';
 export * from './restore-monthly-summaries-from-snapshot.handler';
 export * from './re-judge-daily-summary.handler';
@@ -30,6 +32,7 @@ import { UpdateMonthlySummaryNoteHandler } from './update-monthly-summary-note.h
 import { UpdateMonthlySummaryForEmployeeHandler } from './update-monthly-summary-for-employee.handler';
 import { SoftDeleteDailySummariesHandler } from './soft-delete-daily-summaries.handler';
 import { SoftDeleteMonthlySummariesHandler } from './soft-delete-monthly-summaries.handler';
+import { SoftDeleteEmployeeSummariesHandler } from './soft-delete-employee-summaries.handler';
 import { RestoreDailySummariesFromSnapshotHandler } from './restore-daily-summaries-from-snapshot.handler';
 import { RestoreMonthlySummariesFromSnapshotHandler } from './restore-monthly-summaries-from-snapshot.handler';
 import { ReJudgeDailySummaryHandler } from './re-judge-daily-summary.handler';
@@ -42,6 +45,7 @@ export const ATTENDANCE_DATA_COMMAND_HANDLERS = [
     UpdateMonthlySummaryForEmployeeHandler,
     SoftDeleteDailySummariesHandler,
     SoftDeleteMonthlySummariesHandler,
+    SoftDeleteEmployeeSummariesHandler,
     RestoreDailySummariesFromSnapshotHandler,
     RestoreMonthlySummariesFromSnapshotHandler,
     ReJudgeDailySummaryHandler,

@@ -13,6 +13,7 @@ import {
     GetDailySummaryDetailQuery,
     SoftDeleteDailySummariesCommand,
     SoftDeleteMonthlySummariesCommand,
+    SoftDeleteEmployeeSummariesCommand,
     RestoreDailySummariesFromSnapshotCommand,
     RestoreMonthlySummariesFromSnapshotCommand,
 } from './handlers';
@@ -36,6 +37,7 @@ import {
     IReJudgeAndGenerateMonthlyResponse,
     IRestoreDailySummariesFromSnapshotCommand,
     IRestoreMonthlySummariesFromSnapshotCommand,
+    ISoftDeleteEmployeeSummariesCommand,
 } from './interfaces';
 import { DailyEventSummary } from '../../domain/daily-event-summary/daily-event-summary.entity';
 import { MonthlyEventSummary } from '../../domain/monthly-event-summary/monthly-event-summary.entity';
@@ -322,6 +324,18 @@ export class AttendanceDataContextService {
         command: IUpdateMonthlySummaryNoteCommand,
     ): Promise<IUpdateMonthlySummaryNoteResponse> {
         const commandInstance = new UpdateMonthlySummaryNoteCommand(command);
+        return await this.commandBus.execute(commandInstance);
+    }
+
+    /**
+     * 특정 직원의 특정 연월 일간/월간 요약을 소프트 삭제한다
+     *
+     * 특정 직원의 특정 연월에 대한 일간 요약과 월간 요약을 소프트 삭제합니다.
+     *
+     * @param command 소프트 삭제 명령
+     */
+    async 특정직원요약을소프트삭제한다(command: ISoftDeleteEmployeeSummariesCommand): Promise<void> {
+        const commandInstance = new SoftDeleteEmployeeSummariesCommand(command);
         return await this.commandBus.execute(commandInstance);
     }
 }

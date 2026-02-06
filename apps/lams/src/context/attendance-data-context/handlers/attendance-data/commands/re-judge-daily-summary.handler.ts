@@ -1,4 +1,4 @@
-import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
+import { CommandHandler, ICommandHandler, CommandBus } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ReJudgeDailySummaryCommand } from './re-judge-daily-summary.command';
@@ -6,6 +6,8 @@ import { DailySummaryJudgmentService } from '../../../services/daily-summary-jud
 import { DomainHolidayInfoService } from '../../../../../domain/holiday-info/holiday-info.service';
 import { DailyEventSummary } from '../../../../../domain/daily-event-summary/daily-event-summary.entity';
 import { DailyEventSummaryDTO } from '../../../../../domain/daily-event-summary/daily-event-summary.types';
+import { AttendanceIssue } from '../../../../../domain/attendance-issue/attendance-issue.entity';
+import { CreateAttendanceIssuesCommand } from '../../../../attendance-issue-context/handlers/attendance-issue/commands';
 
 /**
  * 일간 요약 결근/지각/조퇴 재판정 Command Handler
@@ -15,15 +17,14 @@ import { DailyEventSummaryDTO } from '../../../../../domain/daily-event-summary/
  * (update-daily-summary.handler.ts의 출퇴근 시간 수정 시 판정·업데이트 블록만 실행)
  */
 @CommandHandler(ReJudgeDailySummaryCommand)
-export class ReJudgeDailySummaryHandler
-    implements ICommandHandler<ReJudgeDailySummaryCommand, DailyEventSummaryDTO[]>
-{
+export class ReJudgeDailySummaryHandler implements ICommandHandler<ReJudgeDailySummaryCommand, DailyEventSummaryDTO[]> {
     private readonly logger = new Logger(ReJudgeDailySummaryHandler.name);
 
     constructor(
         private readonly dailySummaryJudgmentService: DailySummaryJudgmentService,
         private readonly holidayInfoService: DomainHolidayInfoService,
         private readonly dataSource: DataSource,
+        private readonly commandBus: CommandBus,
     ) {}
 
     async execute(command: ReJudgeDailySummaryCommand): Promise<DailyEventSummaryDTO[]> {
@@ -49,8 +50,7 @@ export class ReJudgeDailySummaryHandler
                 const updatedRealLeave = dailySummary.real_leave ?? dailySummary.leave;
                 const usedAttendances = dailySummary.used_attendances || undefined;
 
-                const is_holiday =
-                    holidaySet.has(dailySummary.date) || this.주말여부확인(dailySummary.date);
+                const is_holiday = holidaySet.has(dailySummary.date) || this.주말여부확인(dailySummary.date);
 
                 const workTime = this.근무시간을계산한다(
                     updatedEnter,
@@ -95,8 +95,55 @@ export class ReJudgeDailySummaryHandler
 
             this.logger.log(`일간 요약 재판정 완료: date=${date}, 처리 건수=${results.length}`);
 
+            // 재판정된 일간 요약을 엔티티로 변환하여 근태 이슈 재생성
+            const rejudgedSummaries = await manager.find(DailyEventSummary, {
+                where: { date },
+            });
+
+            // 해당 날짜의 기존 근태 이슈 소프트 삭제
+            await this.해당날짜근태이슈소프트삭제(date, performedBy || '', manager);
+
+            // 근태 이슈 재생성
+            if (rejudgedSummaries.length > 0 && performedBy) {
+                await this.commandBus.execute(
+                    new CreateAttendanceIssuesCommand({
+                        summaries: rejudgedSummaries,
+                        performedBy,
+                    }),
+                );
+            }
+
             return results;
         });
+    }
+
+    /**
+     * 해당 날짜의 기존 근태 이슈를 소프트 삭제한다
+     *
+     * @param date 날짜 (YYYY-MM-DD)
+     * @param performedBy 수행자 ID
+     * @param manager EntityManager
+     */
+    private async 해당날짜근태이슈소프트삭제(date: string, performedBy: string, manager: any): Promise<void> {
+        const existingIssues = await manager
+            .createQueryBuilder(AttendanceIssue, 'ai')
+            .where('ai.date = :date', { date })
+            .andWhere('ai.deleted_at IS NULL')
+            .getMany();
+
+        if (existingIssues.length === 0) {
+            return;
+        }
+
+        const now = new Date();
+        for (const issue of existingIssues) {
+            issue.deleted_at = now;
+            issue.수정자설정한다(performedBy);
+            issue.메타데이터업데이트한다(performedBy);
+        }
+
+        await manager.save(AttendanceIssue, existingIssues);
+        this.logger.log(`해당 날짜 근태 이슈 소프트 삭제 완료: ${existingIssues.length}건 (date=${date})`);
     }
 
     private 근무시간을계산한다(

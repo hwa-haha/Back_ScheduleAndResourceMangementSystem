@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsUUID, IsBoolean, IsNotEmpty } from 'class-validator';
+import { IsUUID, IsBoolean, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 /**
  * 직원 추가 정보 변경 요청 DTO
@@ -14,6 +14,18 @@ export class UpdateEmployeeExtraInfoRequestDto {
     @IsBoolean()
     @IsNotEmpty()
     isExcludedFromSummary: boolean;
+
+    @ApiPropertyOptional({ description: '연도 (YYYY 형식)', example: '2025' })
+    @IsOptional()
+    @IsString()
+    @Matches(/^\d{4}$/, { message: '연도는 YYYY 형식이어야 합니다.' })
+    year?: string;
+
+    @ApiPropertyOptional({ description: '월 (MM 형식)', example: '01' })
+    @IsOptional()
+    @IsString()
+    @Matches(/^(0[1-9]|1[0-2])$/, { message: '월은 01-12 형식이어야 합니다.' })
+    month?: string;
 }
 
 /**

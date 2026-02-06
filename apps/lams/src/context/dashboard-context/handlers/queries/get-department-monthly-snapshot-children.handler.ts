@@ -35,8 +35,9 @@ export class GetDepartmentMonthlySnapshotChildrenHandler implements IQueryHandle
 
         this.logger.log(`부서별 월별 스냅샷 child 조회: departmentId=${departmentId}, year=${year}, month=${monthStr}`);
 
+        // 하위 부서를 포함한 모든 부서원 조회
         const employeeHistories =
-            await this.employeeDepartmentPositionHistoryService.특정연월부서의배치이력목록을조회한다(
+            await this.employeeDepartmentPositionHistoryService.특정연월부서와하위부서의배치이력목록을조회한다(
                 year,
                 monthStr,
                 departmentId,

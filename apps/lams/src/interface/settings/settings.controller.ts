@@ -1,4 +1,16 @@
-import { Controller, Get, Patch, Post, Delete, Body, UseGuards, Param, ParseUUIDPipe, BadRequestException, Query } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Patch,
+    Post,
+    Delete,
+    Body,
+    UseGuards,
+    Param,
+    ParseUUIDPipe,
+    BadRequestException,
+    Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { SettingsBusinessService } from '../../business/settings-business/settings-business.service';
 import {
@@ -10,10 +22,7 @@ import {
     GetEmployeePermissionListResponseDto,
 } from './dto/employee-permission.dto';
 import { GetDepartmentListForPermissionResponseDto } from './dto/department-permission.dto';
-import {
-    UpdateEmployeeExtraInfoRequestDto,
-    UpdateEmployeeExtraInfoResponseDto,
-} from './dto/employee-extra-info.dto';
+import { UpdateEmployeeExtraInfoRequestDto, UpdateEmployeeExtraInfoResponseDto } from './dto/employee-extra-info.dto';
 import {
     GetHolidayListRequestDto,
     GetHolidayListResponseDto,
@@ -43,7 +52,10 @@ import {
     DeleteAttendanceTypeResponseDto,
 } from './dto/attendance-type.dto';
 import { IGetDepartmentListForPermissionResponse } from '../../context/settings-context/interfaces';
-import { IGetPermissionRelatedEmployeeListResponse, IGetEmployeePermissionListResponse } from '../../context/settings-context/interfaces';
+import {
+    IGetPermissionRelatedEmployeeListResponse,
+    IGetEmployeePermissionListResponse,
+} from '../../context/settings-context/interfaces';
 import { IGetHolidayListResponse } from '../../context/settings-context/interfaces';
 import { IGetWorkTimeOverrideListResponse } from '../../context/settings-context/interfaces';
 import { IGetAttendanceTypeListResponse } from '../../context/settings-context/interfaces';
@@ -98,8 +110,9 @@ export class SettingsController {
      */
     @Get('permissions/employees')
     @ApiOperation({
-        summary: '권한 관련 직원 목록 조회',  
-        description: '모든 직원 목록을 조회하고, 각 직원별로 어느 부서에 권한을 가지고 있는지 정보를 반환합니다. 직원명과 부서명으로 검색이 가능합니다.',
+        summary: '권한 관련 직원 목록 조회',
+        description:
+            '모든 직원 목록을 조회하고, 각 직원별로 어느 부서에 권한을 가지고 있는지 정보를 반환합니다. 직원명과 부서명으로 검색이 가능합니다.',
     })
     @ApiQuery({
         name: 'employeeName',
@@ -111,7 +124,7 @@ export class SettingsController {
         name: 'departmentName',
         description: '부서명 검색 (선택사항)',
         example: '개발팀',
-        required: false,    
+        required: false,
     })
     @ApiResponse({
         status: 200,
@@ -168,7 +181,8 @@ export class SettingsController {
     @Patch('permissions')
     @ApiOperation({
         summary: '직원-부서 권한 변경',
-        description: '직원의 여러 부서에 대한 접근권한과 검토권한을 변경합니다. 해당 직원의 모든 기존 권한을 삭제한 후 요청된 부서 권한들을 재생성합니다.',
+        description:
+            '직원의 여러 부서에 대한 접근권한과 검토권한을 변경합니다. 해당 직원의 모든 기존 권한을 삭제한 후 요청된 부서 권한들을 재생성합니다.',
     })
     @ApiResponse({
         status: 200,
@@ -213,6 +227,8 @@ export class SettingsController {
             employeeId: dto.employeeId,
             isExcludedFromSummary: dto.isExcludedFromSummary,
             performedBy: userId,
+            year: dto.year,
+            month: dto.month,
         });
     }
 
@@ -340,7 +356,9 @@ export class SettingsController {
         description: '특별근태시간 목록 조회 성공',
         type: GetWorkTimeOverrideListResponseDto,
     })
-    async getWorkTimeOverrideList(@Query() dto: GetWorkTimeOverrideListRequestDto): Promise<IGetWorkTimeOverrideListResponse> {
+    async getWorkTimeOverrideList(
+        @Query() dto: GetWorkTimeOverrideListRequestDto,
+    ): Promise<IGetWorkTimeOverrideListResponse> {
         return await this.settingsBusinessService.특별근태시간목록을조회한다({ year: dto.year });
     }
 

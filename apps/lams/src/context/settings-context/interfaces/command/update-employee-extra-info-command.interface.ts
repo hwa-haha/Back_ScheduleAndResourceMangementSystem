@@ -5,4 +5,6 @@ export interface IUpdateEmployeeExtraInfoCommand {
     employeeId: string;
     isExcludedFromSummary: boolean;
     performedBy: string;
+    year?: string;
+    month?: string;
 }

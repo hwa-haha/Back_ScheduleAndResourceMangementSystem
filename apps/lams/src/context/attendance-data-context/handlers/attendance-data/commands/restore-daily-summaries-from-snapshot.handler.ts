@@ -19,9 +19,10 @@ import { DailySummaryChangeHistoryDTO } from '../../../../../domain/daily-summar
  * - 기존 일일요약 데이터를 복원
  */
 @CommandHandler(RestoreDailySummariesFromSnapshotCommand)
-export class RestoreDailySummariesFromSnapshotHandler
-    implements ICommandHandler<RestoreDailySummariesFromSnapshotCommand, DailyEventSummary[]>
-{
+export class RestoreDailySummariesFromSnapshotHandler implements ICommandHandler<
+    RestoreDailySummariesFromSnapshotCommand,
+    DailyEventSummary[]
+> {
     private readonly logger = new Logger(RestoreDailySummariesFromSnapshotHandler.name);
 
     constructor(
@@ -63,7 +64,7 @@ export class RestoreDailySummariesFromSnapshotHandler
                 issues?: AttendanceIssueDTO[];
                 history?: DailySummaryChangeHistoryDTO[];
             }> = [];
-            
+
             snapshotData.children?.forEach((child) => {
                 try {
                     // TypeORM의 JSON 컬럼은 자동으로 파싱되므로 JSON.parse() 불필요
@@ -98,19 +99,11 @@ export class RestoreDailySummariesFromSnapshotHandler
             });
 
             // 2. 일일 요약 복원
-            const restoredSummaries = await this.스냅샷기반일일요약복원(
-                { dailyEventSummaries },
-                year,
-                month,
-                manager,
-            );
+            const restoredSummaries = await this.스냅샷기반일일요약복원({ dailyEventSummaries }, year, month, manager);
 
             // 2. 복원된 일일 요약 조회 (날짜와 직원 ID 기준으로 매핑)
             const startDateStr = `${year}-${month.padStart(2, '0')}-01`;
-            const endDateStr = format(
-                endOfMonth(new Date(Number(year), Number(month) - 1, 1)),
-                'yyyy-MM-dd',
-            );
+            const endDateStr = format(endOfMonth(new Date(Number(year), Number(month) - 1, 1)), 'yyyy-MM-dd');
 
             const dailySummaries = await manager
                 .createQueryBuilder(DailyEventSummary, 'des')
@@ -207,8 +200,7 @@ export class RestoreDailySummariesFromSnapshotHandler
                         existingIssue.corrected_leave_time = snapshotIssue.issue.correctedLeaveTime;
                         existingIssue.problematic_attendance_type_ids =
                             snapshotIssue.issue.problematicAttendanceTypeIds;
-                        existingIssue.corrected_attendance_type_ids =
-                            snapshotIssue.issue.correctedAttendanceTypeIds;
+                        existingIssue.corrected_attendance_type_ids = snapshotIssue.issue.correctedAttendanceTypeIds;
                         existingIssue.description = snapshotIssue.issue.description;
                         existingIssue.status = snapshotIssue.issue.status;
                         existingIssue.confirmed_by = snapshotIssue.issue.confirmedBy;
@@ -233,8 +225,7 @@ export class RestoreDailySummariesFromSnapshotHandler
                                 correctedLeaveTime: snapshotIssue.issue.correctedLeaveTime || undefined,
                                 problematicAttendanceTypeIds:
                                     snapshotIssue.issue.problematicAttendanceTypeIds || undefined,
-                                correctedAttendanceTypeIds:
-                                    snapshotIssue.issue.correctedAttendanceTypeIds || undefined,
+                                correctedAttendanceTypeIds: snapshotIssue.issue.correctedAttendanceTypeIds || undefined,
                                 description: snapshotIssue.issue.description || undefined,
                             },
                             manager,
@@ -285,17 +276,17 @@ export class RestoreDailySummariesFromSnapshotHandler
                         restoredHistoryCount++;
                     } else {
                         // 기존 데이터가 없으면 새로 생성
-                            await this.dailySummaryChangeHistoryService.생성한다(
-                                {
-                                    dailyEventSummaryId: dailySummary.id,
-                                    date: snapshotHistory.date,
-                                    content: snapshotHistory.history.content,
-                                    changedBy: snapshotHistory.history.changedBy,
-                                    reason: snapshotHistory.history.reason || undefined,
-                                    snapshotId: snapshotData.id,
-                                },
-                                manager,
-                            );
+                        await this.dailySummaryChangeHistoryService.생성한다(
+                            {
+                                dailyEventSummaryId: dailySummary.id,
+                                date: snapshotHistory.date,
+                                content: snapshotHistory.history.content,
+                                changedBy: snapshotHistory.history.changedBy,
+                                reason: snapshotHistory.history.reason || undefined,
+                                snapshotId: snapshotData.id,
+                            },
+                            manager,
+                        );
                         restoredHistoryCount++;
                     }
                 } catch (error) {
