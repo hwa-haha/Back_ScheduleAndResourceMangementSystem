@@ -351,12 +351,20 @@ export class AttendanceDataContextService {
      */
     async 특정직원요약을생성한다(employeeId: string, year: string, month: string, performedBy: string): Promise<void> {
         // 일간 요약 생성 (특정 직원만)
-        await this.commandBus.execute(
+        const dailySummaries = await this.commandBus.execute(
             new GenerateDailySummariesCommand({
                 year,
                 month,
                 performedBy,
                 employeeIds: [employeeId],
+            }),
+        );
+
+        // 3. 근태 이슈 생성 핸들러 호출
+        await this.commandBus.execute(
+            new CreateAttendanceIssuesCommand({
+                summaries: dailySummaries.summaries,
+                performedBy,
             }),
         );
 

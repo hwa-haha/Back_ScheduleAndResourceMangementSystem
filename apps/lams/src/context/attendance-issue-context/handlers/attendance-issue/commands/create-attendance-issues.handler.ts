@@ -5,12 +5,13 @@ import { CreateAttendanceIssuesCommand } from './create-attendance-issues.comman
 import { DomainAttendanceIssueService } from '../../../../../domain/attendance-issue/attendance-issue.service';
 import { DailyEventSummary } from '../../../../../domain/daily-event-summary/daily-event-summary.entity';
 import { UsedAttendance } from '../../../../../domain/used-attendance/used-attendance.entity';
+import { AttendanceIssue } from '../../../../../domain/attendance-issue/attendance-issue.entity';
 
 /**
- * 근태 이슈 생성 핸들러
+ * 근태 이슈 생성/복원 핸들러
  *
- * 정상근무 범위를 벗어난 경우 근태 이슈를 생성합니다.
- * 최초로 일간요약과 생성이 되었으면 그 다음부터는 생성되거나 업데이트되지 않게 함
+ * 정상근무 범위를 벗어난 경우 근태 이슈를 생성하거나 복원합니다.
+ * 기존 이슈가 있으면 복원하고 업데이트하고, 없으면 새로 생성합니다.
  */
 @CommandHandler(CreateAttendanceIssuesCommand)
 export class CreateAttendanceIssuesHandler implements ICommandHandler<CreateAttendanceIssuesCommand, any[]> {
@@ -30,9 +31,9 @@ export class CreateAttendanceIssuesHandler implements ICommandHandler<CreateAtte
     }
 
     /**
-     * 근태 이슈를 생성한다 (정상근무 범위를 벗어난 경우)
+     * 근태 이슈를 생성하거나 복원한다 (정상근무 범위를 벗어난 경우)
      *
-     * 최초로 일간요약과 생성이 되었으면 그 다음부터는 생성되거나 업데이트되지 않게 함
+     * 기존 이슈가 있으면 복원하고 업데이트하고, 없으면 새로 생성합니다.
      */
     private async 근태이슈를생성한다(
         summaries: DailyEventSummary[],
@@ -47,16 +48,17 @@ export class CreateAttendanceIssuesHandler implements ICommandHandler<CreateAtte
             return issues;
         }
 
+        // 기존 이슈 조회 (소프트 삭제된 것 포함)
         const existingIssues = await manager
-            .createQueryBuilder('AttendanceIssue', 'ai')
+            .createQueryBuilder(AttendanceIssue, 'ai')
             .where('ai.daily_event_summary_id IN (:...summaryIds)', { summaryIds })
-            .andWhere('ai.deleted_at IS NULL')
+            .withDeleted() // 소프트 삭제된 데이터도 조회
             .getMany();
 
-        const existingIssueMap = new Map<string, boolean>();
+        const existingIssueMap = new Map<string, AttendanceIssue>();
         existingIssues.forEach((issue) => {
             if (issue.daily_event_summary_id) {
-                existingIssueMap.set(issue.daily_event_summary_id, true);
+                existingIssueMap.set(issue.daily_event_summary_id, issue);
             }
         });
 
@@ -115,30 +117,53 @@ export class CreateAttendanceIssuesHandler implements ICommandHandler<CreateAtte
             }
 
             if (isAttendanceIssue || isDuplicateTimeIssue) {
-                if (existingIssueMap.has(summary.id)) {
-                    continue;
-                }
+                const existingIssue = existingIssueMap.get(summary.id);
 
                 try {
-                    const issue = await this.attendanceIssueService.생성한다(
-                        {
-                            employeeId: summary.employee_id!,
-                            date: summary.date,
-                            dailyEventSummaryId: summary.id,
-                            problematicEnterTime: summary.real_enter || summary.enter,
-                            problematicLeaveTime: summary.real_leave || summary.leave,
-                            correctedEnterTime: null,
-                            correctedLeaveTime: null,
-                            problematicAttendanceTypeIds:
-                                problematicAttendanceTypeIds.length > 0 ? problematicAttendanceTypeIds : null,
-                            correctedAttendanceTypeIds: null,
-                            description: null,
-                        },
-                        manager,
-                    );
-                    issues.push(issue);
+                    if (existingIssue) {
+                        // 기존 이슈가 있으면 복원하고 업데이트
+                        existingIssue.deleted_at = null; // 복원
+                        existingIssue.employee_id = summary.employee_id!;
+                        existingIssue.date = summary.date;
+                        existingIssue.daily_event_summary_id = summary.id;
+                        existingIssue.problematic_enter_time = summary.real_enter || summary.enter;
+                        existingIssue.problematic_leave_time = summary.real_leave || summary.leave;
+                        // corrected_* 필드는 기존 값 유지 (수정 정보 보존)
+                        // existingIssue.corrected_enter_time = null;
+                        // existingIssue.corrected_leave_time = null;
+                        existingIssue.problematic_attendance_type_ids =
+                            problematicAttendanceTypeIds.length > 0 ? problematicAttendanceTypeIds : null;
+                        // existingIssue.corrected_attendance_type_ids = null;
+                        // description, status, confirmed_by 등은 기존 값 유지 (복원 시 기존 값 유지)
+                        existingIssue.수정자설정한다(performedBy);
+                        existingIssue.메타데이터업데이트한다(performedBy);
+
+                        await manager.save(AttendanceIssue, existingIssue);
+                        issues.push(existingIssue);
+                    } else {
+                        // 기존 이슈가 없으면 새로 생성
+                        const issue = await this.attendanceIssueService.생성한다(
+                            {
+                                employeeId: summary.employee_id!,
+                                date: summary.date,
+                                dailyEventSummaryId: summary.id,
+                                problematicEnterTime: summary.real_enter || summary.enter,
+                                problematicLeaveTime: summary.real_leave || summary.leave,
+                                correctedEnterTime: null,
+                                correctedLeaveTime: null,
+                                problematicAttendanceTypeIds:
+                                    problematicAttendanceTypeIds.length > 0 ? problematicAttendanceTypeIds : null,
+                                correctedAttendanceTypeIds: null,
+                                description: null,
+                            },
+                            manager,
+                        );
+                        issues.push(issue);
+                    }
                 } catch (error: any) {
-                    this.logger.warn(`근태 이슈 생성 실패 (${summary.date}, ${summary.employee_id}): ${error.message}`);
+                    this.logger.warn(
+                        `근태 이슈 생성/복원 실패 (${summary.date}, ${summary.employee_id}): ${error.message}`,
+                    );
                 }
             }
         }
