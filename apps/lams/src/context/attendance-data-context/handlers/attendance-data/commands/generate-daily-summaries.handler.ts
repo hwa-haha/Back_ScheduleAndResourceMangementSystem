@@ -57,11 +57,13 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
     ) {}
 
     async execute(command: GenerateDailySummariesCommand): Promise<IGenerateDailySummariesResponse> {
-        const { year, month, performedBy } = command.data;
+        const { year, month, performedBy, employeeIds } = command.data;
 
         return await this.dataSource.transaction(async (manager) => {
             try {
-                this.logger.log(`일일 요약 생성 시작: year=${year}, month=${month}`);
+                this.logger.log(
+                    `일일 요약 생성 시작: year=${year}, month=${month}${employeeIds ? `, employeeIds=${employeeIds.length}명` : ''}`,
+                );
 
                 // 날짜 범위 계산
                 const yearNum = parseInt(year);
@@ -86,7 +88,20 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
                     manager,
                 );
 
-                if (employees.length === 0) {
+                // 특정 직원 ID 목록이 제공되면 해당 직원들만 필터링
+                let filteredEmployees = employees;
+                let filteredEmployeeNumberMap = employeeNumberMap;
+                if (employeeIds && employeeIds.length > 0) {
+                    const employeeIdSet = new Set(employeeIds);
+                    filteredEmployees = employees.filter((emp) => employeeIdSet.has(emp.id));
+                    // employeeNumberMap도 필터링
+                    filteredEmployeeNumberMap = new Map<string, Employee>();
+                    filteredEmployees.forEach((emp) => {
+                        filteredEmployeeNumberMap.set(emp.employeeNumber, emp);
+                    });
+                }
+
+                if (filteredEmployees.length === 0) {
                     this.logger.warn('조회된 직원이 없습니다.');
                     return {
                         success: true,
@@ -105,8 +120,8 @@ export class GenerateDailySummariesHandler implements ICommandHandler<
                 const summaries = await this.일일요약을생성한다(
                     events,
                     usedAttendances,
-                    employees,
-                    employeeNumberMap,
+                    filteredEmployees,
+                    filteredEmployeeNumberMap,
                     holidaySet,
                     year,
                     month,

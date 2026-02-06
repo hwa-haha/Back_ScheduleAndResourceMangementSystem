@@ -37,7 +37,7 @@ export class GenerateMonthlySummariesHandler implements ICommandHandler<
     ) {}
 
     async execute(command: GenerateMonthlySummariesCommand): Promise<IGenerateMonthlySummariesResponse> {
-        const { year, month, performedBy } = command.data;
+        const { year, month, performedBy, employeeIds } = command.data;
 
         return await this.dataSource.transaction(async (manager) => {
             try {
@@ -50,22 +50,31 @@ export class GenerateMonthlySummariesHandler implements ICommandHandler<
                 const endDateStr = format(endDate, 'yyyy-MM-dd');
                 const yyyymm = `${year}-${month.padStart(2, '0')}`;
 
-                // 1. 해당 연월에 일간 요약이 있는 모든 직원 ID 조회
-                const employeesWithDailySummaries = await manager
+                // 1. 해당 연월에 일간 요약이 있는 직원 ID 조회
+                let employeesWithDailySummariesQuery = manager
                     .createQueryBuilder(DailyEventSummary, 'daily')
                     .select('DISTINCT daily.employee_id', 'employeeId')
                     .where('daily.deleted_at IS NULL')
                     .andWhere('daily.date >= :startDate', { startDate: startDateStr })
                     .andWhere('daily.date <= :endDate', { endDate: endDateStr })
-                    .andWhere('daily.employee_id IS NOT NULL')
-                    .getRawMany();
+                    .andWhere('daily.employee_id IS NOT NULL');
+
+                // 특정 직원 ID 목록이 제공되면 해당 직원들만 필터링
+                if (employeeIds && employeeIds.length > 0) {
+                    employeesWithDailySummariesQuery = employeesWithDailySummariesQuery.andWhere(
+                        'daily.employee_id IN (:...employeeIds)',
+                        { employeeIds },
+                    );
+                }
+
+                const employeesWithDailySummaries = await employeesWithDailySummariesQuery.getRawMany();
 
                 const allEmployeeIds = employeesWithDailySummaries
                     .map((row) => row.employeeId)
                     .filter((id) => id !== null);
 
                 this.logger.log(
-                    `월간 요약 생성 시작: year=${year}, month=${month}, 일간 요약이 있는 직원 수=${allEmployeeIds.length}`,
+                    `월간 요약 생성 시작: year=${year}, month=${month}, 일간 요약이 있는 직원 수=${allEmployeeIds.length}${employeeIds ? ` (필터링: ${employeeIds.length}명)` : ''}`,
                 );
 
                 if (allEmployeeIds.length === 0) {

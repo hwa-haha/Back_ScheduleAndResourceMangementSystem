@@ -103,19 +103,32 @@ export class SettingsBusinessService {
 
     /**
      * 직원 추가 정보를 변경한다
-     * 연도와 월이 제공되면 해당 직원의 해당 연월 일간/월간 요약을 소프트 삭제한다.
+     * 연도와 월이 제공되면:
+     * - isExcludedFromSummary가 true인 경우: 해당 직원의 해당 연월 일간/월간 요약을 생성한다.
+     * - isExcludedFromSummary가 false인 경우: 해당 직원의 해당 연월 일간/월간 요약을 소프트 삭제한다.
      */
     async 직원추가정보를변경한다(command: IUpdateEmployeeExtraInfoCommand): Promise<IUpdateEmployeeExtraInfoResponse> {
         const result = await this.settingsContextService.직원추가정보를변경한다(command);
 
-        // 연도와 월이 제공되면 해당 직원의 해당 연월 일간/월간 요약을 소프트 삭제
+        // 연도와 월이 제공되면 해당 직원의 해당 연월 일간/월간 요약 처리
         if (command.year && command.month) {
-            await this.attendanceDataContextService.특정직원요약을소프트삭제한다({
-                employeeId: command.employeeId,
-                year: command.year,
-                month: command.month,
-                performedBy: command.performedBy,
-            });
+            if (!command.isExcludedFromSummary) {
+                // 제외 상태로 변경: 요약 생성 (해당 직원만 생성)
+                await this.attendanceDataContextService.특정직원요약을생성한다(
+                    command.employeeId,
+                    command.year,
+                    command.month,
+                    command.performedBy,
+                );
+            } else {
+                // 포함 상태로 변경: 기존 요약 소프트 삭제
+                await this.attendanceDataContextService.특정직원요약을소프트삭제한다({
+                    employeeId: command.employeeId,
+                    year: command.year,
+                    month: command.month,
+                    performedBy: command.performedBy,
+                });
+            }
         }
 
         return result;

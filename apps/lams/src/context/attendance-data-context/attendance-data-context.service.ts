@@ -338,4 +338,36 @@ export class AttendanceDataContextService {
         const commandInstance = new SoftDeleteEmployeeSummariesCommand(command);
         return await this.commandBus.execute(commandInstance);
     }
+
+    /**
+     * 특정 직원의 특정 연월 일간/월간 요약을 생성한다
+     *
+     * 특정 직원의 특정 연월에 대한 일간 요약과 월간 요약을 생성합니다.
+     *
+     * @param employeeId 직원 ID
+     * @param year 연도
+     * @param month 월
+     * @param performedBy 수행자 ID
+     */
+    async 특정직원요약을생성한다(employeeId: string, year: string, month: string, performedBy: string): Promise<void> {
+        // 일간 요약 생성 (특정 직원만)
+        await this.commandBus.execute(
+            new GenerateDailySummariesCommand({
+                year,
+                month,
+                performedBy,
+                employeeIds: [employeeId],
+            }),
+        );
+
+        // 월간 요약 생성 (특정 직원만)
+        await this.commandBus.execute(
+            new GenerateMonthlySummariesCommand({
+                year,
+                month,
+                performedBy,
+                employeeIds: [employeeId],
+            }),
+        );
+    }
 }

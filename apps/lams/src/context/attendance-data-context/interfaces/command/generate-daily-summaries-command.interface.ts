@@ -6,10 +6,14 @@
  * 2. 스냅샷 적용 흐름: 스냅샷 데이터를 기반으로 생성 (snapshotData 제공)
  */
 export interface IGenerateDailySummariesCommand {
-    // employeeIds: string[];
     year: string;
     month: string;
     performedBy: string;
+    /**
+     * 특정 직원 ID 목록 (선택적)
+     * 제공되면 해당 직원들만 생성, 없으면 전체 직원 생성
+     */
+    employeeIds?: string[];
     /**
      * 스냅샷 데이터 (선택적)
      * 제공되면 스냅샷 기반으로 생성, 없으면 event-info와 used-attendance 기반으로 생성

@@ -66,6 +66,14 @@ export class ReJudgeDailySummaryHandler implements ICommandHandler<ReJudgeDailyS
                     manager,
                 );
 
+                // 판정 결과를 먼저 반영하여 노트 생성에 사용
+                dailySummary.is_late = 판정결과.isLate;
+                dailySummary.is_early_leave = 판정결과.isEarlyLeave;
+                dailySummary.is_absent = 판정결과.isAbsent;
+
+                // 노트 생성
+                this.노트를생성한다(dailySummary);
+
                 dailySummary.업데이트한다(
                     undefined,
                     is_holiday,
@@ -211,5 +219,32 @@ export class ReJudgeDailySummaryHandler implements ICommandHandler<ReJudgeDailyS
         const date = new Date(dateString);
         const dayOfWeek = date.getDay();
         return dayOfWeek === 0 || dayOfWeek === 6;
+    }
+
+    /**
+     * 일간 요약 노트를 생성한다
+     *
+     * 지각, 조퇴, 결근 정보를 노트에 추가합니다.
+     */
+    private 노트를생성한다(summary: DailyEventSummary): void {
+        let newNote = '';
+
+        if (summary.is_late) {
+            newNote += `출근 시간: ${summary.enter} 지각\n`;
+        }
+
+        if (summary.is_early_leave) {
+            newNote += `퇴근 시간: ${summary.leave} 조퇴\n`;
+        }
+
+        if (summary.is_absent) {
+            newNote += '결근\n';
+        }
+
+        if (newNote) {
+            summary.note = newNote.trim();
+        } else {
+            summary.note = '';
+        }
     }
 }
