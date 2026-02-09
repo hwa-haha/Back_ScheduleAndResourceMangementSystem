@@ -169,6 +169,9 @@ export class DomainEmployeeDepartmentPositionHistoryService {
     /**
      * 특정 부서 및 모든 하위 부서의 특정 시점 배치 목록을 재귀적으로 조회한다
      *
+     * 주의: 특정 시점의 부서 계층 구조를 기반으로 하위 부서를 찾습니다.
+     * 현재 시점의 부서 구조가 아닌, 해당 시점에 실제로 존재했던 부서 계층 구조를 사용합니다.
+     *
      * @param departmentId 부서 ID
      * @param targetDate 대상 날짜
      * @returns 배치 이력 목록 (하위 부서 포함)
@@ -177,10 +180,51 @@ export class DomainEmployeeDepartmentPositionHistoryService {
         departmentId: string,
         targetDate: string,
     ): Promise<EmployeeDepartmentPositionHistory[]> {
-        // 1. 하위 부서 ID 목록을 재귀적으로 조회 (자기 자신 포함)
-        const departmentIds = await this.departmentService.하위부서ID목록을재귀적으로조회한다(departmentId);
+        // 1. 해당 시점의 모든 배치 이력을 조회하여 부서 계층 구조 재구성
+        const allHistories = await this.repository
+            .createQueryBuilder('eh')
+            .select('eh.departmentId', 'departmentId')
+            .addSelect('eh.parentDepartmentId', 'parentDepartmentId')
+            .where('eh.effectiveStartDate <= :targetDate', { targetDate })
+            .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :targetDate)', { targetDate })
+            .distinct(true)
+            .getRawMany();
 
-        // 2. 모든 부서(본부서 + 하위 부서)의 배치 이력 조회
+        // 2. 부서 계층 구조 맵 생성 (parentDepartmentId -> [childDepartmentId, ...])
+        const parentToChildrenMap = new Map<string, Set<string>>();
+        const allDepartmentIds = new Set<string>();
+
+        for (const history of allHistories) {
+            const deptId = history.departmentId;
+            const parentDeptId = history.parentDepartmentId;
+
+            allDepartmentIds.add(deptId);
+
+            if (parentDeptId) {
+                if (!parentToChildrenMap.has(parentDeptId)) {
+                    parentToChildrenMap.set(parentDeptId, new Set());
+                }
+                parentToChildrenMap.get(parentDeptId)!.add(deptId);
+            }
+        }
+
+        // 3. 특정 부서의 하위 부서 ID 목록을 재귀적으로 조회 (해당 시점의 부서 구조 기반)
+        const departmentIds: string[] = [departmentId];
+        const findChildDepartments = (parentId: string): void => {
+            const children = parentToChildrenMap.get(parentId);
+            if (children) {
+                for (const childId of children) {
+                    if (!departmentIds.includes(childId)) {
+                        departmentIds.push(childId);
+                        findChildDepartments(childId);
+                    }
+                }
+            }
+        };
+
+        findChildDepartments(departmentId);
+
+        // 4. 모든 부서(본부서 + 하위 부서)의 배치 이력 조회
         return this.repository
             .createQueryBuilder('eh')
             .leftJoinAndSelect('eh.employee', 'emp')
