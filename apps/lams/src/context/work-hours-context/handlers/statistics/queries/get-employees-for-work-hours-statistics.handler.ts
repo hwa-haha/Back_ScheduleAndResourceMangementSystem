@@ -67,7 +67,6 @@ export class GetEmployeesForWorkHoursStatisticsHandler implements IQueryHandler<
                 year,
                 monthStr,
             );
-            console.log(histories);
             for (const h of histories) {
                 if (employeeInfoMap.has(h.employeeId)) continue;
                 const emp = h.employee as { name?: string; employeeNumber?: string } | undefined;

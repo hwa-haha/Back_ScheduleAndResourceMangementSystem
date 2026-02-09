@@ -39,7 +39,6 @@ export class GetSnapshotByIdHandler implements IQueryHandler<GetSnapshotByIdQuer
                     snapshot.mm,
                     departmentId,
                 );
-
             // 직원 ID 목록 추출
             const employeeIds = departmentEmployees.map((history) => history.employeeId);
             this.logger.log(`부서별 직원 조회 완료: departmentId=${departmentId}, employeeCount=${employeeIds.length}`);

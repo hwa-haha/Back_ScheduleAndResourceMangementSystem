@@ -57,10 +57,7 @@ export class DomainDepartmentService {
      * @param manager 트랜잭션 EntityManager (선택)
      * @returns 하위 부서 ID 목록 (자기 자신 포함)
      */
-    async 하위부서ID목록을재귀적으로조회한다(
-        parentDepartmentId: string,
-        manager?: EntityManager,
-    ): Promise<string[]> {
+    async 하위부서ID목록을재귀적으로조회한다(parentDepartmentId: string, manager?: EntityManager): Promise<string[]> {
         const repository = this.getRepository(manager);
         const departmentIds: string[] = [parentDepartmentId];
 

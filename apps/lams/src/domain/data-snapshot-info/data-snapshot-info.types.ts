@@ -79,4 +79,3 @@ export interface DataSnapshotInfoDTO {
     version: number;
     children?: DataSnapshotChildDTO[];
 }
-
