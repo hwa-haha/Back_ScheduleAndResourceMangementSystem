@@ -26,6 +26,6 @@ export const cleanupScenarioData = async (dataSource: DataSource): Promise<void>
     await dataSource.manager.createQueryBuilder().delete().from(EventInfo).execute();
     await dataSource.manager.createQueryBuilder().delete().from(UsedAttendance).execute();
     await dataSource.manager.createQueryBuilder().delete().from(FileContentReflectionHistory).execute();
-    await dataSource.manager.createQueryBuilder().delete().from(File).execute();
-    await dataSource.manager.createQueryBuilder().delete().from(WorkTimeOverride).execute();
+    // await dataSource.manager.createQueryBuilder().delete().from(File).execute();
+    // await dataSource.manager.createQueryBuilder().delete().from(WorkTimeOverride).execute();
 };

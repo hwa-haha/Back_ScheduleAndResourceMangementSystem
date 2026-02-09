@@ -589,41 +589,25 @@ export class InitService implements OnApplicationBootstrap {
         this.logger.log('초기 파일 업로드 확인 중...');
 
         try {
-            // 2026년 1월 초기 파일이 이미 업로드되어 있으면 실행하지 않음
-            const INITIAL_YEAR = '2026';
-            const INITIAL_MONTH = '01';
-            const INITIAL_FILE_NAMES = ['출입내역_2026년1월.xlsx', '근태신청내역_2026년1월.xlsx'] as const;
-
-            const existingFiles = await this.fileService.연도월별목록조회한다(INITIAL_YEAR, INITIAL_MONTH);
-            const existingNames = new Set(existingFiles.map((f) => f.fileOriginalName ?? f.fileName).filter(Boolean));
-            const allUploaded = INITIAL_FILE_NAMES.every((name) => existingNames.has(name));
-            if (allUploaded) {
-                this.logger.log(
-                    `초기 파일이 이미 업로드되어 있습니다 (${INITIAL_YEAR}-${INITIAL_MONTH}). 업로드를 건너뜁니다.`,
-                );
-                return;
-            }
-
             // 프로젝트 루트 경로 (빌드 환경과 소스 환경 모두 지원)
             // __dirname이 dist 폴더에 있을 수도 있으므로 process.cwd() 사용
             const projectRoot = process.cwd();
             const storagePath = path.join(projectRoot, 'storage', 'local-files');
 
-            // 업로드할 파일 목록
-            const filesToUpload = [
-                {
-                    filePath: path.join(storagePath, '출입내역_2026년1월.xlsx'),
-                    fileName: '출입내역_2026년1월.xlsx',
-                    year: '2026',
-                    month: '01',
-                },
-                {
-                    filePath: path.join(storagePath, '근태신청내역_2026년1월.xlsx'),
-                    fileName: '근태신청내역_2026년1월.xlsx',
-                    year: '2026',
-                    month: '01',
-                },
-            ];
+            // 초기 파일 체크 (하나의 파일만 체크)
+            const INITIAL_FILE_NAME = '출입내역_2026년1월.xlsx';
+            const INITIAL_YEAR = '2026';
+            const INITIAL_MONTH = '01';
+
+            const existingFiles = await this.fileService.연도월별목록조회한다(INITIAL_YEAR, INITIAL_MONTH);
+            const existingNames = new Set(existingFiles.map((f) => f.fileOriginalName ?? f.fileName).filter(Boolean));
+            if (existingNames.has(INITIAL_FILE_NAME)) {
+                this.logger.log(`초기 파일이 이미 업로드되어 있습니다 (${INITIAL_FILE_NAME}). 업로드를 건너뜁니다.`);
+                return;
+            }
+
+            // storage 폴더에서 파일 목록 동적으로 생성
+            const filesToUpload = this.업로드파일목록을생성한다(storagePath);
 
             for (const fileInfo of filesToUpload) {
                 // 파일 존재 여부 확인
@@ -671,5 +655,93 @@ export class InitService implements OnApplicationBootstrap {
             this.logger.warn(`초기 파일 업로드 중 오류 발생: ${error.message}`);
             // 파일 업로드 실패는 애플리케이션 시작을 막지 않습니다
         }
+    }
+
+    /**
+     * storage 폴더에서 업로드할 파일 목록을 동적으로 생성한다
+     *
+     * 파일명 패턴: (출입내역|근태신청내역)_YYYY년M월.xlsx
+     * 예: 출입내역_2025년3월.xlsx, 근태신청내역_2026년1월.xlsx
+     */
+    private 업로드파일목록을생성한다(storagePath: string): Array<{
+        filePath: string;
+        fileName: string;
+        year: string;
+        month: string;
+    }> {
+        const filesToUpload: Array<{
+            filePath: string;
+            fileName: string;
+            year: string;
+            month: string;
+        }> = [];
+
+        // storage 폴더가 존재하지 않으면 빈 배열 반환
+        if (!fs.existsSync(storagePath)) {
+            this.logger.warn(`storage 폴더가 존재하지 않습니다: ${storagePath}`);
+            return filesToUpload;
+        }
+
+        // 파일 목록 읽기
+        const files = fs.readdirSync(storagePath);
+
+        // 파일명 패턴: (출입내역|근태신청내역)_(\d{4})년(\d{1,2})월\.xlsx
+        const filePattern = /^(출입내역|근태신청내역)_(\d{4})년(\d{1,2})월\.xlsx$/;
+
+        // 월 이름을 숫자로 매핑
+        const monthMap: Record<string, string> = {
+            '1월': '01',
+            '2월': '02',
+            '3월': '03',
+            '4월': '04',
+            '5월': '05',
+            '6월': '06',
+            '7월': '07',
+            '8월': '08',
+            '9월': '09',
+            '10월': '10',
+            '11월': '11',
+            '12월': '12',
+        };
+
+        for (const fileName of files) {
+            // .xlsx 파일만 처리
+            if (!fileName.endsWith('.xlsx')) {
+                continue;
+            }
+
+            // 파일명 패턴 매칭
+            const match = fileName.match(filePattern);
+            if (!match) {
+                continue;
+            }
+
+            const [, , year, monthNumStr] = match;
+            const monthKey = `${monthNumStr}월`;
+            const month = monthMap[monthKey];
+
+            if (!month) {
+                this.logger.warn(`알 수 없는 월 형식: ${fileName} (월: ${monthKey})`);
+                continue;
+            }
+
+            const filePath = path.join(storagePath, fileName);
+            filesToUpload.push({
+                filePath,
+                fileName,
+                year,
+                month,
+            });
+        }
+
+        // 연도와 월 순서로 정렬
+        filesToUpload.sort((a, b) => {
+            const yearCompare = a.year.localeCompare(b.year);
+            if (yearCompare !== 0) return yearCompare;
+            return a.month.localeCompare(b.month);
+        });
+
+        this.logger.log(`업로드할 파일 목록 생성 완료: ${filesToUpload.length}개 파일`);
+        return filesToUpload;
     }
 }

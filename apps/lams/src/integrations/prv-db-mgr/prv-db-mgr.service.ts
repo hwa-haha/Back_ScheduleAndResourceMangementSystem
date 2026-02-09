@@ -12,10 +12,6 @@ import { DataSnapshotChild } from '../../domain/data-snapshot-child/data-snapsho
 import { Employee } from '@libs/modules/employee/employee.entity';
 import { Department } from '@libs/modules/department/department.entity';
 import { HolidayInfo } from '../../domain/holiday-info/holiday-info.entity';
-import { AttendanceTypeEntity as PrvAttendanceTypeEntity } from './entities/attendance-type.entity';
-import { EmployeeInfoEntity as PrvEmployeeInfoEntity } from './entities/employee-info.entity';
-import { DepartmentInfoEntity as PrvDepartmentInfoEntity } from './entities/department-info.entity';
-import { HolidayInfoEntity as PrvHolidayInfoEntity } from './entities/holiday-info.entity';
 import { EventInfoEntity as PrvEventInfoEntity } from './entities/event-info.entity';
 import { UsedAttendanceEntity as PrvUsedAttendanceEntity } from './entities/used-attendance.entity';
 import { MonthlyEmployeeAttendanceInfoEntity as PrvMonthlySummaryEntity } from './entities/monthly-event-summary.entity';
@@ -23,6 +19,7 @@ import { DataSnapshotInfoEntity as PrvDataSnapshotInfoEntity } from './entities/
 import { DataSnapshotChildInfoEntity as PrvDataSnapshotChildInfoEntity } from './entities/data-snapshot-child.entity';
 import { DataSnapshotApprovalRequestInfoEntity as PrvDataSnapshotApprovalRequestInfoEntity } from './entities/approval/data-snapshot-approval-request-info.entity';
 import { cleanupScenarioData } from '../../../test/scenarios/utils/cleanup-scenario-data';
+import { ApprovalStatus } from '../../domain/data-snapshot-info/data-snapshot-info.types';
 
 @Injectable()
 export class PrvDbMgrService implements OnModuleInit {
@@ -743,109 +740,235 @@ export class PrvDbMgrService implements OnModuleInit {
             snapshotsByDepartmentMonth.set(key, bucket);
         });
 
-        snapshotsByDepartmentMonth.forEach((snapshots) => {
-            snapshots
-                .sort(
-                    (a, b) =>
-                        this.생성일자를파싱한다(a.createdAt).getTime() - this.생성일자를파싱한다(b.createdAt).getTime(),
-                )
-                .forEach((snapshot, index) => {
-                    versionBySnapshotId.set(snapshot.dataSnapshotId, this.스냅샷버전을계산한다(index));
-                });
+        // snapshotsByDepartmentMonth.forEach((snapshots) => {
+        //     snapshots
+        //         .sort(
+        //             (a, b) =>
+        //                 this.생성일자를파싱한다(a.createdAt).getTime() - this.생성일자를파싱한다(b.createdAt).getTime(),
+        //         )
+        //         .forEach((snapshot, index) => {
+        //             versionBySnapshotId.set(snapshot.dataSnapshotId, this.스냅샷버전을계산한다(index));
+        //         });
+        // });
+
+        // TODO : 스냅샷 내용 타입 일치시켜야함
+
+        // 저장하기 전 데이터 만들기
+        // 1. 연월별로 스냅샷 그룹핑
+        const snapshotsByYearMonth = new Map<string, PrvDataSnapshotInfoEntity[]>();
+        prvSnapshots.forEach((snapshot) => {
+            const yearMonth = `${snapshot.yyyy}-${snapshot.mm}`;
+            if (!snapshotsByYearMonth.has(yearMonth)) {
+                snapshotsByYearMonth.set(yearMonth, []);
+            }
+            snapshotsByYearMonth.get(yearMonth)!.push(snapshot);
         });
 
-        // 메모리 부족 방지를 위해 배치 처리 및 즉시 저장 (10개씩 처리)
-        const batchSize = 10;
-        let totalSaved = 0;
+        // 2. 각 연월별로 스냅샷 1개 선택 (최신 createdAt 기준)
+        const selectedSnapshotsByYearMonth = new Map<string, PrvDataSnapshotInfoEntity>();
+        snapshotsByYearMonth.forEach((snapshots, yearMonth) => {
+            // createdAt 기준으로 정렬하여 최신 스냅샷 선택
+            const sortedSnapshots = snapshots.sort((a, b) => {
+                const dateA = this.생성일자를파싱한다(a.createdAt).getTime();
+                const dateB = this.생성일자를파싱한다(b.createdAt).getTime();
+                return dateB - dateA; // 최신순
+            });
+            selectedSnapshotsByYearMonth.set(yearMonth, sortedSnapshots[0]);
+        });
 
-        for (let i = 0; i < prvSnapshots.length; i += batchSize) {
-            const batch = prvSnapshots.slice(i, i + batchSize);
-            const batchEntities = await Promise.all(
-                batch.map(async (snapshot) => {
-                    const departmentCode = snapshot.department?.departmentCode;
-                    const departmentId = departmentCode ? (departmentIdByCode.get(departmentCode) ?? null) : null;
+        // 3. 모든 스냅샷의 자식들을 직원별로 그룹핑
+        const childrenByEmployeeId = new Map<string, PrvDataSnapshotChildInfoEntity[]>();
+        prvChildren.forEach((child) => {
+            const employeeId = child.employeeId;
+            if (!employeeId) {
+                return;
+            }
+            if (!childrenByEmployeeId.has(employeeId)) {
+                childrenByEmployeeId.set(employeeId, []);
+            }
+            childrenByEmployeeId.get(employeeId)!.push(child);
+        });
 
-                    const approval = approvalBySnapshotId.get(snapshot.dataSnapshotId);
-                    const snapshotVersion = departmentId
-                        ? (versionBySnapshotId.get(snapshot.dataSnapshotId) ?? null)
-                        : null;
+        // 4. 각 직원의 최신 자식 데이터 선택 및 연월별로 매핑
+        const finalDataByYearMonth = new Map<
+            string,
+            {
+                snapshot: PrvDataSnapshotInfoEntity;
+                children: PrvDataSnapshotChildInfoEntity[];
+            }
+        >();
 
-                    // 출입기록과 근태사용내역 조회 (prvDataSource에서 조회)
-                    const rawData = await this.해당연월반영데이터를조회한다(
-                        snapshot.yyyy,
-                        snapshot.mm,
-                        employeeIdByNumber,
-                    );
+        selectedSnapshotsByYearMonth.forEach((selectedSnapshot, yearMonth) => {
+            const children: PrvDataSnapshotChildInfoEntity[] = [];
 
-                    // department_id가 null일 수 있으므로 null을 전달 (엔티티는 nullable이지만 생성자는 string 타입이므로 타입 단언 사용)
-                    const snapshotEntity = new DataSnapshotInfo(
-                        snapshot.snapshotName,
-                        snapshot.snapshotType as any,
-                        snapshot.yyyy,
-                        snapshot.mm,
-                        (departmentId ?? null) as unknown as string, // nullable이므로 null 허용
-                        snapshot.description ?? '',
-                        snapshotVersion,
-                        null,
-                        approval?.submittedAt ?? null,
-                        approval?.approverName ?? null,
-                        (approval?.approvalStatus as any) ?? null,
-                        false,
-                    );
+            // 각 직원별로 최신 자식 데이터 선택
+            childrenByEmployeeId.forEach((employeeChildren, employeeId) => {
+                // 해당 연월에 맞는 자식들만 필터링
+                const matchingChildren = employeeChildren.filter(
+                    (child) => child.yyyy === selectedSnapshot.yyyy && child.mm === selectedSnapshot.mm,
+                );
 
-                    // 해당 스냅샷의 자식들 가져오기 (ID 기준)
-                    const snapshotChildren = childrenBySnapshotId.get(snapshot.dataSnapshotId) || [];
-                    const childEntities = snapshotChildren
-                        .map((child) => {
-                            const employeeId = employeeIdByNumber.get(child.employeeNumber);
-                            if (!employeeId) {
-                                return null;
-                            }
+                if (matchingChildren.length === 0) {
+                    return;
+                }
 
-                            // 직원별로 rawData 분리
-                            const eventInfo = rawData.eventInfo.filter(
-                                (e) => e.employee_number === child.employeeNumber,
-                            );
-                            const usedAttendance = rawData.usedAttendance.filter((ua) => {
-                                // employee_id를 employeeNumber로 변환하여 비교
-                                const employeeIdForAttendance = employeeIdByNumber.get(child.employeeNumber);
-                                return ua.employee_id === employeeIdForAttendance;
-                            });
+                // createdAt 기준으로 최신 자식 선택
+                const sortedChildren = matchingChildren.sort((a, b) => {
+                    const dateA = this.생성일자를파싱한다(a.createdAt).getTime();
+                    const dateB = this.생성일자를파싱한다(b.createdAt).getTime();
+                    return dateB - dateA; // 최신순
+                });
 
-                            const employeeRawData = {
-                                year: rawData.year,
-                                month: rawData.month,
-                                eventInfo,
-                                usedAttendance,
-                            };
+                children.push(sortedChildren[0]);
+            });
 
-                            const childEntity = new DataSnapshotChild(
-                                employeeId,
-                                child.employeeName,
-                                child.employeeNumber,
-                                child.yyyy,
-                                child.mm,
-                                JSON.stringify(child.snapshotData),
-                                employeeRawData,
-                            );
-                            childEntity.parentSnapshot = snapshotEntity;
-                            return childEntity;
-                        })
-                        .filter(Boolean) as DataSnapshotChild[];
+            finalDataByYearMonth.set(yearMonth, {
+                snapshot: selectedSnapshot,
+                children,
+            });
+        });
 
-                    snapshotEntity.dataSnapshotChildInfoList = childEntities;
+        // 6. 스냅샷 데이터 저장
+        const empIdByNumber = await this.사번매핑을생성한다();
+        const snapshotRepository = this.dataSource.getRepository(DataSnapshotInfo);
 
-                    return snapshotEntity;
-                }),
+        this.logger.log('스냅샷 데이터 저장 시작...');
+
+        // finalDataByYearMonth를 기반으로 저장
+        const snapshotsToSave: DataSnapshotInfo[] = [];
+
+        for (const [yearMonth, data] of finalDataByYearMonth.entries()) {
+            const snapshot = data.snapshot;
+            const children = data.children;
+
+            // 결재 정보 매핑
+            const approval = approvalBySnapshotId.get(snapshot.dataSnapshotId);
+
+            // 해당 연월의 반영 데이터 조회 (EventInfo, UsedAttendance)
+            const rawData = await this.해당연월반영데이터를조회한다(snapshot.yyyy, snapshot.mm, empIdByNumber);
+
+            // 스냅샷 엔티티 생성
+            const snapshotEntity = new DataSnapshotInfo(
+                snapshot.snapshotName,
+                snapshot.snapshotType as any,
+                snapshot.yyyy,
+                snapshot.mm,
+                null,
+                snapshot.description ?? '',
+                'A', // snapshotVersion
+                null, // approvalDocumentId
+                approval?.submittedAt ?? null,
+                null,
+                ApprovalStatus.SUBMITTED,
+                true, // isCurrent
             );
 
-            const validBatchEntities = batchEntities.filter(Boolean) as DataSnapshotInfo[];
+            // 자식 엔티티 생성
+            const childEntities = children
+                .map((child) => {
+                    const employeeId = empIdByNumber.get(child.employeeNumber);
+                    if (!employeeId) {
+                        this.logger.warn(
+                            `직원 번호 ${child.employeeNumber}에 해당하는 직원 ID를 찾을 수 없습니다. 스킵합니다.`,
+                        );
+                        return null;
+                    }
 
-            // 배치 단위로 즉시 저장하여 메모리 해제 (cascade로 자식도 함께 저장됨)
-            const saved = await repository.save(validBatchEntities, { chunk: 50 });
+                    // 직원별로 rawData 분리
+                    const eventInfo = rawData.eventInfo.filter((e) => e.employee_number === child.employeeNumber);
+                    const usedAttendance = rawData.usedAttendance.filter((ua) => {
+                        const employeeIdForAttendance = empIdByNumber.get(child.employeeNumber);
+                        return ua.employee_id === employeeIdForAttendance;
+                    });
+
+                    const employeeRawData = {
+                        year: rawData.year,
+                        month: rawData.month,
+                        eventInfo,
+                        usedAttendance,
+                    };
+
+                    // 저장하기 전에 데이터 구조 변환 (1번 구조 → 2번 구조)
+                    const snapshotDataObj =
+                        typeof child.snapshotData === 'string' ? JSON.parse(child.snapshotData) : child.snapshotData;
+
+                    // 구조 변환 (1번 구조 → 2번 구조)
+                    // dailyEventSummary가 있으면 dailySummaries로 변환, 없으면 기존 dailySummaries 유지
+                    const monthlyEventSummaryId = snapshotDataObj.monthlyEventSummaryId || snapshotDataObj.id;
+                    const dailySummaries =
+                        snapshotDataObj.dailyEventSummary && snapshotDataObj.dailyEventSummary.length > 0
+                            ? snapshotDataObj.dailyEventSummary.map((daily: any) => ({
+                                  id: daily.dailyEventSummaryId || daily.id,
+                                  date: daily.date,
+                                  employeeId: employeeId,
+                                  monthlyEventSummaryId: monthlyEventSummaryId,
+                                  isHoliday: daily.isHoliday,
+                                  enter: daily.enter,
+                                  leave: daily.leave,
+                                  realEnter: daily.realEnter,
+                                  realLeave: daily.realLeave,
+                                  isChecked: daily.isChecked,
+                                  isLate: daily.isLate,
+                                  isEarlyLeave: daily.isEarlyLeave,
+                                  isAbsent: daily.isAbsent,
+                                  hasAttendanceConflict: false,
+                                  hasAttendanceOverlap: false,
+                                  workTime: daily.workTime,
+                                  note: daily.note,
+                                  usedAttendances: daily.usedAttendances || [],
+                                  createdAt: daily.createdAt || snapshotDataObj.createdAt,
+                                  updatedAt: daily.updatedAt || snapshotDataObj.updatedAt,
+                                  deletedAt: null,
+                                  createdBy: null,
+                                  updatedBy: null,
+                                  version: 1,
+                              }))
+                            : snapshotDataObj.dailySummaries || [];
+
+                    const transformedSnapshotData: any = {
+                        ...snapshotDataObj,
+                        id: monthlyEventSummaryId,
+                        dailyEventSummary: null,
+                        dailySummaries: dailySummaries,
+                        deletedAt: null,
+                        createdBy: null,
+                        updatedBy: null,
+                        version: snapshotDataObj.version || 1,
+                    };
+
+                    // annualLeaveData 제거
+                    delete transformedSnapshotData.annualLeaveData;
+                    // monthlyEventSummaryId 제거 (id로 변경되었으므로)
+                    delete transformedSnapshotData.monthlyEventSummaryId;
+
+                    const childEntity = new DataSnapshotChild(
+                        employeeId,
+                        child.employeeName,
+                        child.employeeNumber,
+                        child.yyyy,
+                        child.mm,
+                        JSON.stringify(transformedSnapshotData),
+                        employeeRawData,
+                    );
+                    childEntity.parentSnapshot = snapshotEntity;
+                    return childEntity;
+                })
+                .filter(Boolean) as DataSnapshotChild[];
+
+            snapshotEntity.dataSnapshotChildInfoList = childEntities;
+            snapshotsToSave.push(snapshotEntity);
+        }
+
+        // 배치로 저장 (메모리 부족 방지)
+        const batchSize = 100;
+        let totalSaved = 0;
+
+        for (let i = 0; i < snapshotsToSave.length; i += batchSize) {
+            const batch = snapshotsToSave.slice(i, i + batchSize);
+            const saved = await snapshotRepository.save(batch, { chunk: 50 });
             totalSaved += saved.length;
             this.logger.log(
-                `스냅샷 및 자식 배치 저장 완료: ${i + batch.length}/${prvSnapshots.length}건 (저장: ${saved.length}건)`,
+                `스냅샷 및 자식 배치 저장 완료: ${i + batch.length}/${snapshotsToSave.length}건 (저장: ${saved.length}건)`,
             );
         }
 
