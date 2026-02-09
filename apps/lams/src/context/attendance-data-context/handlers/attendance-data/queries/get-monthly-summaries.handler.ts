@@ -53,6 +53,7 @@ export class GetMonthlySummariesHandler implements IQueryHandler<
                 departmentId,
                 monthEndDate,
             );
+        console.log(employeeHistories.map((eh) => eh.employee.name));
         const employeeIds = employeeHistories.map((eh) => eh.employeeId).filter((id) => id);
 
         if (employeeIds.length === 0) {
