@@ -36,7 +36,7 @@ import { HolidaySyncModule } from './integrations/holiday-sync';
         InterfaceModule, // 인터페이스 모듈 (API 엔드포인트)
         OrganizationMigrationModule,
         InitModule, // 기본 데이터 초기화 모듈
-        PrvDbMgrModule,
+        // PrvDbMgrModule,
         HolidaySyncModule, // 매년 1/1 공휴일 API 동기화
     ],
     controllers: [],
