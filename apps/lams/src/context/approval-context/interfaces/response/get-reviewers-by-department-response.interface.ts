@@ -5,6 +5,10 @@ export interface IReviewerInfo {
     employeeId: string;
     employeeName: string;
     employeeNumber: string;
+    departmentId?: string;
+    departmentName?: string;
+    positionId?: string;
+    positionTitle?: string;
 }
 
 /**
