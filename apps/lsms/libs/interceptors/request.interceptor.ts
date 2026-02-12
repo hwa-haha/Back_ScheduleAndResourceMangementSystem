@@ -3,7 +3,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } fr
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { DomainRequestLogService } from '../../src/domain/request-log/request-log.service';
-import { Environment } from '../entities/request-log.entity';
+import { Environment } from '../../src/domain/request-log/request-log.entity';
 import { throwError } from 'rxjs';
 
 @Injectable()

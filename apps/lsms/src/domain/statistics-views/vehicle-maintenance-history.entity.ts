@@ -2,19 +2,14 @@ import { ViewEntity, ViewColumn } from 'typeorm';
 
 @ViewEntity({
     expression: `SELECT
-    -- 자원 정보
     res."resourceId",
     res.name AS "resourceName",
     vi."vehicleInfoId",
     vi."vehicleNumber",
-    
-    -- 소모품 정보
     c."consumableId",
     c.name AS "consumableName",
     c."replaceCycle",
     c."notifyReplacementCycle",
-    
-    -- 정비 정보
     m."maintenanceId",
     m.date AS "maintenanceDate",
     m.mileage,
@@ -23,14 +18,10 @@ import { ViewEntity, ViewColumn } from 'typeorm';
     m.images,
     m."createdAt",
     m."updatedAt",
-    
-    -- 담당자 정보
     e."employeeId" AS "responsibleEmployeeId",
     e.name AS "responsibleEmployeeName",
     e.department,
     e.position,
-    
-    -- 시간 정보
     EXTRACT(YEAR FROM CAST(m.date AS timestamp)) AS year,
     EXTRACT(MONTH FROM CAST(m.date AS timestamp)) AS month,
     m.date AS "dateStr"

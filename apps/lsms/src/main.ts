@@ -26,6 +26,7 @@ async function bootstrap() {
                       'https://lrms-dev.lumir.space',
                       'https://lrim.lumir.space',
                       'http://localhost:3002',
+                      'http://ec2-43-202-216-71.ap-northeast-2.compute.amazonaws.com:5004',
                   ];
                   if (!isProduction || !origin || whitelist.includes(origin)) {
                       callback(null, true);

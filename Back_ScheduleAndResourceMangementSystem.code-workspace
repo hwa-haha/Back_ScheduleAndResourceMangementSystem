@@ -1,16 +1,11 @@
 {
-  "folders": [
-	{
-		"path": "."
-	},
-	{
-		"path": "../Back_ProjectManagementSystem"
-	},
-	{
-		"path": "../Back_EvaludationManagementSystem"
-	}
-],
-"settings": {
-	"cursor.cpp.enablePartialAccepts": true
-}
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../lsms-v1"
+		}
+	],
+	"settings": {}
 }

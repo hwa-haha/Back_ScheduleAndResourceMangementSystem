@@ -20,19 +20,17 @@ import { ViewEntity, ViewColumn } from 'typeorm';
     COUNT(DISTINCT r."reservationId") AS "reservationCount",
     SUM(EXTRACT(EPOCH FROM (r."endDate" - r."startDate"))/3600) AS "totalHours",
     
-    -- 순위 계산 (동일 자원에 대한 직원별 예약 횟수 순위)
+    -- 순위 계산
     RANK() OVER (
         PARTITION BY res."resourceId", EXTRACT(YEAR FROM r."startDate"), EXTRACT(MONTH FROM r."startDate")
         ORDER BY COUNT(DISTINCT r."reservationId") DESC
     ) AS "countRank",
     
-    -- 시간 기준 순위 계산
     RANK() OVER (
         PARTITION BY res."resourceId", EXTRACT(YEAR FROM r."startDate"), EXTRACT(MONTH FROM r."startDate")
         ORDER BY SUM(EXTRACT(EPOCH FROM (r."endDate" - r."startDate"))/3600) DESC
     ) AS "hoursRank",
     
-    -- 집계 시점
     NOW() AS "computedAt"
 FROM 
     reservations r
@@ -40,8 +38,8 @@ FROM
     JOIN resources res ON r."resourceId" = res."resourceId"
     JOIN employees e ON rp."employeeId" = e."employeeId"
 WHERE
-    rp.type = 'RESERVER' -- 예약 주체만 집계
-    AND r.status <> 'CANCELLED' -- 취소된 예약 제외
+    rp.type = 'RESERVER'
+    AND r.status <> 'CANCELLED'
 GROUP BY
     res."resourceId",
     res.name,
