@@ -76,6 +76,7 @@ export class NotificationController {
             sendNotificationDto.notificationType,
             sendNotificationDto.notificationData,
             sendNotificationDto.notificationTarget,
+            sendNotificationDto.linkUrl,
         );
     }
 

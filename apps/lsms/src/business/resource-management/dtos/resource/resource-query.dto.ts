@@ -90,4 +90,15 @@ export class ResourceQueryDto extends PaginationQueryDto {
     @Min(1)
     @Type(() => Number)
     timeUnit?: number;
+
+    @ApiPropertyOptional({
+        description: '슬롯 간격(분) - 시간 슬롯 생성 시 간격을 설정합니다. 기본값: 30',
+        example: 30,
+        minimum: 1,
+    })
+    @IsOptional()
+    @IsNumber()
+    @Min(1)
+    @Type(() => Number)
+    slotIntervalMinutes?: number;
 }

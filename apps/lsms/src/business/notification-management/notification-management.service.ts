@@ -52,6 +52,7 @@ export class NotificationManagementService {
         notificationType: NotificationType,
         notificationData: CreateNotificationDataDto,
         notificationTarget: string[],
+        linkUrl?: string,
     ): Promise<void> {
         /** 관리자페이지에서 보내는 알림의 경우 일정ID가 없을 수 있으므로 일정ID를 조회한다 */
         if (!notificationData.schedule && notificationData.reservation) {
@@ -68,6 +69,7 @@ export class NotificationManagementService {
             notificationType,
             notificationData,
             notificationTarget,
+            linkUrl,
         );
     }
 

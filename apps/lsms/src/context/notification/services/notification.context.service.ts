@@ -360,6 +360,7 @@ export class NotificationContextService {
         notificationType: NotificationType,
         notificationData: CreateNotificationDataDto,
         targetEmployeeIds: string[],
+        linkUrl?: string,
     ) {
         // 알림에 들어갈 title과 body 생성
         const notificationContent = await this.알림_내용을_생성한다(notificationType, notificationData);
@@ -434,7 +435,7 @@ export class NotificationContextService {
             const notificationPayload = {
                 title: notification.title,
                 body: notification.body,
-                linkUrl: '/plan/user/schedule-add', // TODO: 알림 타입별로 적절한 링크 설정
+                linkUrl: linkUrl || '/current/sms/schedule-status', // TODO: 알림 타입별로 적절한 링크 설정
                 icon: 'https://lumir-erp.vercel.app/%EC%82%BC%EC%A1%B1%EC%98%A4_black.png',
                 notificationType: notification.notificationType,
                 notificationData: notification.notificationData,

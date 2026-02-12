@@ -67,11 +67,11 @@ export class ResourceController {
 이 API는 세 가지 시나리오로 사용할 수 있습니다:
 
 ### 🎯 시나리오 1: 시간 슬롯 방식 (회의실, 장비)
-30분 단위로 사용 가능한 시간 슬롯을 조회합니다.
+시간 슬롯 단위로 사용 가능한 시간 슬롯을 조회합니다.
 - **필수**: resourceType, resourceGroupId, startDate, endDate(=startDate), timeUnit
-- **선택**: am, pm (시간대 필터)
+- **선택**: am, pm (시간대 필터), slotIntervalMinutes (슬롯 간격, 기본값: 30분)
 
-**예시**: \`?resourceType=MEETING_ROOM&resourceGroupId=xxx&startDate=2024-01-15&endDate=2024-01-15&timeUnit=30&pm=true\`
+**예시**: \`?resourceType=MEETING_ROOM&resourceGroupId=xxx&startDate=2024-01-15&endDate=2024-01-15&timeUnit=30&slotIntervalMinutes=30&pm=true\`
 
 ### 🎯 시나리오 2: 시간 범위 방식 (정확한 시간 지정)
 특정 시간 범위에서 자원 가용성을 확인합니다.

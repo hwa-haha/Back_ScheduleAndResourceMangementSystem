@@ -164,6 +164,7 @@ export class ResourceService {
             am,
             pm,
             timeUnit,
+            slotIntervalMinutes,
             reservationId,
         } = query;
 
@@ -172,9 +173,6 @@ export class ResourceService {
         const queryStartDate = new Date(`${startDate}T00:00:00Z`);
         const todayString = now.toISOString().slice(0, 10); // UTC 기준 yyyy-mm-dd
         const queryDateString = queryStartDate.toISOString().slice(0, 10); // UTC 기준 yyyy-mm-dd
-
-        console.log('조회 시작날짜 (UTC):', queryDateString);
-        console.log('오늘 날짜 (UTC):', todayString);
 
         if (queryDateString < todayString) {
             return [];
@@ -207,18 +205,15 @@ export class ResourceService {
             const dateRangeEnd = endTime
                 ? new Date(`${endDate}T${endTime}+09:00`)
                 : new Date(`${endDate}T23:59:59+09:00`);
-            console.log('dateRangeStart', dateRangeStart);
-            console.log('dateRangeEnd', dateRangeEnd);
-            console.log('resource', resource.resourceId);
+
             const reservations = await this.reservationContextService.자원의_날짜범위_예약을_조회한다(
                 resource.resourceId,
                 dateRangeStart,
                 dateRangeEnd,
                 reservationId,
             );
-            console.log('reservations', reservations);
             if (isTimeSlotRequest) {
-                // 시간 슬롯 방식: 30분 단위로 가용 시간 계산
+                // 시간 슬롯 방식: 슬롯 간격으로 가용 시간 계산
                 const availabilityDto = await this.calculateTimeSlotAvailability(
                     resource,
                     startDate!,
@@ -228,6 +223,7 @@ export class ResourceService {
                     am,
                     pm,
                     timeUnit!,
+                    slotIntervalMinutes,
                     reservations,
                 );
                 availabilityDto.resourceGroupName = resource.resourceGroup.title;
@@ -297,6 +293,7 @@ export class ResourceService {
         am?: boolean,
         pm?: boolean,
         timeUnit?: number,
+        slotIntervalMinutes: number = 30,
         reservations: any[] = [],
     ): Promise<ResourceAvailabilityDto> {
         const availabilityDto = new ResourceAvailabilityDto();
@@ -311,7 +308,7 @@ export class ResourceService {
             startTime,
             endTime,
         );
-        console.log('timeRange', timeRange);
+
         const availableSlots = this.calculateAvailableTimeSlots(
             startDate,
             timeRange.startTime,
@@ -319,6 +316,7 @@ export class ResourceService {
             timeUnit!,
             am,
             pm,
+            slotIntervalMinutes,
             reservations,
         );
 
@@ -327,7 +325,7 @@ export class ResourceService {
     }
 
     /**
-     * 30분 단위 시간 슬롯별 가용성 계산
+     * 시간 슬롯별 가용성 계산
      */
     private calculateAvailableTimeSlots(
         dateStr: string,
@@ -336,10 +334,10 @@ export class ResourceService {
         timeUnit: number,
         am?: boolean,
         pm?: boolean,
+        slotIntervalMinutes: number = 30,
         reservations: any[] = [],
     ): TimeSlotDto[] {
         const availableSlots: TimeSlotDto[] = [];
-        const slotIntervalMinutes = 30; // 30분 간격
 
         // 오전/오후 필터링
         let actualStartTime = startTime;
@@ -353,7 +351,7 @@ export class ResourceService {
 
         const startDateTime = new Date(`${dateStr}T${actualStartTime}+09:00`);
         const endDateTime = new Date(`${dateStr}T${actualEndTime}+09:00`);
-        console.log('startDateTime', startDateTime, endDateTime);
+
         const slotStart = new Date(startDateTime);
 
         while (slotStart < endDateTime) {

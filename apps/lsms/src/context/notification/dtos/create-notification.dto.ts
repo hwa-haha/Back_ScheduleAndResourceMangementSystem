@@ -219,4 +219,9 @@ export class SendNotificationDto {
     })
     @IsString({ each: true })
     notificationTarget: string[];
+
+    @ApiPropertyOptional({ description: '알림 링크 URL' })
+    @IsOptional()
+    @IsString()
+    linkUrl?: string;
 }
