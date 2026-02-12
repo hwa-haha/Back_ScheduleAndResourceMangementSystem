@@ -50,7 +50,7 @@ export class WorkTimePolicyService {
         if (!this.isRecognizedWorkTime(attendanceType)) {
             return false;
         }
-        const startTime = attendanceType?.startWorkTime;
+        const startTime = this.workTimeToHHmmss(attendanceType?.startWorkTime);
         // startWorkTime이 없거나 정상근무 시작 시간 이전/이후를 커버하면 오전 인정
         return !startTime || startTime <= this.NORMAL_WORK_START_TIME;
     }
@@ -65,8 +65,8 @@ export class WorkTimePolicyService {
         if (!this.isRecognizedWorkTime(attendanceType)) {
             return false;
         }
-        const endTime = attendanceType?.endWorkTime;
-        // endWorkTime이 없거나 정상근무 종료 시간 이후/이후를 커버하면 오후 인정
+        const endTime = this.workTimeToHHmmss(attendanceType?.endWorkTime);
+        // endWorkTime이 없거나 정상근무 종료 시간 이후를 커버하면 오후 인정
         return !endTime || endTime >= this.NORMAL_WORK_END_TIME;
     }
 
@@ -80,8 +80,8 @@ export class WorkTimePolicyService {
         if (!this.isRecognizedWorkTime(attendanceType)) {
             return false;
         }
-        const startTime = attendanceType?.startWorkTime;
-        const endTime = attendanceType?.endWorkTime;
+        const startTime = this.workTimeToHHmmss(attendanceType?.startWorkTime);
+        const endTime = this.workTimeToHHmmss(attendanceType?.endWorkTime);
         // startWorkTime과 endWorkTime이 모두 없거나, 전체 시간대를 커버하면 하루 종일
         return (
             (!startTime || startTime <= this.NORMAL_WORK_START_TIME) &&
@@ -106,6 +106,7 @@ export class WorkTimePolicyService {
      * @returns 오후 근무 인정 여부
      */
     hasAfternoonRecognized(attendances: UsedAttendance[]): boolean {
+        console.log('attendances', attendances);
         return attendances.some((ua) => this.isAfternoonRecognized(ua.attendanceType));
     }
 
@@ -224,10 +225,11 @@ export class WorkTimePolicyService {
 
         // HHMMSS 형식을 HH:MM:SS 형식으로 변환하여 비교
         const leaveTimeFormatted = this.HHMMSS를HHMMSS로변환(leaveTime);
-
+        console.log('hasAfternoonRecognized', hasAfternoonRecognized);
         // 오후 근무가 인정되면 workEndTime을 14시로 설정
         const workEndTime = hasAfternoonRecognized ? '14:00:00' : this.getWorkEndTime(date, workTimeOverride);
-
+        console.log('workEndTime', workEndTime);
+        console.log('leaveTimeFormatted', leaveTimeFormatted);
         return leaveTimeFormatted < workEndTime;
     }
 
@@ -239,5 +241,37 @@ export class WorkTimePolicyService {
             return hhmmss;
         }
         return `${hhmmss.substring(0, 2)}:${hhmmss.substring(2, 4)}:${hhmmss.substring(4, 6)}`;
+    }
+
+    /**
+     * attendanceType의 work time 값을 HH:mm:ss 형식으로 정규화한다.
+     * "09:00", "09:00:00", "090000" 등 다양한 입력을 HH:mm:ss로 통일하여 비교에 사용한다.
+     */
+    private workTimeToHHmmss(time: string | undefined | null): string {
+        if (time == null || time === '') {
+            return '';
+        }
+        const trimmed = time.trim();
+        if (!trimmed) return '';
+
+        const digits = trimmed.replace(/\D/g, '');
+        if (digits.length >= 6) {
+            return `${digits.slice(0, 2)}:${digits.slice(2, 4)}:${digits.slice(4, 6)}`;
+        }
+        if (digits.length === 4) {
+            return `${digits.slice(0, 2)}:${digits.slice(2, 4)}:00`;
+        }
+        if (digits.length === 5) {
+            return `0${digits.slice(0, 1)}:${digits.slice(1, 3)}:${digits.slice(3, 5)}`;
+        }
+        // 이미 HH:mm 또는 HH:mm:ss 형태인 경우
+        const parts = trimmed.split(':');
+        if (parts.length >= 2) {
+            const hh = parts[0].padStart(2, '0');
+            const mm = parts[1].padStart(2, '0');
+            const ss = (parts[2] ?? '0').padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
+        }
+        return trimmed;
     }
 }
