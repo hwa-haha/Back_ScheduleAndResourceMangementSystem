@@ -37,7 +37,12 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
         const dbSchema =
             this.configService.get<string>('database.schema') ||
             this.configService.get<string>('POSTGRES_SCHEMA', 'public');
-
+        console.log('dbHost', dbHost);
+        console.log('dbPort', dbPort);
+        console.log('dbUsername', dbUsername);
+        console.log('dbPassword', dbPassword);
+        console.log('dbDatabase', dbDatabase);
+        console.log('dbSchema', dbSchema);
         return {
             type: 'postgres',
             host: dbHost,
