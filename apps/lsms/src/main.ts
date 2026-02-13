@@ -21,12 +21,15 @@ async function bootstrap() {
                   const whitelist = [
                       'https://portal.lumir.space',
                       'https://lsms.lumir.space',
+                      'https://portal-dev.lumir.space',
+                      'https://lsms-dev.lumir.space',
                       'https://lrms.lumir.space',
                       'https://rms-backend-iota.vercel.app',
+                      'https://rms-backend-lumir-web-dev.vercel.app',
+                      'https://rms-backend-git-dev-lumir-web-dev.vercel.app',
                       'https://lrms-dev.lumir.space',
                       'https://lrim.lumir.space',
-                      'http://localhost:3002',
-                      'http://ec2-43-202-216-71.ap-northeast-2.compute.amazonaws.com:5004',
+                      'http://ec2-43-202-216-71.ap-northeast-2.compute.amazonaws.com:5002',
                   ];
                   if (!isProduction || !origin || whitelist.includes(origin)) {
                       callback(null, true);
