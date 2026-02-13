@@ -48,11 +48,11 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             schema: dbSchema,
 
             // 마이그레이션 설정
-            migrations: [join(__dirname, '../migrations/*{.ts,.js}')],
-            migrationsRun: false, // 애플리케이션 시작 시 자동 마이그레이션 실행 여부
+            // migrations: [join(__dirname, '../migrations/*{.ts,.js}')],
+            // migrationsRun: false, // 애플리케이션 시작 시 자동 마이그레이션 실행 여부
 
             // 개발 환경 설정
-            synchronize: isDevelopment, // 개발 환경에서만 스키마 자동 동기화
+            // synchronize: isDevelopment, // 개발 환경에서만 스키마 자동 동기화
             logging: isDevelopment ? ['error', 'warn'] : ['error'],
 
             // 연결 풀 설정
@@ -70,7 +70,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             },
 
             // SSL 설정 (운영 환경)
-            ssl: isProduction ? { rejectUnauthorized: false } : false,
+            // ssl: isProduction ? { rejectUnauthorized: false } : false,
 
             // 연결 재시도 설정
             retryAttempts: 3,
