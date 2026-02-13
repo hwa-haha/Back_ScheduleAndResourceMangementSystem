@@ -6,6 +6,7 @@ import { DomainAssignedProjectModule } from '../../domain/assigned-project/assig
 import { DomainWorkHoursModule } from '../../domain/work-hours/work-hours.module';
 import { DomainProjectModule } from '../../domain/project/project.module';
 import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
+import { OrganizationManagementContextModule } from '../organization-management-context/organization-management-context.module';
 
 /**
  * 시수 관리 Context 모듈
@@ -17,6 +18,7 @@ import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/emp
         DomainWorkHoursModule,
         DomainProjectModule,
         DomainEmployeeDepartmentPositionHistoryModule,
+        OrganizationManagementContextModule,
     ],
     providers: [WorkHoursContextService, ...QUERY_HANDLERS, ...COMMAND_HANDLERS],
     exports: [WorkHoursContextService],

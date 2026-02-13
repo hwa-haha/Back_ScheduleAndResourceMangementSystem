@@ -5,6 +5,7 @@ import {
     ExportAllDataRequest,
     ExportAllDataResponse,
     ExportDepartmentDto,
+    ExportDepartmentHistoryDto,
     ExportEmployeeDto,
     ExportPositionDto,
     ExportRankDto,
@@ -17,18 +18,20 @@ import { DomainPositionService } from '@libs/modules/position/position.service';
 import { DomainRankService } from '@libs/modules/rank/rank.service';
 import { DomainEmployeeDepartmentPositionService } from '@libs/modules/employee-department-position/employee-department-position.service';
 import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/employee-department-position-history/employee-department-position-history.service';
+import { DomainDepartmentHistoryService } from '@libs/modules/department-history/department-history.service';
 import { Department, DepartmentType } from '@libs/modules/department/department.entity';
 import { Employee, Gender, EmployeeStatus } from '@libs/modules/employee/employee.entity';
 import { Position } from '@libs/modules/position/position.entity';
 import { Rank } from '@libs/modules/rank/rank.entity';
 import { EmployeeDepartmentPosition } from '@libs/modules/employee-department-position/employee-department-position.entity';
 import { EmployeeDepartmentPositionHistory } from '@libs/modules/employee-department-position-history/employee-department-position-history.entity';
+import { DepartmentHistory } from '@libs/modules/department-history/department-history.entity';
 
 /**
  * 조직 데이터 마이그레이션 서비스
  *
  * SSO에서 모든 조직 데이터를 가져와서 로컬 데이터베이스에 동기화합니다.
- * 순서: Rank -> Position -> Department -> Employee -> EmployeeDepartmentPosition -> EmployeeDepartmentPositionHistory
+ * 순서: Rank -> Position -> Department -> DepartmentHistory -> Employee -> EmployeeDepartmentPosition -> EmployeeDepartmentPositionHistory
  */
 @Injectable()
 export class OrganizationMigrationService {
@@ -42,6 +45,7 @@ export class OrganizationMigrationService {
         private readonly rankService: DomainRankService,
         private readonly employeeDepartmentPositionService: DomainEmployeeDepartmentPositionService,
         private readonly employeeDepartmentPositionHistoryService: DomainEmployeeDepartmentPositionHistoryService,
+        private readonly departmentHistoryService: DomainDepartmentHistoryService,
         private readonly dataSource: DataSource,
     ) {}
 
@@ -58,6 +62,7 @@ export class OrganizationMigrationService {
             ranks: number;
             positions: number;
             departments: number;
+            departmentHistories: number;
             employees: number;
             employeeDepartmentPositions: number;
             assignmentHistories: number;
@@ -68,7 +73,7 @@ export class OrganizationMigrationService {
         // 1. SSO에서 모든 데이터 가져오기
         const ssoData = await this.ssoService.exportAllData(params);
         this.logger.log(
-            `SSO 데이터 조회 완료: 부서 ${ssoData.totalCounts.departments}개, 직원 ${ssoData.totalCounts.employees}명, 직급 ${ssoData.totalCounts.ranks}개, 직책 ${ssoData.totalCounts.positions}개`,
+            `SSO 데이터 조회 완료: 부서 ${ssoData.totalCounts.departments}개, 부서이력 ${ssoData.totalCounts.departmentHistories ?? 0}건, 직원 ${ssoData.totalCounts.employees}명, 직급 ${ssoData.totalCounts.ranks}개, 직책 ${ssoData.totalCounts.positions}개`,
         );
 
         // 1단계: 기본 정보 마이그레이션 (Rank, Position, Department, Employee)
@@ -96,6 +101,7 @@ export class OrganizationMigrationService {
                 ranks: firstPhaseResult.rankCount,
                 positions: firstPhaseResult.positionCount,
                 departments: firstPhaseResult.departmentCount,
+                departmentHistories: firstPhaseResult.departmentHistoryCount,
                 employees: firstPhaseResult.employeeCount,
                 employeeDepartmentPositions: secondPhaseResult.edpResult.count,
                 assignmentHistories: secondPhaseResult.historyResult.count,
@@ -105,12 +111,13 @@ export class OrganizationMigrationService {
 
     /**
      * 기본 정보 마이그레이션 (1단계)
-     * Rank, Position, Department, Employee 마이그레이션 후 커밋
+     * Rank, Position, Department, DepartmentHistory, Employee 마이그레이션 후 커밋
      */
     private async 기본정보마이그레이션한다(ssoData: ExportAllDataResponse): Promise<{
         rankCount: number;
         positionCount: number;
         departmentCount: number;
+        departmentHistoryCount: number;
         employeeCount: number;
     }> {
         const queryRunner = this.dataSource.createQueryRunner();
@@ -118,7 +125,9 @@ export class OrganizationMigrationService {
         await queryRunner.startTransaction();
 
         try {
-            this.logger.log('1단계: 기본 정보 마이그레이션 시작 (Rank, Position, Department, Employee)');
+            this.logger.log(
+                '1단계: 기본 정보 마이그레이션 시작 (Rank, Position, Department, DepartmentHistory, Employee)',
+            );
 
             // 1. Rank 마이그레이션 (의존성 없음)
             const rankCount = await this.마이그레이션Rank한다(ssoData.ranks, queryRunner);
@@ -129,10 +138,21 @@ export class OrganizationMigrationService {
             this.logger.log(`직책 마이그레이션 완료: ${positionCount}개`);
 
             // 3. Department 마이그레이션 (parentDepartmentId 의존성)
-            const departmentCount = await this.마이그레이션Department한다(ssoData.departments, queryRunner);
+            const { count: departmentCount, savedDepartmentIds } = await this.마이그레이션Department한다(
+                ssoData.departments,
+                queryRunner,
+            );
             this.logger.log(`부서 마이그레이션 완료: ${departmentCount}개`);
 
-            // 4. Employee 마이그레이션 (currentRankId 의존성)
+            // 4. DepartmentHistory 마이그레이션 (실제 저장된 부서 ID만 사용하여 FK 위반 방지)
+            const departmentHistoryCount = await this.마이그레이션DepartmentHistory한다(
+                ssoData.departmentHistories ?? [],
+                savedDepartmentIds,
+                queryRunner,
+            );
+            this.logger.log(`부서 이력 마이그레이션 완료: ${departmentHistoryCount}건`);
+
+            // 5. Employee 마이그레이션 (currentRankId 의존성)
             const employeeCount = await this.마이그레이션Employee한다(ssoData.employees, queryRunner);
             this.logger.log(`직원 마이그레이션 완료: ${employeeCount}명`);
 
@@ -143,6 +163,7 @@ export class OrganizationMigrationService {
                 rankCount,
                 positionCount,
                 departmentCount,
+                departmentHistoryCount,
                 employeeCount,
             };
         } catch (error) {
@@ -200,17 +221,18 @@ export class OrganizationMigrationService {
     }
 
     /**
-     * Rank 마이그레이션
+     * Rank 마이그레이션 (존재하면 업데이트, 없으면 삽입)
      */
     private async 마이그레이션Rank한다(ranks: ExportRankDto[], queryRunner: QueryRunner): Promise<number> {
         let count = 0;
+        const manager = queryRunner.manager;
         for (const rankDto of ranks) {
-            const rank = new Rank();
+            const existing = await this.rankService.findOne(rankDto.id, manager);
+            const rank = existing ?? new Rank();
             rank.id = rankDto.id;
-            rank.rankTitle = rankDto.rankName; // rankName -> rankTitle 매핑
+            rank.rankTitle = rankDto.rankName;
             rank.rankCode = rankDto.rankCode;
             rank.level = rankDto.level;
-
             await this.rankService.save(rank, { queryRunner });
             count++;
         }
@@ -218,18 +240,19 @@ export class OrganizationMigrationService {
     }
 
     /**
-     * Position 마이그레이션
+     * Position 마이그레이션 (존재하면 업데이트, 없으면 삽입)
      */
     private async 마이그레이션Position한다(positions: ExportPositionDto[], queryRunner: QueryRunner): Promise<number> {
         let count = 0;
+        const manager = queryRunner.manager;
         for (const positionDto of positions) {
-            const position = new Position();
+            const existing = await this.positionService.findOne(positionDto.id, manager);
+            const position = existing ?? new Position();
             position.id = positionDto.id;
             position.positionTitle = positionDto.positionTitle;
             position.positionCode = positionDto.positionCode;
             position.level = positionDto.level;
             position.hasManagementAuthority = positionDto.hasManagementAuthority;
-
             await this.positionService.save(position, { queryRunner });
             count++;
         }
@@ -241,11 +264,12 @@ export class OrganizationMigrationService {
      *
      * 부서는 계층 구조로 되어 있어서 부모 부서가 먼저 생성되어야 합니다.
      * parentDepartmentId가 null인 부서부터 시작해서 계층적으로 저장합니다.
+     * 실제로 저장된 부서 ID 집합을 반환하여 부서 이력 마이그레이션 선별에 사용한다.
      */
     private async 마이그레이션Department한다(
         departments: ExportDepartmentDto[],
         queryRunner: QueryRunner,
-    ): Promise<number> {
+    ): Promise<{ count: number; savedDepartmentIds: Set<string> }> {
         let count = 0;
         const savedDepartmentIds = new Set<string>();
 
@@ -281,16 +305,17 @@ export class OrganizationMigrationService {
                 }
             }
 
-            // 저장 가능한 부서들을 저장
+            // 저장 가능한 부서들을 저장 (존재하면 업데이트, 없으면 삽입)
+            const manager = queryRunner.manager;
             for (const deptDto of toSave) {
-                const department = new Department();
+                const existing = await this.departmentService.findOne(deptDto.id, manager);
+                const department = existing ?? new Department();
                 department.id = deptDto.id;
                 department.departmentName = deptDto.departmentName;
                 department.departmentCode = deptDto.departmentCode;
                 department.type = deptDto.type as DepartmentType;
                 department.parentDepartmentId = deptDto.parentDepartmentId || undefined;
                 department.order = deptDto.order;
-
                 await this.departmentService.save(department, { queryRunner });
                 savedDepartmentIds.add(deptDto.id);
                 count++;
@@ -315,16 +340,67 @@ export class OrganizationMigrationService {
             );
         }
 
+        return { count, savedDepartmentIds };
+    }
+
+    /**
+     * DepartmentHistory 마이그레이션 (존재하면 업데이트, 없으면 삽입)
+     *
+     * SSO export의 부서 이력을 로컬 department_history 테이블에 저장한다.
+     * departmentId가 validDepartmentIds에 있는 이력만 저장하여 FK 위반을 방지한다.
+     */
+    private async 마이그레이션DepartmentHistory한다(
+        departmentHistories: ExportDepartmentHistoryDto[],
+        validDepartmentIds: Set<string>,
+        queryRunner: QueryRunner,
+    ): Promise<number> {
+        let count = 0;
+        let skipped = 0;
+        const repo = queryRunner.manager.getRepository(DepartmentHistory);
+        for (const dto of departmentHistories) {
+            if (!validDepartmentIds.has(dto.departmentId)) {
+                skipped++;
+                continue;
+            }
+            const existing = await repo.findOne({ where: { historyId: dto.historyId } });
+            const history = existing ?? new DepartmentHistory();
+            history.historyId = dto.historyId;
+            history.departmentId = dto.departmentId;
+            history.부서명을설정한다(dto.departmentName);
+            history.부서코드를설정한다(dto.departmentCode);
+            history.유형을설정한다(dto.type as DepartmentType);
+            history.상위부서를설정한다(dto.parentDepartmentId ?? undefined);
+            history.정렬순서를설정한다(dto.order);
+            history.활성상태를설정한다(dto.isActive);
+            history.예외처리를설정한다(dto.isException);
+            history.effectiveStartDate = dto.effectiveStartDate;
+            history.effectiveEndDate = dto.effectiveEndDate ?? null;
+            history.isCurrent = dto.isCurrent;
+            history.changeReason = dto.changeReason ?? undefined;
+            history.changedBy = dto.changedBy ?? undefined;
+            if (dto.createdAt) {
+                history.createdAt = new Date(dto.createdAt);
+            }
+            await this.departmentHistoryService.save(history, { queryRunner });
+            count++;
+        }
+        if (skipped > 0) {
+            this.logger.warn(
+                `부서 이력 ${skipped}건 건너뜀 (departmentId가 마이그레이션된 부서 목록에 없음)`,
+            );
+        }
         return count;
     }
 
     /**
-     * Employee 마이그레이션
+     * Employee 마이그레이션 (존재하면 업데이트, 없으면 삽입)
      */
     private async 마이그레이션Employee한다(employees: ExportEmployeeDto[], queryRunner: QueryRunner): Promise<number> {
         let count = 0;
+        const manager = queryRunner.manager;
         for (const empDto of employees) {
-            const employee = new Employee();
+            const existing = await this.employeeService.findOne(empDto.id, manager);
+            const employee = existing ?? new Employee();
             employee.id = empDto.id;
             employee.employeeNumber = empDto.employeeNumber;
             employee.name = empDto.name;
@@ -336,7 +412,6 @@ export class OrganizationMigrationService {
             employee.status = empDto.status as EmployeeStatus;
             employee.currentRankId = empDto.currentRankId || undefined;
             employee.isInitialPasswordSet = empDto.isInitialPasswordSet;
-
             await this.employeeService.save(employee, { queryRunner });
             count++;
         }
@@ -344,7 +419,7 @@ export class OrganizationMigrationService {
     }
 
     /**
-     * EmployeeDepartmentPosition 마이그레이션
+     * EmployeeDepartmentPosition 마이그레이션 (존재하면 업데이트, 없으면 삽입)
      *
      * 외래키 오류가 발생해도 무시하고 계속 진행합니다.
      * 각 엔티티를 별도의 트랜잭션으로 저장하여 오류가 발생해도 다른 엔티티에 영향을 주지 않습니다.
@@ -356,19 +431,21 @@ export class OrganizationMigrationService {
         let count = 0;
         const failedEmployeeIds: string[] = [];
         for (const edpDto of edps) {
-            // 각 엔티티를 별도의 트랜잭션으로 저장
             const itemQueryRunner = this.dataSource.createQueryRunner();
             await itemQueryRunner.connect();
             await itemQueryRunner.startTransaction();
 
             try {
-                const edp = new EmployeeDepartmentPosition();
+                const existing = await this.employeeDepartmentPositionService.findOne(
+                    edpDto.id,
+                    itemQueryRunner.manager,
+                );
+                const edp = existing ?? new EmployeeDepartmentPosition();
                 edp.id = edpDto.id;
                 edp.employeeId = edpDto.employeeId;
                 edp.departmentId = edpDto.departmentId;
                 edp.positionId = edpDto.positionId;
                 edp.isManager = edpDto.isManager;
-
                 await this.employeeDepartmentPositionService.save(edp, { queryRunner: itemQueryRunner });
                 await itemQueryRunner.commitTransaction();
                 count++;
@@ -384,7 +461,7 @@ export class OrganizationMigrationService {
     }
 
     /**
-     * EmployeeDepartmentPositionHistory 마이그레이션
+     * EmployeeDepartmentPositionHistory 마이그레이션 (존재하면 업데이트, 없으면 삽입)
      *
      * 외래키 오류가 발생해도 무시하고 계속 진행합니다.
      * 각 엔티티를 별도의 트랜잭션으로 저장하여 오류가 발생해도 다른 엔티티에 영향을 주지 않습니다.
@@ -396,13 +473,14 @@ export class OrganizationMigrationService {
         let count = 0;
         const failedEmployeeIds: string[] = [];
         for (const historyDto of histories) {
-            // 각 엔티티를 별도의 트랜잭션으로 저장
             const itemQueryRunner = this.dataSource.createQueryRunner();
             await itemQueryRunner.connect();
             await itemQueryRunner.startTransaction();
 
             try {
-                const history = new EmployeeDepartmentPositionHistory();
+                const historyRepo = itemQueryRunner.manager.getRepository(EmployeeDepartmentPositionHistory);
+                const existing = await historyRepo.findOne({ where: { historyId: historyDto.historyId } });
+                const history = existing ?? new EmployeeDepartmentPositionHistory();
                 history.historyId = historyDto.historyId;
                 history.employeeId = historyDto.employeeId;
                 history.부서를설정한다(historyDto.departmentId);
@@ -414,9 +492,9 @@ export class OrganizationMigrationService {
                 history.effectiveEndDate = historyDto.effectiveEndDate || null;
                 history.isCurrent = historyDto.isCurrent;
                 history.assignmentReason = historyDto.assignmentReason || undefined;
-
-                // 서비스의 save 메서드 사용 (queryRunner 지원)
-                await this.employeeDepartmentPositionHistoryService.save(history, { queryRunner: itemQueryRunner });
+                await this.employeeDepartmentPositionHistoryService.save(history, {
+                    queryRunner: itemQueryRunner,
+                });
                 await itemQueryRunner.commitTransaction();
                 count++;
             } catch (error: any) {

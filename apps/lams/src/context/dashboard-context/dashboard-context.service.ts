@@ -27,7 +27,8 @@ import {
 /**
  * 대시보드 Context Service
  *
- * QueryBus를 통해 Handler를 호출하며, 스냅샷 조회와 집계를 조합하여 사용합니다.
+ * QueryBus를 통해 Handler를 호출하며, 스냅샷 조회와 집계를 조합합니다.
+ * (직원 목록 등은 각 핸들러가 필요 시 QueryBus로 다른 핸들러를 호출해 조회합니다.)
  */
 @Injectable()
 export class DashboardContextService {
@@ -133,8 +134,7 @@ export class DashboardContextService {
     async 부서별연도월별스냅샷을조회한다(
         query: IGetDepartmentSnapshotsQuery,
     ): Promise<IGetDepartmentSnapshotsResponse> {
-        const queryInstance = new GetDepartmentSnapshotsQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        return await this.queryBus.execute(new GetDepartmentSnapshotsQuery(query));
     }
 
     /**

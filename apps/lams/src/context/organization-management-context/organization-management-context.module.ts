@@ -6,6 +6,9 @@ import { QUERY_HANDLERS } from './handlers';
 import { DomainDepartmentModule } from '@libs/modules/department/department.module';
 import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
 import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
+import { EmployeeDepartmentPositionHistory } from '@libs/modules/employee-department-position-history/employee-department-position-history.entity';
+import { DepartmentHistory } from '@libs/modules/department-history/department-history.entity';
+import { Department } from '@libs/modules/department/department.entity';
 
 /**
  * 조직 관리 Context Module
@@ -15,7 +18,7 @@ import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
 @Module({
     imports: [
         CqrsModule, // QueryBus 제공
-        TypeOrmModule.forFeature([]),
+        TypeOrmModule.forFeature([EmployeeDepartmentPositionHistory, DepartmentHistory, Department]),
         DomainDepartmentModule,
         DomainEmployeeDepartmentPositionHistoryModule,
         DomainEmployeeModule,

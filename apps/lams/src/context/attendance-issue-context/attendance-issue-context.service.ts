@@ -57,8 +57,7 @@ export class AttendanceIssueContextService {
     async 연월부서별근태이슈를조회한다(
         query: IGetAttendanceIssuesByDepartmentQuery,
     ): Promise<IGetAttendanceIssuesByDepartmentResponse> {
-        const queryInstance = new GetAttendanceIssuesByDepartmentQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        return await this.queryBus.execute(new GetAttendanceIssuesByDepartmentQuery(query));
     }
 
     /**

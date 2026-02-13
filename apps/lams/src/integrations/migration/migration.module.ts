@@ -8,6 +8,7 @@ import { DomainPositionModule } from '@libs/modules/position/position.module';
 import { DomainRankModule } from '@libs/modules/rank/rank.module';
 import { DomainEmployeeDepartmentPositionModule } from '@libs/modules/employee-department-position/employee-department-position.module';
 import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
+import { DomainDepartmentHistoryModule } from '@libs/modules/department-history/department-history.module';
 
 /**
  * 조직 데이터 마이그레이션 모듈
@@ -23,6 +24,7 @@ import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/emp
         DomainRankModule,
         DomainEmployeeDepartmentPositionModule,
         DomainEmployeeDepartmentPositionHistoryModule,
+        DomainDepartmentHistoryModule,
     ],
     providers: [OrganizationMigrationService],
     exports: [OrganizationMigrationService],

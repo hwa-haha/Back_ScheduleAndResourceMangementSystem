@@ -1,17 +1,18 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
+import { QueryHandler, IQueryHandler, QueryBus } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
 import { GetEmployeesForWorkHoursStatisticsQuery } from './get-employees-for-work-hours-statistics.query';
 import {
     IGetEmployeesForWorkHoursStatisticsResponse,
     IEmployeeInfoForWorkHoursStatistics,
 } from '../../../interfaces/response/get-employees-for-work-hours-statistics-response.interface';
+import { GetAssignmentHistoryByYearMonthDepartmentQuery } from '../../../../organization-management-context';
 import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/employee-department-position-history/employee-department-position-history.service';
-import { EmployeeStatus } from '@libs/modules/employee/employee.entity';
+import { EmployeeDepartmentPositionHistory } from '@libs/modules/employee-department-position-history/employee-department-position-history.entity';
 
 /**
  * 시수 통계 대상 직원 결정 Query Handler
  *
- * 부서 ID가 있으면 해당 부서(및 하위) 부서원, 없으면 해당 연월 전체 직원을 구한 뒤
+ * 부서가 있으면 QueryBus로 부서별 배치이력 조회 핸들러를 호출하고, 없으면 도메인 서비스로 전체 배치이력을 조회한 뒤
  * 직원명·부서명 검색 및 직원 ID 필터를 적용합니다.
  */
 @QueryHandler(GetEmployeesForWorkHoursStatisticsQuery)
@@ -22,6 +23,7 @@ export class GetEmployeesForWorkHoursStatisticsHandler implements IQueryHandler<
     private readonly logger = new Logger(GetEmployeesForWorkHoursStatisticsHandler.name);
 
     constructor(
+        private readonly queryBus: QueryBus,
         private readonly employeeDepartmentPositionHistoryService: DomainEmployeeDepartmentPositionHistoryService,
     ) {}
 
@@ -38,47 +40,46 @@ export class GetEmployeesForWorkHoursStatisticsHandler implements IQueryHandler<
         } = query.data;
         const monthStr = month.padStart(2, '0');
 
+        let assignmentHistories: EmployeeDepartmentPositionHistory[];
+        if (departmentIds?.length) {
+            const all: EmployeeDepartmentPositionHistory[] = [];
+            for (const departmentId of departmentIds) {
+                const histories = await this.queryBus.execute(
+                    new GetAssignmentHistoryByYearMonthDepartmentQuery({
+                        year,
+                        month: monthStr,
+                        departmentId,
+                    }),
+                );
+                for (const h of histories) {
+                    if (!all.some((x) => x.employeeId === h.employeeId && x.departmentId === h.departmentId))
+                        all.push(h);
+                }
+            }
+            assignmentHistories = all;
+        } else {
+            assignmentHistories =
+                await this.employeeDepartmentPositionHistoryService.특정연월의전체배치이력목록을조회한다(
+                    year,
+                    monthStr,
+                );
+        }
+
         const employeeInfoMap = new Map<
             string,
             { employeeName: string; employeeNumber: string; departmentName: string }
         >();
 
-        if (departmentIds?.length) {
-            for (const departmentId of departmentIds) {
-                const histories =
-                    await this.employeeDepartmentPositionHistoryService.특정연월부서와하위부서의배치이력목록을조회한다(
-                        year,
-                        monthStr,
-                        departmentId,
-                    );
-                for (const h of histories) {
-                    if (employeeInfoMap.has(h.employeeId)) continue;
-                    const emp = h.employee as { name?: string; employeeNumber?: string } | undefined;
-                    const dept = h.department as { departmentName?: string } | undefined;
-                    employeeInfoMap.set(h.employeeId, {
-                        employeeName: emp?.name ?? '',
-                        employeeNumber: emp?.employeeNumber ?? '',
-                        departmentName: dept?.departmentName ?? '',
-                    });
-                }
-            }
-        } else {
-            const histories = await this.employeeDepartmentPositionHistoryService.특정연월의전체배치이력목록을조회한다(
-                year,
-                monthStr,
-            );
-            for (const h of histories) {
-                if (employeeInfoMap.has(h.employeeId)) continue;
-                const emp = h.employee as { name?: string; employeeNumber?: string } | undefined;
-                const dept = h.department as { departmentName?: string } | undefined;
-                if (h.department.departmentName !== '퇴사자') {
-                    employeeInfoMap.set(h.employeeId, {
-                        employeeName: emp?.name ?? '',
-                        employeeNumber: emp?.employeeNumber ?? '',
-                        departmentName: dept?.departmentName ?? '',
-                    });
-                }
-            }
+        for (const h of assignmentHistories) {
+            if (employeeInfoMap.has(h.employeeId)) continue;
+            const dept = h.department as { departmentName?: string } | undefined;
+            if (dept?.departmentName === '퇴사자') continue;
+            const emp = h.employee as { name?: string; employeeNumber?: string } | undefined;
+            employeeInfoMap.set(h.employeeId, {
+                employeeName: emp?.name ?? '',
+                employeeNumber: emp?.employeeNumber ?? '',
+                departmentName: dept?.departmentName ?? '',
+            });
         }
 
         let targetEmployeeIds = Array.from(employeeInfoMap.keys());

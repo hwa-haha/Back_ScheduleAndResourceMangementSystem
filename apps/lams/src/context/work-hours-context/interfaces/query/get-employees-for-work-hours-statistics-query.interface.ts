@@ -1,8 +1,7 @@
 /**
  * 시수 통계 대상 직원 결정 쿼리 인터페이스
  *
- * 부서 ID 또는 직원 ID가 없으면 해당 연월 전체 직원을 대상으로 하고,
- * 직원명·부서명 검색으로 필터링합니다.
+ * 핸들러 내부에서 QueryBus로 배치이력 조회 핸들러를 호출하거나, 도메인 서비스로 전체 배치이력을 조회합니다.
  */
 export interface IGetEmployeesForWorkHoursStatisticsQuery {
     /** 연도 */

@@ -60,8 +60,7 @@ export class DataSnapshotContextService {
      * @returns 스냅샷과 하위 스냅샷 조회 결과
      */
     async 스냅샷을ID로조회한다(query: IGetSnapshotByIdQuery): Promise<IGetSnapshotByIdResponse> {
-        const queryInstance = new GetSnapshotByIdQuery(query);
-        return await this.queryBus.execute(queryInstance);
+        return await this.queryBus.execute(new GetSnapshotByIdQuery(query));
     }
 
     /**

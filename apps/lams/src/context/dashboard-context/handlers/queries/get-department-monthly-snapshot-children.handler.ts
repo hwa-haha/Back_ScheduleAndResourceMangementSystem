@@ -1,17 +1,17 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
+import { QueryHandler, IQueryHandler, QueryBus } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
 import { GetDepartmentMonthlySnapshotChildrenQuery } from './get-department-monthly-snapshot-children.query';
 import { IGetDepartmentMonthlySnapshotChildrenResponse } from '../../interfaces/response/get-department-monthly-snapshot-children-response.interface';
 import { ApprovalStatus } from '../../../../domain/data-snapshot-info/data-snapshot-info.types';
-import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/employee-department-position-history/employee-department-position-history.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DataSnapshotChild } from '../../../../domain/data-snapshot-child/data-snapshot-child.entity';
+import { GetAssignmentHistoryByYearMonthDepartmentQuery } from '../../../organization-management-context';
 
 /**
  * 부서별 월별 스냅샷 child 조회 Query Handler
  *
- * 해당 연·월·부서의 직원 목록을 구한 뒤, 직원별 최적 child(제출됨·제출 시간 최신, 없으면 snapshot_version 최신)를 선택하여 반환합니다.
+ * QueryBus로 배치이력 조회 핸들러를 호출해 직원 목록을 구한 뒤, 직원별 최적 child를 선택하여 반환합니다.
  */
 @QueryHandler(GetDepartmentMonthlySnapshotChildrenQuery)
 export class GetDepartmentMonthlySnapshotChildrenHandler implements IQueryHandler<
@@ -21,7 +21,7 @@ export class GetDepartmentMonthlySnapshotChildrenHandler implements IQueryHandle
     private readonly logger = new Logger(GetDepartmentMonthlySnapshotChildrenHandler.name);
 
     constructor(
-        private readonly employeeDepartmentPositionHistoryService: DomainEmployeeDepartmentPositionHistoryService,
+        private readonly queryBus: QueryBus,
         @InjectRepository(DataSnapshotChild)
         private readonly dataSnapshotChildRepository: Repository<DataSnapshotChild>,
     ) {}
@@ -35,13 +35,9 @@ export class GetDepartmentMonthlySnapshotChildrenHandler implements IQueryHandle
 
         this.logger.log(`부서별 월별 스냅샷 child 조회: departmentId=${departmentId}, year=${year}, month=${monthStr}`);
 
-        // 하위 부서를 포함한 모든 부서원 조회
-        const employeeHistories =
-            await this.employeeDepartmentPositionHistoryService.특정연월부서와하위부서의배치이력목록을조회한다(
-                year,
-                monthStr,
-                departmentId,
-            );
+        const employeeHistories = await this.queryBus.execute(
+            new GetAssignmentHistoryByYearMonthDepartmentQuery({ year, month: monthStr, departmentId }),
+        );
         const employeeIds = employeeHistories.map((eh) => eh.employeeId).filter((id) => id);
 
         if (employeeIds.length === 0) {

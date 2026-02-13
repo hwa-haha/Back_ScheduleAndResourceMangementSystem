@@ -52,7 +52,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             // migrationsRun: false, // 애플리케이션 시작 시 자동 마이그레이션 실행 여부
 
             // 개발 환경 설정
-            // synchronize: isDevelopment, // 개발 환경에서만 스키마 자동 동기화
+            // synchronize: true, // 개발 환경에서만 스키마 자동 동기화
             logging: isDevelopment ? ['error', 'warn'] : ['error'],
 
             // 연결 풀 설정

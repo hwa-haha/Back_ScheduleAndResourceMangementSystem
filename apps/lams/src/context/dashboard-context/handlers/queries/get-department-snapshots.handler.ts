@@ -23,7 +23,7 @@ export class GetDepartmentSnapshotsHandler implements IQueryHandler<
 
         this.logger.log(`부서별 연도, 월별 스냅샷 조회: departmentId=${departmentId}, year=${year}, month=${month}`);
 
-        // GetDepartmentMonthlySnapshotChildrenQuery를 실행하여 selectedChildren 조회
+        // GetDepartmentMonthlySnapshotChildrenQuery 실행 (해당 핸들러 내부에서 QueryBus로 배치이력 조회)
         const snapshotChildrenResult = await this.queryBus.execute(
             new GetDepartmentMonthlySnapshotChildrenQuery({ departmentId, year, month }),
         );

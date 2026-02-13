@@ -7,7 +7,7 @@ import { DomainUsedAttendanceModule } from '../../domain/used-attendance/used-at
 import { DomainDataSnapshotInfoModule } from '../../domain/data-snapshot-info/data-snapshot-info.module';
 import { DomainDataSnapshotChildModule } from '../../domain/data-snapshot-child/data-snapshot-child.module';
 import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
-import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
+import { OrganizationManagementContextModule } from '../organization-management-context/organization-management-context.module';
 
 /**
  * 대시보드 Context Module
@@ -22,7 +22,7 @@ import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/emp
         DomainDataSnapshotInfoModule,
         DomainDataSnapshotChildModule,
         DomainEmployeeModule,
-        DomainEmployeeDepartmentPositionHistoryModule,
+        OrganizationManagementContextModule,
     ],
     providers: [DashboardContextService, ...QUERY_HANDLERS],
     exports: [DashboardContextService],

@@ -4,8 +4,8 @@ import { ApprovalContextService } from './approval-context.service';
 import { QUERY_HANDLERS, COMMAND_HANDLERS } from './handlers';
 import { DomainEmployeeDepartmentPermissionModule } from '../../domain/employee-department-permission/employee-department-permission.module';
 import { DomainDataSnapshotInfoModule } from '../../domain/data-snapshot-info/data-snapshot-info.module';
-import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
 import { DomainDepartmentModule } from '@libs/modules/department/department.module';
+import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
 
 /**
  * 결재 Context 모듈
@@ -17,8 +17,8 @@ import { DomainDepartmentModule } from '@libs/modules/department/department.modu
         CqrsModule,
         DomainEmployeeDepartmentPermissionModule,
         DomainDataSnapshotInfoModule,
-        DomainEmployeeDepartmentPositionHistoryModule,
         DomainDepartmentModule,
+        DomainEmployeeDepartmentPositionHistoryModule, // 부서별 직원 조회
     ],
     providers: [ApprovalContextService, ...QUERY_HANDLERS, ...COMMAND_HANDLERS],
     exports: [ApprovalContextService],

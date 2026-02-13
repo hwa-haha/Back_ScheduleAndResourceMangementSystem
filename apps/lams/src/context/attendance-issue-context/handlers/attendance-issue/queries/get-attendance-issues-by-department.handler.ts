@@ -1,15 +1,15 @@
-import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
+import { QueryHandler, IQueryHandler, QueryBus } from '@nestjs/cqrs';
 import { Logger } from '@nestjs/common';
 import { GetAttendanceIssuesByDepartmentQuery } from './get-attendance-issues-by-department.query';
 import { IGetAttendanceIssuesByDepartmentResponse } from '../../../interfaces/response/get-attendance-issues-by-department-response.interface';
 import { DomainAttendanceIssueService } from '../../../../../domain/attendance-issue/attendance-issue.service';
-import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/employee-department-position-history/employee-department-position-history.service';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { GetAssignmentHistoryByYearMonthDepartmentQuery } from '../../../../organization-management-context';
 
 /**
  * 연월/부서별 근태 이슈 조회 Query Handler
  *
- * 해당 연월과 부서에 소속되었던 직원들의 근태 이슈를 조회하고 직원별로 그룹핑합니다.
+ * QueryBus로 배치이력 조회 핸들러를 호출한 뒤, 해당 연월·부서 직원들의 근태 이슈를 조회하고 직원별로 그룹핑합니다.
  */
 @QueryHandler(GetAttendanceIssuesByDepartmentQuery)
 export class GetAttendanceIssuesByDepartmentHandler
@@ -19,13 +19,18 @@ export class GetAttendanceIssuesByDepartmentHandler
 
     constructor(
         private readonly attendanceIssueService: DomainAttendanceIssueService,
-        private readonly employeeDepartmentPositionHistoryService: DomainEmployeeDepartmentPositionHistoryService,
+        private readonly queryBus: QueryBus,
     ) {}
 
     async execute(
         query: GetAttendanceIssuesByDepartmentQuery,
     ): Promise<IGetAttendanceIssuesByDepartmentResponse> {
         const { year, month, departmentId } = query.data;
+        const monthStr = month.padStart(2, '0');
+
+        const departmentEmployees = await this.queryBus.execute(
+            new GetAssignmentHistoryByYearMonthDepartmentQuery({ year, month: monthStr, departmentId }),
+        );
 
         this.logger.log(`연월/부서별 근태 이슈 조회 시작: year=${year}, month=${month}, departmentId=${departmentId}`);
 
@@ -38,13 +43,6 @@ export class GetAttendanceIssuesByDepartmentHandler
         const endDate = format(monthEnd, 'yyyy-MM-dd');
 
         this.logger.log(`날짜 범위: ${startDate} ~ ${endDate}`);
-
-        // 2. 해당 부서 및 모든 하위 부서의 해당 연월에 소속되었던 직원 리스트 조회 (재귀적)
-        const departmentEmployees = await this.employeeDepartmentPositionHistoryService.특정연월부서와하위부서의배치이력목록을조회한다(
-            year,
-            month,
-            departmentId,
-        );
 
         if (departmentEmployees.length === 0) {
             this.logger.log(`해당 부서에 소속된 직원이 없습니다: departmentId=${departmentId}`);

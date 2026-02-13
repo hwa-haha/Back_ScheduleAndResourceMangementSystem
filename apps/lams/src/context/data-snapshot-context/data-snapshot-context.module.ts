@@ -6,6 +6,7 @@ import { DomainDataSnapshotInfoModule } from '../../domain/data-snapshot-info/da
 import { DomainAttendanceIssueModule } from '../../domain/attendance-issue/attendance-issue.module';
 import { DomainDailySummaryChangeHistoryModule } from '../../domain/daily-summary-change-history/daily-summary-change-history.module';
 import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
+import { OrganizationManagementContextModule } from '../organization-management-context/organization-management-context.module';
 
 /**
  * 데이터 스냅샷 Context Module
@@ -19,6 +20,7 @@ import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/emp
         DomainAttendanceIssueModule, // 이슈 복원을 위해 필요
         DomainDailySummaryChangeHistoryModule, // 변경이력 복원을 위해 필요
         DomainEmployeeDepartmentPositionHistoryModule, // 직원 부서 정보 조회를 위해 필요
+        OrganizationManagementContextModule,
     ],
     providers: [
         DataSnapshotContextService,

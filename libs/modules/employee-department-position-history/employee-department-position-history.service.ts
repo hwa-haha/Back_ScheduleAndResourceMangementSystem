@@ -3,21 +3,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, QueryRunner, Repository, DataSource, In } from 'typeorm';
 import { EmployeeDepartmentPositionHistory } from './employee-department-position-history.entity';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { DomainDepartmentService } from '../department/department.service';
+import { Department } from '../department/department.entity';
+import { DepartmentHistory } from '../department-history/department-history.entity';
 
 /**
  * 직원-부서-직책 이력 서비스
  *
  * 직원-부서-직책 이력 엔티티에 대한 CRUD 기능을 제공합니다.
  * 상위 로직에서 제공하는 트랜잭션(EntityManager)을 받아서 사용할 수 있습니다.
+ * 부서 계층 조회는 Repository + QueryBuilder(where)만 사용하여 도메인 순수성을 유지합니다.
  */
 @Injectable()
 export class DomainEmployeeDepartmentPositionHistoryService {
     constructor(
         @InjectRepository(EmployeeDepartmentPositionHistory)
         private readonly repository: Repository<EmployeeDepartmentPositionHistory>,
+        @InjectRepository(DepartmentHistory)
+        private readonly departmentHistoryRepository: Repository<DepartmentHistory>,
+        @InjectRepository(Department)
+        private readonly departmentRepository: Repository<Department>,
         private readonly dataSource: DataSource,
-        private readonly departmentService: DomainDepartmentService,
     ) {}
 
     /**
@@ -388,93 +393,6 @@ export class DomainEmployeeDepartmentPositionHistoryService {
             .leftJoinAndSelect('eh.position', 'pos')
             .leftJoinAndSelect('eh.rank', 'rank')
             .where('eh.departmentId = :departmentId', { departmentId })
-            .andWhere('eh.effectiveStartDate <= :endDate', { endDate })
-            .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :startDate)', { startDate })
-            .getMany();
-    }
-
-    /**
-     * 특정 연월 및 부서와 모든 하위 부서에 유효한 배치이력 목록을 재귀적으로 조회한다
-     *
-     * 해당 월의 범위(첫 날짜 ~ 마지막 날짜) 내에 유효한 배치 정보를 조회하여 배치이력 엔티티를 반환합니다.
-     * 특정 부서 및 모든 하위 부서에 속한 직원의 배치이력을 재귀적으로 조회합니다.
-     *
-     * 주의: 특정 연월의 부서 계층 구조를 기반으로 하위 부서를 찾습니다.
-     * 현재 시점의 부서 구조가 아닌, 해당 연월에 실제로 존재했던 부서 계층 구조를 사용합니다.
-     *
-     * @param year 연도
-     * @param month 월
-     * @param departmentId 부서 ID
-     *
-     * @returns 배치이력 엔티티 목록 (department 관계 포함, 하위 부서 포함)
-     */
-    async 특정연월부서와하위부서의배치이력목록을조회한다(
-        year: string,
-        month: string,
-        departmentId: string,
-    ): Promise<EmployeeDepartmentPositionHistory[]> {
-        const repository = this.repository;
-
-        // 해당 월의 시작일과 종료일 계산
-        const yearNum = parseInt(year);
-        const monthNum = parseInt(month);
-        const monthStart = startOfMonth(new Date(yearNum, monthNum - 1, 1));
-        const monthEnd = endOfMonth(new Date(yearNum, monthNum - 1, 1));
-        const startDate = format(monthStart, 'yyyy-MM-dd');
-        const endDate = format(monthEnd, 'yyyy-MM-dd');
-
-        // 1. 해당 연월의 모든 배치 이력을 조회하여 부서 계층 구조 재구성
-        const allHistories = await repository
-            .createQueryBuilder('eh')
-            .select('eh.departmentId', 'departmentId')
-            .addSelect('eh.parentDepartmentId', 'parentDepartmentId')
-            .where('eh.effectiveStartDate <= :endDate', { endDate })
-            .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :startDate)', { startDate })
-            .distinct(true)
-            .getRawMany();
-
-        // 2. 부서 계층 구조 맵 생성 (parentDepartmentId -> [childDepartmentId, ...])
-        const parentToChildrenMap = new Map<string, Set<string>>();
-        const allDepartmentIds = new Set<string>();
-
-        for (const history of allHistories) {
-            const deptId = history.departmentId;
-            const parentDeptId = history.parentDepartmentId;
-
-            allDepartmentIds.add(deptId);
-
-            if (parentDeptId) {
-                if (!parentToChildrenMap.has(parentDeptId)) {
-                    parentToChildrenMap.set(parentDeptId, new Set());
-                }
-                parentToChildrenMap.get(parentDeptId)!.add(deptId);
-            }
-        }
-
-        // 3. 특정 부서의 하위 부서 ID 목록을 재귀적으로 조회 (해당 연월의 부서 구조 기반)
-        const departmentIds: string[] = [departmentId];
-        const findChildDepartments = (parentId: string): void => {
-            const children = parentToChildrenMap.get(parentId);
-            if (children) {
-                for (const childId of children) {
-                    if (!departmentIds.includes(childId)) {
-                        departmentIds.push(childId);
-                        findChildDepartments(childId);
-                    }
-                }
-            }
-        };
-
-        findChildDepartments(departmentId);
-
-        // 4. 모든 부서(본부서 + 하위 부서)의 배치 이력 조회
-        return await repository
-            .createQueryBuilder('eh')
-            .leftJoinAndSelect('eh.department', 'dept')
-            .leftJoinAndSelect('eh.employee', 'emp')
-            .leftJoinAndSelect('eh.position', 'pos')
-            .leftJoinAndSelect('eh.rank', 'rank')
-            .where('eh.departmentId IN (:...departmentIds)', { departmentIds })
             .andWhere('eh.effectiveStartDate <= :endDate', { endDate })
             .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :startDate)', { startDate })
             .getMany();

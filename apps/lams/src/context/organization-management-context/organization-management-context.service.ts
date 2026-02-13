@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
-import { GetDepartmentListQuery, GetDepartmentListWithEmployeesQuery } from './handlers/department/queries';
+import {
+    GetDepartmentListQuery,
+    GetDepartmentListWithEmployeesQuery,
+    GetAssignmentHistoryByYearMonthDepartmentQuery,
+} from './handlers/department/queries';
 import { GetEmployeeIdsByNumbersQuery } from './handlers/employee/queries';
 import {
     IGetDepartmentListQuery,
     IGetDepartmentListResponse,
     IGetDepartmentListWithEmployeesResponse,
     IGetEmployeeIdsByNumbersResponse,
+    IGetAssignmentHistoryByYearMonthDepartmentQuery,
 } from './interfaces';
+import { EmployeeDepartmentPositionHistory } from '@libs/modules/employee-department-position-history/employee-department-position-history.entity';
 
 /**
  * 조직 관리 Context Service
@@ -47,5 +53,17 @@ export class OrganizationManagementContextService {
         const queryInstance = new GetEmployeeIdsByNumbersQuery({ employeeNumbers });
         const result = await this.queryBus.execute(queryInstance);
         return result.employeeIds;
+    }
+
+    /**
+     * 특정 연월 및 부서와 모든 하위 부서에 유효한 배치이력 목록을 재귀적으로 조회한다
+     *
+     * @param query 연도, 월, 부서 ID
+     * @returns 배치이력 엔티티 목록 (department 관계 포함, 하위 부서 포함)
+     */
+    async 특정연월부서와하위부서의배치이력목록을조회한다(
+        query: IGetAssignmentHistoryByYearMonthDepartmentQuery,
+    ): Promise<EmployeeDepartmentPositionHistory[]> {
+        return await this.queryBus.execute(new GetAssignmentHistoryByYearMonthDepartmentQuery(query));
     }
 }

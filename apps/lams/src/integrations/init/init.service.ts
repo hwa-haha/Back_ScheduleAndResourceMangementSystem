@@ -58,7 +58,7 @@ export class InitService implements OnApplicationBootstrap {
             // 3. 프로젝트 기본 데이터 생성
             await this.프로젝트기본데이터생성();
 
-            // 4. 조직 데이터 마이그레이션 (직원 데이터가 없으면 실행)
+            // 4. 조직 데이터 마이그레이션(동기화) — SSO 데이터 기준 존재 시 업데이트, 없으면 삽입
             await this.조직데이터마이그레이션();
 
             // 5. 직원 추가정보 기본 데이터 생성 (추가정보 없는 직원에 대해 레코드 생성)
@@ -549,28 +549,20 @@ export class InitService implements OnApplicationBootstrap {
     }
 
     /**
-     * 조직 데이터 마이그레이션을 실행한다
-     * 직원 데이터가 없으면 SSO에서 데이터를 가져와서 마이그레이션합니다.
+     * 조직 데이터 마이그레이션(동기화)을 실행한다
+     * SSO에서 데이터를 가져와 기존 레코드는 업데이트, 없으면 삽입합니다.
+     * 매 부팅 시 실행되어 SSO와 로컬 DB를 동기화합니다.
      */
     private async 조직데이터마이그레이션(): Promise<void> {
-        this.logger.log('조직 데이터 확인 중...');
-
-        // 직원 데이터가 있는지 확인 (Employee 엔티티는 deleted_at 필드가 없음)
-        const employeeCount = await this.dataSource.manager.count(Employee);
-
-        if (employeeCount > 0) {
-            this.logger.log(`조직 데이터가 이미 존재합니다 (직원 ${employeeCount}명). 마이그레이션을 건너뜁니다.`);
-            return;
-        }
+        this.logger.log('조직 데이터 마이그레이션(동기화) 실행 중...');
 
         try {
-            this.logger.log('조직 데이터가 없습니다. SSO에서 데이터를 가져와서 마이그레이션을 시작합니다.');
             const result = await this.organizationMigrationService.마이그레이션한다({
                 includeTerminated: true,
                 includeInactiveDepartments: true,
             });
             this.logger.log(
-                `✅ 조직 데이터 마이그레이션 완료: 직급 ${result.statistics.ranks}개, 직책 ${result.statistics.positions}개, 부서 ${result.statistics.departments}개, 직원 ${result.statistics.employees}명`,
+                `✅ 조직 데이터 마이그레이션 완료: 직급 ${result.statistics.ranks}개, 직책 ${result.statistics.positions}개, 부서 ${result.statistics.departments}개, 부서이력 ${result.statistics.departmentHistories}건, 직원 ${result.statistics.employees}명`,
             );
         } catch (error) {
             this.logger.error(`조직 데이터 마이그레이션 실패: ${error.message}`, error.stack);
