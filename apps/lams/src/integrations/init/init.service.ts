@@ -59,7 +59,7 @@ export class InitService implements OnApplicationBootstrap {
             await this.프로젝트기본데이터생성();
 
             // 4. 조직 데이터 마이그레이션(동기화) — SSO 데이터 기준 존재 시 업데이트, 없으면 삽입
-            await this.조직데이터마이그레이션();
+            // await this.조직데이터마이그레이션();
 
             // 5. 직원 추가정보 기본 데이터 생성 (추가정보 없는 직원에 대해 레코드 생성)
             await this.직원추가정보기본데이터생성();
