@@ -191,12 +191,9 @@ export class ScheduleNotificationContextService {
             if (scheduleIds.length === 0) {
                 return resultMap;
             }
-            console.time('employeeNotifications');
             // 해당 직원의 모든 읽지 않은 알림을 한 번에 조회
             const employeeNotifications = await this.employeeNotificationService.findByEmployeeId(employeeId);
-            console.timeEnd('employeeNotifications');
             // 읽지 않은 알림만 필터링하고 스케줄 ID별로 확인
-            console.time('employeeNotifications.filter');
             employeeNotifications
                 .filter((empNotification) => !empNotification.isRead)
                 .forEach((empNotification) => {
@@ -224,7 +221,6 @@ export class ScheduleNotificationContextService {
                         });
                     }
                 });
-            console.timeEnd('employeeNotifications.filter');
             return resultMap;
         } catch (error) {
             this.logger.error(`여러 스케줄별 읽지않은 알림 확인 중 오류 발생: ${error.message}`, error.stack);
