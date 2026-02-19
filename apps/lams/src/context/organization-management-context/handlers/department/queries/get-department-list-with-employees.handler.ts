@@ -35,7 +35,9 @@ export class GetDepartmentListWithEmployeesHandler implements IQueryHandler<
         this.logger.log(`부서 목록+부서별 직원 조회: year=${year}, month=${monthStr}`);
 
         const employeeHistories =
-            await this.employeeDepartmentPositionHistoryService.특정연월의전체배치이력목록을조회한다(year, monthStr);
+            await this.employeeDepartmentPositionHistoryService.특정연월의배치이력목록을조회한다(year, monthStr, {
+                includeEmployee: true,
+            });
 
         if (employeeHistories.length === 0) {
             this.logger.warn(`해당 연월에 유효한 배치이력이 없습니다. year=${year}, month=${monthStr}`);

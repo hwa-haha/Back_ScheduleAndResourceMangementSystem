@@ -43,6 +43,19 @@ export class DomainDepartmentService {
     }
 
     /**
+     * 퇴사자 부서를 제외한 전체 부서 목록을 order 기준 오름차순으로 조회한다
+     */
+    async 퇴사자를제외한전체부서목록을조회한다(manager?: EntityManager): Promise<Department[]> {
+        const repository = this.getRepository(manager);
+        return await repository
+            .createQueryBuilder('dept')
+            .where('dept.departmentName != :excludedDepartmentName', { excludedDepartmentName: '퇴사자' })
+            .andWhere('dept.isActive = :isActive', { isActive: true })
+            .orderBy('dept.order', 'ASC')
+            .getMany();
+    }
+
+    /**
      * ID로 엔티티를 조회한다
      */
     async findOne(id: string, manager?: EntityManager): Promise<Department | null> {

@@ -49,9 +49,10 @@ export class GetMonthlySummariesHandler implements IQueryHandler<
         // 1. 부서 및 모든 하위 부서에 속한 직원 ID 목록 조회 (해당 연월 기준, 재귀적)
         const monthEndDate = format(endDate, 'yyyy-MM-dd');
         const employeeHistories =
-            await this.employeeDepartmentPositionHistoryService.findByDepartmentWithChildrenAtDate(
+            await this.employeeDepartmentPositionHistoryService.findByDepartmentAtDate(
                 departmentId,
                 monthEndDate,
+                { includeChildren: true },
             );
         console.log(employeeHistories.map((eh) => eh.employee.name));
         const employeeIds = employeeHistories.map((eh) => eh.employeeId).filter((id) => id);

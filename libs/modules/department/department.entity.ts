@@ -35,7 +35,13 @@ export class Department {
     @Column({ unique: true, comment: '부서 코드' })
     departmentCode: string;
 
-    @Column({ comment: '유형', type: 'enum', enum: DepartmentType, default: DepartmentType.DEPARTMENT })
+    @Column({
+        comment: '유형',
+        type: 'enum',
+        enum: DepartmentType,
+        enumName: 'department_type_enum',
+        default: DepartmentType.DEPARTMENT,
+    })
     type: DepartmentType;
 
     @Column({ comment: '상위 부서 ID', type: 'uuid', nullable: true })
@@ -43,6 +49,12 @@ export class Department {
 
     @Column({ comment: '정렬 순서', default: 0 })
     order: number;
+
+    @Column({ comment: '활성 여부', default: true })
+    isActive: boolean;
+
+    @Column({ comment: '예외 부서 여부', default: false })
+    isException: boolean;
 
     // 부서 계층 구조
     @ManyToOne(() => Department, (department) => department.childDepartments, { nullable: true })

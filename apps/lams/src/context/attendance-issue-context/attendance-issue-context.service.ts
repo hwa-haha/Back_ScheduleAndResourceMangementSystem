@@ -9,6 +9,8 @@ import {
     ApplyAttendanceIssueCommand,
     RejectAttendanceIssueCommand,
     ReRequestAttendanceIssueCommand,
+    ReRequestAttendanceIssuesCommand,
+    RequestAttendanceIssueCommand,
 } from './handlers/attendance-issue';
 import {
     IGetAttendanceIssuesQuery,
@@ -27,6 +29,10 @@ import {
     IRejectAttendanceIssueResponse,
     IReRequestAttendanceIssueCommand,
     IReRequestAttendanceIssueResponse,
+    IReRequestAttendanceIssuesCommand,
+    IReRequestAttendanceIssuesResponse,
+    IRequestAttendanceIssueCommand,
+    IRequestAttendanceIssueResponse,
 } from './interfaces';
 
 /**
@@ -111,6 +117,26 @@ export class AttendanceIssueContextService {
         command: IReRequestAttendanceIssueCommand,
     ): Promise<IReRequestAttendanceIssueResponse> {
         const commandInstance = new ReRequestAttendanceIssueCommand(command);
+        return await this.commandBus.execute(commandInstance);
+    }
+
+    /**
+     * 근태 이슈를 요청한다 (직원용) - PENDING → REQUEST, 복수 ID
+     */
+    async 근태이슈를요청한다(
+        command: IRequestAttendanceIssueCommand,
+    ): Promise<IRequestAttendanceIssueResponse> {
+        const commandInstance = new RequestAttendanceIssueCommand(command);
+        return await this.commandBus.execute(commandInstance);
+    }
+
+    /**
+     * 근태 이슈들을 재요청한다 (직원용) - 복수 ID
+     */
+    async 근태이슈들을재요청한다(
+        command: IReRequestAttendanceIssuesCommand,
+    ): Promise<IReRequestAttendanceIssuesResponse> {
+        const commandInstance = new ReRequestAttendanceIssuesCommand(command);
         return await this.commandBus.execute(commandInstance);
     }
 }

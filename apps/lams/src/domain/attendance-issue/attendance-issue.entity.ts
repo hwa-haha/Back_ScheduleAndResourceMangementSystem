@@ -1,4 +1,4 @@
-import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn, Check } from 'typeorm';
 import { BadRequestException } from '@nestjs/common';
 import { BaseEntity } from '@libs/database/base/base.entity';
 import { Employee } from '@libs/modules/employee/employee.entity';
@@ -14,6 +14,7 @@ import { AttendanceIssueDTO, AttendanceIssueStatus } from './attendance-issue.ty
 @Entity('attendance_issue')
 @Index(['employee_id', 'date'])
 @Index(['status', 'created_at'])
+@Check('CHK_attendance_issue_status', `"status" IN ('pending', 'request', 'applied', 'not_applied')`)
 export class AttendanceIssue extends BaseEntity<AttendanceIssueDTO> {
     // BaseEntity에서 id, created_at, updated_at, deleted_at, created_by, updated_by, version 제공
 
@@ -139,13 +140,13 @@ export class AttendanceIssue extends BaseEntity<AttendanceIssueDTO> {
 
     /**
      * 상태
-     * 이슈의 현재 상태
+     * 이슈의 현재 상태 (varchar + check: pending, request, applied, not_applied)
      */
     @Column({
         name: 'status',
-        type: 'enum',
-        enum: AttendanceIssueStatus,
-        default: AttendanceIssueStatus.REQUEST,
+        type: 'varchar',
+        length: 20,
+        default: AttendanceIssueStatus.PENDING,
         comment: '상태',
     })
     status: AttendanceIssueStatus;

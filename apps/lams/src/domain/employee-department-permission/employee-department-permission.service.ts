@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, IsNull, Repository } from 'typeorm';
+import { EntityManager, In, IsNull, Repository } from 'typeorm';
 import { EmployeeDepartmentPermission } from './employee-department-permission.entity';
 import {
     CreateEmployeeDepartmentPermissionData,
@@ -108,6 +108,24 @@ export class DomainEmployeeDepartmentPermissionService {
             },
         });
         return permissions.map((permission) => permission.DTO변환한다());
+    }
+
+    /**
+     * 부서 ID 목록에 해당하는 권한 전체를 직원 정보와 함께 조회한다 (미삭제만)
+     */
+    async 부서ID목록으로권한목록조회한다(
+        departmentIds: string[],
+        manager?: EntityManager,
+    ): Promise<EmployeeDepartmentPermission[]> {
+        if (departmentIds.length === 0) {
+            return [];
+        }
+        const repository = this.getRepository(manager);
+        return await repository.find({
+            where: { department_id: In(departmentIds), deleted_at: IsNull() },
+            relations: ['employee'],
+            order: { created_at: 'DESC' },
+        });
     }
 
     /**

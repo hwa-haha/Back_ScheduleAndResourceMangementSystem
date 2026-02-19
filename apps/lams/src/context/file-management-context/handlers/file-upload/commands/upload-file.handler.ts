@@ -23,7 +23,6 @@ import { FileType } from '../../../../../domain/file/file.types';
 @CommandHandler(UploadFileCommand)
 export class UploadFileHandler implements ICommandHandler<UploadFileCommand, IUploadFileResponse> {
     private readonly logger = new Logger(UploadFileHandler.name);
- 
 
     // 한글-영어 컬럼명 매핑 (타입별로 분리)
     private readonly koreanToEnglish = {
@@ -114,7 +113,7 @@ export class UploadFileHandler implements ICommandHandler<UploadFileCommand, IUp
 
                     // 첫 번째 행의 키를 컬럼명으로 사용
                     const firstRow = rawExcelData[0];
-                    const columnNames = excelResult.headers
+                    const columnNames = excelResult.headers;
 
                     // 필수 컬럼명 검증 및 파일 타입 구분
                     const validationResult = this.validateAndDetermineFileType(columnNames);
@@ -138,6 +137,10 @@ export class UploadFileHandler implements ICommandHandler<UploadFileCommand, IUp
                             : this.koreanToEnglish.attendance;
 
                     const reconstructedData = this.reconstructDataWithEnglishKeys(rawExcelData, mapping);
+
+                    // 업로드 대상 연월과 데이터 내 연월이 다르면 오류
+                    this.validateYearMonth(fileType, reconstructedData, Number(year), Number(month));
+
                     // 직원별로 구분 (employeeNumber가 있는 경우만)
                     excelData = this.groupByEmployee(reconstructedData);
 
@@ -294,6 +297,96 @@ export class UploadFileHandler implements ICommandHandler<UploadFileCommand, IUp
     }
 
     /**
+     * 업로드 대상 연월(year, month)과 데이터 내 연월이 다른 행이 있으면 BadRequestException 발생
+     * - event: 발생시각(eventTime) 기준 연월 검사 (예: 2025-12-01 05:57:34)
+     * - attendance: 기간(period)의 시작일 기준 연월 검사 (예: 2025-12-30 ~ 2026-01-12 → 2025-12)
+     */
+    private validateYearMonth(
+        fileType: string,
+        data: Record<string, any>[],
+        targetYear: number,
+        targetMonth: number,
+    ): void {
+        const y = Number(targetYear);
+        const m = Number(targetMonth);
+        if (Number.isNaN(y) || Number.isNaN(m) || m < 1 || m > 12) {
+            throw new BadRequestException('업로드 대상 연월이 올바르지 않습니다.');
+        }
+
+        if (fileType === FileType.EVENT_HISTORY) {
+            // "2025-12-01 05:57:34" 또는 "2025-12-01T05:57:34" 형식 파싱. new Date()만 쓰면 2025-11-31 같은 잘못된 날짜가 12/1로 넘어가므로, 연·월·일을 추출해 유효성 검사 후 사용
+            const eventTimeRegex = /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/;
+            for (let i = 0; i < data.length; i++) {
+                const eventTime = data[i].eventTime;
+                if (eventTime == null || eventTime === '') continue;
+                const str = String(eventTime).trim();
+                const match = str.match(eventTimeRegex);
+                if (!match) {
+                    throw new BadRequestException(
+                        `${i + 2}행: 발생시각 형식이 올바르지 않습니다. (예: 2025-12-01 05:57:34)`,
+                    );
+                }
+                const parsedYear = parseInt(match[1], 10);
+                const parsedMonth = parseInt(match[2], 10);
+                const parsedDay = parseInt(match[3], 10);
+                const h = parseInt(match[4], 10);
+                const min = parseInt(match[5], 10);
+                const sec = parseInt(match[6], 10);
+                // 월(1-12) → 0-based, 로컬 기준으로 생성해 잘못된 날짜(예: 11-31)가 넘어가지 않았는지 확인
+                const date = new Date(parsedYear, parsedMonth - 1, parsedDay, h, min, sec);
+                if (
+                    date.getFullYear() !== parsedYear ||
+                    date.getMonth() + 1 !== parsedMonth ||
+                    date.getDate() !== parsedDay
+                ) {
+                    throw new BadRequestException(
+                        `${i + 2}행: 발생시각의 날짜가 유효하지 않습니다. (${parsedYear}-${String(parsedMonth).padStart(2, '0')}-${String(parsedDay).padStart(2, '0')} — 해당 월의 일 수를 확인하세요)`,
+                    );
+                }
+                if (parsedYear !== y || parsedMonth !== m) {
+                    throw new BadRequestException(
+                        `${i + 2}행: 발생시각의 연월(${parsedYear}-${String(parsedMonth).padStart(2, '0')})이 업로드 대상 연월(${y}-${String(m).padStart(2, '0')})과 다릅니다.`,
+                    );
+                }
+            }
+            return;
+        }
+
+        if (fileType === FileType.ATTENDANCE_DATA) {
+            // 기간에서 시작일·종료일 추출 (예: 2025-12-30 ~ 2026-01-12)
+            const periodDateRegex = /\d{4}-\d{2}-\d{2}/g;
+            for (let i = 0; i < data.length; i++) {
+                const period = data[i].period;
+                if (period == null || period === '') continue;
+                const str = String(period).trim();
+                const matches = str.match(periodDateRegex);
+                if (!matches || matches.length < 1) {
+                    throw new BadRequestException(
+                        `${i + 2}행: 기간 형식이 올바르지 않습니다. (예: 2025-12-30 ~ 2026-01-12)`,
+                    );
+                }
+                const startDateStr = matches[0];
+                const endDateStr = matches.length >= 2 ? matches[1] : matches[0];
+                const startDate = new Date(startDateStr);
+                const endDate = new Date(endDateStr);
+                if (Number.isNaN(startDate.getTime())) {
+                    throw new BadRequestException(`${i + 2}행: 기간의 시작일을 해석할 수 없습니다. (${startDateStr})`);
+                }
+                if (Number.isNaN(endDate.getTime())) {
+                    throw new BadRequestException(`${i + 2}행: 기간의 종료일을 해석할 수 없습니다. (${endDateStr})`);
+                }
+                const startInTarget = startDate.getFullYear() === y && startDate.getMonth() + 1 === m;
+                const endInTarget = endDate.getFullYear() === y && endDate.getMonth() + 1 === m;
+                if (!startInTarget && !endInTarget) {
+                    throw new BadRequestException(
+                        `${i + 2}행: 기간(${startDateStr} ~ ${endDateStr})이 업로드 대상 연월(${y}-${String(m).padStart(2, '0')})에 전혀 걸쳐 있지 않습니다. 시작일 또는 종료일 중 하나라도 해당 연월에 포함되어야 합니다.`,
+                    );
+                }
+            }
+        }
+    }
+
+    /**
      * 직원별로 데이터 그룹화
      * employeeNumber가 없는 경우는 저장하지 않습니다.
      */
@@ -322,8 +415,10 @@ export class UploadFileHandler implements ICommandHandler<UploadFileCommand, IUp
      * 각 부서 그룹 안에 직원 정보를 하나씩만 저장합니다.
      */
     private buildOrgData(excelData: Record<string, any>[]): Record<string, any> | null {
-        const departments: Record<string, Array<{ employeeNumber: string; name: string | null; position: string | null }>> =
-            {};
+        const departments: Record<
+            string,
+            Array<{ employeeNumber: string; name: string | null; position: string | null }>
+        > = {};
         const employeeInDepartment: Record<string, Set<string>> = {}; // 부서별로 이미 추가된 직원번호 추적
 
         excelData.forEach((row) => {

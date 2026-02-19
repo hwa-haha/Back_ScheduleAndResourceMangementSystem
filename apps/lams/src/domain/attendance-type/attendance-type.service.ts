@@ -62,7 +62,7 @@ export class DomainAttendanceTypeService {
     async 목록조회한다(): Promise<AttendanceTypeDTO[]> {
         const attendanceTypes = await this.repository.find({
             where: { deleted_at: IsNull() },
-            order: { created_at: 'DESC' },
+            order: { title: 'ASC' },
         });
         return attendanceTypes.map((at) => at.DTO변환한다());
     }

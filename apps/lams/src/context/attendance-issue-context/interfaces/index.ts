@@ -7,6 +7,8 @@ export * from './command/update-attendance-issue-correction-command.interface';
 export * from './command/apply-attendance-issue-command.interface';
 export * from './command/reject-attendance-issue-command.interface';
 export * from './command/re-request-attendance-issue-command.interface';
+export * from './command/re-request-attendance-issues-command.interface';
+export * from './command/request-attendance-issue-command.interface';
 export * from './response/get-attendance-issues-response.interface';
 export * from './response/get-attendance-issue-response.interface';
 export * from './response/get-attendance-issues-by-department-response.interface';
@@ -15,3 +17,5 @@ export * from './response/update-attendance-issue-correction-response.interface'
 export * from './response/apply-attendance-issue-response.interface';
 export * from './response/reject-attendance-issue-response.interface';
 export * from './response/re-request-attendance-issue-response.interface';
+export * from './response/re-request-attendance-issues-response.interface';
+export * from './response/request-attendance-issue-response.interface';

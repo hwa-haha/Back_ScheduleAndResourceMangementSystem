@@ -59,10 +59,9 @@ export class GetEmployeesForWorkHoursStatisticsHandler implements IQueryHandler<
             assignmentHistories = all;
         } else {
             assignmentHistories =
-                await this.employeeDepartmentPositionHistoryService.특정연월의전체배치이력목록을조회한다(
-                    year,
-                    monthStr,
-                );
+                await this.employeeDepartmentPositionHistoryService.특정연월의배치이력목록을조회한다(year, monthStr, {
+                    includeEmployee: true,
+                });
         }
 
         const employeeInfoMap = new Map<

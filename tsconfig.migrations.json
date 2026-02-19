@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist/lams-migrations",
+    "rootDir": "./apps/lams/libs/migrations",
+    "noEmit": false,
+    "incremental": false
+  },
+  "include": ["./apps/lams/libs/migrations/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

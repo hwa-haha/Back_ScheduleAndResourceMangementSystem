@@ -137,7 +137,6 @@ export class ScheduleManagementService {
             return { schedules: [] };
         }
 
-        console.time('scheduleDataList');
         // 3. 벌크 데이터 조회 (한 번의 호출로 모든 관련 데이터 조회)
         const scheduleDataList = await this.scheduleQueryContextService.복수_일정과_관계정보들을_조회한다(scheduleIds, {
             withReservation: true,
@@ -145,7 +144,6 @@ export class ScheduleManagementService {
             withProject: true,
             withParticipants: true, // 예약자 정보 필요
         });
-        console.timeEnd('scheduleDataList');
         // employeeIds 필터링 적용 (해당 직원이 참여하는 일정만)
         // TODO : 부서 및 회사 일정도 추가 필요
         let filteredScheduleDataList = scheduleDataList;

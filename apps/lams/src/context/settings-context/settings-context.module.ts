@@ -11,7 +11,7 @@ import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
 import { DomainDepartmentModule } from '@libs/modules/department/department.module';
 import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
 import { DomainWageCalculationTypeModule } from '../../domain/wage-calculation-type/wage-calculation-type.module';
- 
+
 /**
  * 설정 관리 Context 모듈
  */
@@ -27,7 +27,6 @@ import { DomainWageCalculationTypeModule } from '../../domain/wage-calculation-t
         DomainDepartmentModule,
         DomainEmployeeDepartmentPositionHistoryModule,
         DomainWageCalculationTypeModule,
-
     ],
     providers: [SettingsContextService, ...QUERY_HANDLERS, ...COMMAND_HANDLERS],
     exports: [SettingsContextService],

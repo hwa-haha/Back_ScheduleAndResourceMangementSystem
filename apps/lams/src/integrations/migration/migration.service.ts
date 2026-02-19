@@ -265,6 +265,8 @@ export class OrganizationMigrationService {
      * 부서는 계층 구조로 되어 있어서 부모 부서가 먼저 생성되어야 합니다.
      * parentDepartmentId가 null인 부서부터 시작해서 계층적으로 저장합니다.
      * 실제로 저장된 부서 ID 집합을 반환하여 부서 이력 마이그레이션 선별에 사용한다.
+     * - ExportDepartmentDto의 createdAt/updatedAt을 보존하여 저장한다.
+     * - type은 DepartmentType에 없으면 DEPARTMENT로 fallback한다.
      */
     private async 마이그레이션Department한다(
         departments: ExportDepartmentDto[],
@@ -273,7 +275,7 @@ export class OrganizationMigrationService {
         let count = 0;
         const savedDepartmentIds = new Set<string>();
 
-        // 퇴사자 부서를 배열 맨 앞에 추가
+        // 퇴사자 부서를 배열 맨 앞에 추가 (ExportDepartmentDto 형식 준수)
         const terminatedDepartment: ExportDepartmentDto = {
             id: 'ae6b09b3-3811-4d6a-af3b-bec84ea87b10',
             departmentName: '퇴사자',
@@ -281,14 +283,15 @@ export class OrganizationMigrationService {
             type: 'DEPARTMENT',
             parentDepartmentId: null,
             order: 2,
+            isActive: true,
+            isException: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
 
-        // 부서를 계층적으로 저장하기 위해 여러 번 반복
-        // 각 반복에서 저장 가능한 부서(부모가 이미 저장된 부서)만 저장
-        let remainingDepartments = [terminatedDepartment, ...departments];
-        const maxIterations = departments.length; // 무한 루프 방지
+        const totalDepts = 1 + departments.length;
+        let remainingDepartments: ExportDepartmentDto[] = [terminatedDepartment, ...departments];
+        const maxIterations = totalDepts + 10; // 계층 깊이 대비 여유
         let iterations = 0;
 
         while (remainingDepartments.length > 0 && iterations < maxIterations) {
@@ -297,15 +300,14 @@ export class OrganizationMigrationService {
             const stillRemaining: ExportDepartmentDto[] = [];
 
             for (const deptDto of remainingDepartments) {
-                // 부모 부서가 없거나, 부모 부서가 이미 저장된 경우 저장 가능
-                if (!deptDto.parentDepartmentId || savedDepartmentIds.has(deptDto.parentDepartmentId)) {
+                const parentSaved = !deptDto.parentDepartmentId || savedDepartmentIds.has(deptDto.parentDepartmentId);
+                if (parentSaved) {
                     toSave.push(deptDto);
                 } else {
                     stillRemaining.push(deptDto);
                 }
             }
 
-            // 저장 가능한 부서들을 저장 (존재하면 업데이트, 없으면 삽입)
             const manager = queryRunner.manager;
             for (const deptDto of toSave) {
                 const existing = await this.departmentService.findOne(deptDto.id, manager);
@@ -313,9 +315,13 @@ export class OrganizationMigrationService {
                 department.id = deptDto.id;
                 department.departmentName = deptDto.departmentName;
                 department.departmentCode = deptDto.departmentCode;
-                department.type = deptDto.type as DepartmentType;
-                department.parentDepartmentId = deptDto.parentDepartmentId || undefined;
+                department.type = this.유효한부서타입으로변환한다(deptDto.type);
+                department.parentDepartmentId = deptDto.parentDepartmentId ?? undefined;
                 department.order = deptDto.order;
+                department.isActive = deptDto.isActive ?? true;
+                department.isException = deptDto.isException ?? false;
+                department.createdAt = new Date(deptDto.createdAt);
+                department.updatedAt = new Date(deptDto.updatedAt);
                 await this.departmentService.save(department, { queryRunner });
                 savedDepartmentIds.add(deptDto.id);
                 count++;
@@ -323,7 +329,6 @@ export class OrganizationMigrationService {
 
             remainingDepartments = stillRemaining;
 
-            // 저장 가능한 부서가 없으면 루프 종료
             if (toSave.length === 0) {
                 if (remainingDepartments.length > 0) {
                     this.logger.warn(
@@ -341,6 +346,15 @@ export class OrganizationMigrationService {
         }
 
         return { count, savedDepartmentIds };
+    }
+
+    /** SSO type 문자열을 DepartmentType으로 변환 (없으면 DEPARTMENT) */
+    private 유효한부서타입으로변환한다(type: string): DepartmentType {
+        const v = type?.toUpperCase();
+        if (v === 'COMPANY' || v === 'DIVISION' || v === 'DEPARTMENT' || v === 'TEAM') {
+            return v as DepartmentType;
+        }
+        return DepartmentType.DEPARTMENT;
     }
 
     /**
@@ -385,9 +399,7 @@ export class OrganizationMigrationService {
             count++;
         }
         if (skipped > 0) {
-            this.logger.warn(
-                `부서 이력 ${skipped}건 건너뜀 (departmentId가 마이그레이션된 부서 목록에 없음)`,
-            );
+            this.logger.warn(`부서 이력 ${skipped}건 건너뜀 (departmentId가 마이그레이션된 부서 목록에 없음)`);
         }
         return count;
     }

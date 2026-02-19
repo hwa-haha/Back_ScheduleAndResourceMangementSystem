@@ -65,6 +65,36 @@ export class ApplyAttendanceIssueRequestDto {
 }
 
 /**
+ * 근태 이슈 요청 DTO (PENDING → REQUEST, 복수 ID)
+ */
+export class RequestAttendanceIssueRequestDto {
+    @ApiProperty({
+        description: '요청할 근태 이슈 ID 목록 (대기 상태만 요청 가능)',
+        example: ['123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
+        type: [String],
+    })
+    @IsArray()
+    @ArrayMinSize(1)
+    @IsUUID('4', { each: true })
+    ids: string[];
+}
+
+/**
+ * 근태 이슈 재요청 DTO (복수 ID)
+ */
+export class ReRequestAttendanceIssuesRequestDto {
+    @ApiProperty({
+        description: '재요청할 근태 이슈 ID 목록 (이미 반영된 이슈는 제외)',
+        example: ['123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
+        type: [String],
+    })
+    @IsArray()
+    @ArrayMinSize(1)
+    @IsUUID('4', { each: true })
+    ids: string[];
+}
+
+/**
  * 근태 이슈 미반영 요청 DTO
  */
 export class RejectAttendanceIssueRequestDto {
@@ -138,6 +168,28 @@ export class AttendanceIssueResponseDto {
 
     @ApiProperty({ description: '수정 시간' })
     updatedAt: Date;
+}
+
+/**
+ * 근태 이슈 요청 응답 DTO (복수 처리 결과)
+ */
+export class RequestAttendanceIssueResponseDto {
+    @ApiProperty({ description: '요청 처리된 근태 이슈 목록', type: [AttendanceIssueResponseDto] })
+    issues: AttendanceIssueResponseDto[];
+
+    @ApiProperty({ description: '요청 처리된 개수', example: 2 })
+    requestedCount: number;
+}
+
+/**
+ * 근태 이슈 재요청 응답 DTO (복수 처리 결과)
+ */
+export class ReRequestAttendanceIssuesResponseDto {
+    @ApiProperty({ description: '재요청 처리된 근태 이슈 목록', type: [AttendanceIssueResponseDto] })
+    issues: AttendanceIssueResponseDto[];
+
+    @ApiProperty({ description: '재요청 처리된 개수', example: 2 })
+    reRequestedCount: number;
 }
 
 /**

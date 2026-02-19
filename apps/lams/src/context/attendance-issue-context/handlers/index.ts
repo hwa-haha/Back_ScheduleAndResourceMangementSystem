@@ -10,6 +10,8 @@ import {
     ApplyAttendanceIssueHandler,
     RejectAttendanceIssueHandler,
     ReRequestAttendanceIssueHandler,
+    ReRequestAttendanceIssuesHandler,
+    RequestAttendanceIssueHandler,
 } from './attendance-issue/commands';
 
 export const QUERY_HANDLERS = [
@@ -25,4 +27,6 @@ export const COMMAND_HANDLERS = [
     ApplyAttendanceIssueHandler,
     RejectAttendanceIssueHandler,
     ReRequestAttendanceIssueHandler,
+    ReRequestAttendanceIssuesHandler,
+    RequestAttendanceIssueHandler,
 ];

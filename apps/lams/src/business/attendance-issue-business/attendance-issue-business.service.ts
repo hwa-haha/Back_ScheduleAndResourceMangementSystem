@@ -18,6 +18,10 @@ import {
     IRejectAttendanceIssueResponse,
     IReRequestAttendanceIssueCommand,
     IReRequestAttendanceIssueResponse,
+    IRequestAttendanceIssueCommand,
+    IRequestAttendanceIssueResponse,
+    IReRequestAttendanceIssuesCommand,
+    IReRequestAttendanceIssuesResponse,
 } from '../../context/attendance-issue-context/interfaces';
 import { AttendanceIssueStatus } from '../../domain/attendance-issue/attendance-issue.types';
 
@@ -179,6 +183,28 @@ export class AttendanceIssueBusinessService {
         this.logger.log(`근태 이슈 재요청: id=${id}`);
         return await this.attendanceIssueContextService.근태이슈를재요청한다({
             id,
+            userId,
+        });
+    }
+
+    /**
+     * 근태 이슈를 요청한다 (직원용) - PENDING → REQUEST, 복수 ID
+     */
+    async 근태이슈를요청한다(ids: string[], userId: string): Promise<IRequestAttendanceIssueResponse> {
+        this.logger.log(`근태 이슈 요청: ids=${ids.join(', ')}`);
+        return await this.attendanceIssueContextService.근태이슈를요청한다({
+            ids,
+            userId,
+        });
+    }
+
+    /**
+     * 근태 이슈들을 재요청한다 (직원용) - 복수 ID
+     */
+    async 근태이슈들을재요청한다(ids: string[], userId: string): Promise<IReRequestAttendanceIssuesResponse> {
+        this.logger.log(`근태 이슈 재요청: ids=${ids.join(', ')}`);
+        return await this.attendanceIssueContextService.근태이슈들을재요청한다({
+            ids,
             userId,
         });
     }
