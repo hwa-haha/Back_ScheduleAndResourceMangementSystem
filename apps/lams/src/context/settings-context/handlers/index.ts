@@ -2,6 +2,7 @@ export * from './department/queries/get-department-list-for-permission.handler';
 export * from './permission/queries/get-permission-related-department-list.handler';
 export * from './permission/queries/get-permission-related-employee-list.handler';
 export * from './permission/queries/get-employee-permission-list.handler';
+export * from './permission/queries/get-department-permission-list.handler';
 export * from './holiday-info/queries/get-holiday-list.handler';
 export * from './holiday-info/queries/get-holiday.handler';
 export * from './work-time-override/queries/get-work-time-override-list.handler';
@@ -26,6 +27,7 @@ import { GetDepartmentListForPermissionHandler } from './department/queries/get-
 import { GetPermissionRelatedDepartmentListHandler } from './permission/queries/get-permission-related-department-list.handler';
 import { GetPermissionRelatedEmployeeListHandler } from './permission/queries/get-permission-related-employee-list.handler';
 import { GetEmployeePermissionListHandler } from './permission/queries/get-employee-permission-list.handler';
+import { GetDepartmentPermissionListHandler } from './permission/queries/get-department-permission-list.handler';
 import { GetHolidayListHandler } from './holiday-info/queries/get-holiday-list.handler';
 import { GetHolidayHandler } from './holiday-info/queries/get-holiday.handler';
 import { GetWorkTimeOverrideListHandler } from './work-time-override/queries/get-work-time-override-list.handler';
@@ -51,6 +53,7 @@ export const QUERY_HANDLERS = [
     GetPermissionRelatedDepartmentListHandler,
     GetPermissionRelatedEmployeeListHandler,
     GetEmployeePermissionListHandler,
+    GetDepartmentPermissionListHandler,
     GetEmployeeExtraInfoListHandler,
     GetHolidayListHandler,
     GetHolidayHandler,

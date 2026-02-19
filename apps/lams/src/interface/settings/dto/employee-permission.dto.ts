@@ -166,7 +166,7 @@ export class EmployeeExtraInfoSummaryDto {
 }
 
 /**
- * 직원 권한 정보 DTO
+ * 직원 권한 정보 DTO (추가정보 제외)
  */
 export class EmployeeWithPermissionsDto {
     @ApiProperty({ description: '직원 ID' })
@@ -180,6 +180,20 @@ export class EmployeeWithPermissionsDto {
 
     @ApiProperty({ description: '부서별 권한 목록', type: [EmployeeDepartmentPermissionInfoDto] })
     permissions: EmployeeDepartmentPermissionInfoDto[];
+}
+
+/**
+ * 직원 추가정보만 응답 DTO (권한 정보 제외)
+ */
+export class EmployeeWithExtraInfoDto {
+    @ApiProperty({ description: '직원 ID' })
+    id: string;
+
+    @ApiProperty({ description: '직원번호' })
+    employeeNumber: string;
+
+    @ApiProperty({ description: '직원명' })
+    employeeName: string;
 
     @ApiPropertyOptional({
         description: '직원 추가정보 (없을 수 있음)',
@@ -206,6 +220,17 @@ export class GetPermissionRelatedDepartmentListResponseDto {
 export class GetPermissionRelatedEmployeeListResponseDto {
     @ApiProperty({ description: '직원 목록', type: [EmployeeWithPermissionsDto] })
     employees: EmployeeWithPermissionsDto[];
+
+    @ApiProperty({ description: '전체 직원 수' })
+    totalCount: number;
+}
+
+/**
+ * 권한 관련 직원 목록 조회 응답 DTO (추가정보만 포함, 권한 정보 제외)
+ */
+export class GetPermissionRelatedEmployeeListWithExtraInfoResponseDto {
+    @ApiProperty({ description: '직원 목록 (추가정보만)', type: [EmployeeWithExtraInfoDto] })
+    employees: EmployeeWithExtraInfoDto[];
 
     @ApiProperty({ description: '전체 직원 수' })
     totalCount: number;

@@ -12,6 +12,8 @@ import {
     IGetPermissionRelatedEmployeeListResponse,
     IGetEmployeePermissionListQuery,
     IGetEmployeePermissionListResponse,
+    IGetDepartmentPermissionListQuery,
+    IGetDepartmentPermissionListResponse,
     IGetHolidayListResponse,
     IGetWorkTimeOverrideListResponse,
     IGetAttendanceTypeListResponse,
@@ -61,12 +63,21 @@ export class SettingsBusinessService {
     }
 
     /**
-     * 권한 관련 직원 목록을 조회한다
+     * 권한 관련 직원 목록을 조회한다 (추가정보 제외)
      */
     async 권한관련직원목록을조회한다(
         query: IGetPermissionRelatedEmployeeListQuery,
     ): Promise<IGetPermissionRelatedEmployeeListResponse> {
         return await this.settingsContextService.권한관련직원목록을조회한다(query);
+    }
+
+    /**
+     * 권한 관련 직원 목록 및 추가정보를 조회한다
+     */
+    async 권한관련직원목록및추가정보를조회한다(
+        query: IGetPermissionRelatedEmployeeListQuery,
+    ): Promise<IGetPermissionRelatedEmployeeListResponse> {
+        return await this.settingsContextService.권한관련직원목록및추가정보를조회한다(query);
     }
 
     /**
@@ -76,6 +87,15 @@ export class SettingsBusinessService {
         query: IGetEmployeePermissionListQuery,
     ): Promise<IGetEmployeePermissionListResponse> {
         return await this.settingsContextService.직원의권한목록을조회한다(query);
+    }
+
+    /**
+     * 특정 부서별 직원 권한 목록을 조회한다
+     */
+    async 부서별직원권한목록을조회한다(
+        query: IGetDepartmentPermissionListQuery,
+    ): Promise<IGetDepartmentPermissionListResponse> {
+        return await this.settingsContextService.부서별직원권한목록을조회한다(query);
     }
 
     /**

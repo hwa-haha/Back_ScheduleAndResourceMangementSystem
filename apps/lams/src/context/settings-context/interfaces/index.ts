@@ -2,6 +2,7 @@ export * from './query/get-department-list-for-permission-query.interface';
 export * from './query/get-permission-related-department-list-query.interface';
 export * from './query/get-permission-related-employee-list-query.interface';
 export * from './query/get-employee-permission-list-query.interface';
+export * from './query/get-department-permission-list-query.interface';
 export * from './query/get-holiday-list-query.interface';
 export * from './query/get-holiday-query.interface';
 export * from './query/get-work-time-override-list-query.interface';
@@ -26,6 +27,7 @@ export * from './response/get-department-list-for-permission-response.interface'
 export * from './response/get-permission-related-department-list-response.interface';
 export * from './response/get-permission-related-employee-list-response.interface';
 export * from './response/get-employee-permission-list-response.interface';
+export * from './response/get-department-permission-list-response.interface';
 export * from './response/update-employee-department-permission-response.interface';
 export * from './response/update-employee-extra-info-response.interface';
 export * from './response/get-holiday-list-response.interface';

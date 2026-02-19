@@ -15,6 +15,8 @@ import {
     IGetPermissionRelatedEmployeeListResponse,
     IGetEmployeePermissionListQuery,
     IGetEmployeePermissionListResponse,
+    IGetDepartmentPermissionListQuery,
+    IGetDepartmentPermissionListResponse,
     IGetEmployeeExtraInfoListQuery,
     IGetEmployeeExtraInfoListResponse,
     IGetHolidayListResponse,
@@ -49,6 +51,7 @@ import {
 import { GetDepartmentListForPermissionQuery } from './handlers/department/queries/get-department-list-for-permission.query';
 import { GetPermissionRelatedEmployeeListQuery } from './handlers/permission/queries/get-permission-related-employee-list.query';
 import { GetEmployeePermissionListQuery } from './handlers/permission/queries/get-employee-permission-list.query';
+import { GetDepartmentPermissionListQuery } from './handlers/permission/queries/get-department-permission-list.query';
 import { GetEmployeeExtraInfoListQuery } from './handlers/employee-extra-info/queries/get-employee-extra-info-list.query';
 import { GetHolidayListQuery } from './handlers/holiday-info/queries/get-holiday-list.query';
 import { GetHolidayQuery } from './handlers/holiday-info/queries/get-holiday.query';
@@ -91,9 +94,18 @@ export class SettingsContextService {
     }
 
     /**
-     * 권한 관련 직원 목록을 조회한다 (추가정보 포함, 두 조회 결과 병합)
+     * 권한 관련 직원 목록을 조회한다 (권한 정보만, 추가정보 제외)
      */
     async 권한관련직원목록을조회한다(
+        query: IGetPermissionRelatedEmployeeListQuery,
+    ): Promise<IGetPermissionRelatedEmployeeListResponse> {
+        return await this.queryBus.execute(new GetPermissionRelatedEmployeeListQuery(query));
+    }
+
+    /**
+     * 권한 관련 직원 목록 및 추가정보를 조회한다 (두 조회 결과 병합)
+     */
+    async 권한관련직원목록및추가정보를조회한다(
         query: IGetPermissionRelatedEmployeeListQuery,
     ): Promise<IGetPermissionRelatedEmployeeListResponse> {
         const [permissionResult, extraInfoResult] = await Promise.all([
@@ -121,6 +133,15 @@ export class SettingsContextService {
         query: IGetEmployeePermissionListQuery,
     ): Promise<IGetEmployeePermissionListResponse> {
         return await this.queryBus.execute(new GetEmployeePermissionListQuery(query));
+    }
+
+    /**
+     * 특정 부서별 직원 권한 목록을 조회한다
+     */
+    async 부서별직원권한목록을조회한다(
+        query: IGetDepartmentPermissionListQuery,
+    ): Promise<IGetDepartmentPermissionListResponse> {
+        return await this.queryBus.execute(new GetDepartmentPermissionListQuery(query));
     }
 
     /**

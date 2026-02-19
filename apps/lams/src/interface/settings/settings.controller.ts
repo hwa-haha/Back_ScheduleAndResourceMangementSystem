@@ -18,10 +18,14 @@ import {
     UpdateEmployeeDepartmentPermissionResponseDto,
     GetPermissionRelatedEmployeeListRequestDto,
     GetPermissionRelatedEmployeeListResponseDto,
+    GetPermissionRelatedEmployeeListWithExtraInfoResponseDto,
     GetEmployeePermissionListRequestDto,
     GetEmployeePermissionListResponseDto,
 } from './dto/employee-permission.dto';
-import { GetDepartmentListForPermissionResponseDto } from './dto/department-permission.dto';
+import {
+    GetDepartmentListForPermissionResponseDto,
+    GetDepartmentPermissionListResponseDto,
+} from './dto/department-permission.dto';
 import { UpdateEmployeeExtraInfoRequestDto, UpdateEmployeeExtraInfoResponseDto } from './dto/employee-extra-info.dto';
 import {
     GetHolidayListRequestDto,
@@ -55,6 +59,7 @@ import { IGetDepartmentListForPermissionResponse } from '../../context/settings-
 import {
     IGetPermissionRelatedEmployeeListResponse,
     IGetEmployeePermissionListResponse,
+    IGetDepartmentPermissionListResponse,
 } from '../../context/settings-context/interfaces';
 import { IGetHolidayListResponse } from '../../context/settings-context/interfaces';
 import { IGetWorkTimeOverrideListResponse } from '../../context/settings-context/interfaces';
@@ -141,6 +146,53 @@ export class SettingsController {
     }
 
     /**
+     * 권한 관련 직원 목록 조회 (추가정보 포함)
+     *
+     * 직원별 권한 정보와 함께 추가정보(대시보드 요약 제외 여부 등)를 반환합니다.
+     * 직원명과 부서명으로 검색이 가능합니다.
+     */
+    @Get('permissions/employees/with-extra-info')
+    @ApiOperation({
+        summary: '권한 관련 직원 목록 조회 (추가정보 포함)',
+        description:
+            '직원별 권한 정보와 함께 추가정보(대시보드 요약 제외 여부 등)를 반환합니다. 직원명과 부서명으로 검색이 가능합니다.',
+    })
+    @ApiQuery({
+        name: 'employeeName',
+        description: '직원명 검색 (선택사항)',
+        example: '홍길동',
+        required: false,
+    })
+    @ApiQuery({
+        name: 'departmentName',
+        description: '부서명 검색 (선택사항)',
+        example: '개발팀',
+        required: false,
+    })
+    @ApiResponse({
+        status: 200,
+        description: '권한 관련 직원 목록 조회 성공 (추가정보 포함)',
+        type: GetPermissionRelatedEmployeeListWithExtraInfoResponseDto,
+    })
+    async getPermissionRelatedEmployeeListWithExtraInfo(
+        @Query() dto: GetPermissionRelatedEmployeeListRequestDto,
+    ): Promise<GetPermissionRelatedEmployeeListWithExtraInfoResponseDto> {
+        const result = await this.settingsBusinessService.권한관련직원목록및추가정보를조회한다({
+            employeeName: dto.employeeName,
+            departmentName: dto.departmentName,
+        });
+        return {
+            employees: result.employees.map(({ id, employeeNumber, employeeName, extraInfo }) => ({
+                id,
+                employeeNumber,
+                employeeName,
+                extraInfo: extraInfo ?? null,
+            })),
+            totalCount: result.totalCount,
+        };
+    }
+
+    /**
      * 직원의 권한 목록 조회
      *
      * 특정 직원의 부서별 권한 정보를 조회합니다.
@@ -169,6 +221,38 @@ export class SettingsController {
     ): Promise<IGetEmployeePermissionListResponse> {
         return await this.settingsBusinessService.직원의권한목록을조회한다({
             employeeId,
+        });
+    }
+
+    /**
+     * 특정 부서별 직원 권한 목록 조회
+     *
+     * 특정 부서에 대한 권한을 가진 직원 목록과 권한 정보(보기/검토)를 조회합니다.
+     */
+    @Get('permissions/departments/:departmentId')
+    @ApiOperation({
+        summary: '특정 부서별 직원 권한 목록 조회',
+        description: '특정 부서에 대한 권한을 가진 직원 목록과 권한 정보(보기/검토)를 조회합니다.',
+    })
+    @ApiParam({
+        name: 'departmentId',
+        description: '부서 ID',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @ApiResponse({
+        status: 200,
+        description: '부서별 직원 권한 목록 조회 성공',
+        type: GetDepartmentPermissionListResponseDto,
+    })
+    @ApiResponse({
+        status: 404,
+        description: '부서를 찾을 수 없음',
+    })
+    async getDepartmentPermissionList(
+        @Param('departmentId', ParseUUIDPipe) departmentId: string,
+    ): Promise<IGetDepartmentPermissionListResponse> {
+        return await this.settingsBusinessService.부서별직원권한목록을조회한다({
+            departmentId,
         });
     }
 

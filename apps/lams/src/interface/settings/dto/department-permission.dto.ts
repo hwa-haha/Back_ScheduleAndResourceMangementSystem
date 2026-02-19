@@ -56,3 +56,40 @@ export class GetDepartmentListForPermissionResponseDto {
     @ApiProperty({ description: '전체 부서 수' })
     totalCount: number;
 }
+
+/**
+ * 특정 부서의 직원별 권한 정보 DTO
+ */
+export class DepartmentPermissionEmployeeInfoDto {
+    @ApiProperty({ description: '직원 ID' })
+    id: string;
+
+    @ApiProperty({ description: '사번' })
+    employeeNumber: string;
+
+    @ApiProperty({ description: '직원명' })
+    employeeName: string;
+
+    @ApiProperty({ description: '보기권한(접근권한) 여부' })
+    hasAccessPermission: boolean;
+
+    @ApiProperty({ description: '검토권한 여부' })
+    hasReviewPermission: boolean;
+}
+
+/**
+ * 특정 부서별 직원 권한 목록 조회 응답 DTO
+ */
+export class GetDepartmentPermissionListResponseDto {
+    @ApiProperty({ description: '부서 ID' })
+    departmentId: string;
+
+    @ApiProperty({ description: '부서명' })
+    departmentName: string;
+
+    @ApiProperty({
+        description: '해당 부서에 권한을 가진 직원 목록',
+        type: [DepartmentPermissionEmployeeInfoDto],
+    })
+    employees: DepartmentPermissionEmployeeInfoDto[];
+}

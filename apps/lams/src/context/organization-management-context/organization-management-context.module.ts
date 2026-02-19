@@ -7,6 +7,7 @@ import { DomainDepartmentModule } from '@libs/modules/department/department.modu
 import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
 import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
 import { EmployeeDepartmentPositionHistory } from '@libs/modules/employee-department-position-history/employee-department-position-history.entity';
+import { DomainEmployeeDepartmentPermissionModule } from '../../domain/employee-department-permission/employee-department-permission.module';
 import { DepartmentHistory } from '@libs/modules/department-history/department-history.entity';
 import { Department } from '@libs/modules/department/department.entity';
 
@@ -22,6 +23,7 @@ import { Department } from '@libs/modules/department/department.entity';
         DomainDepartmentModule,
         DomainEmployeeDepartmentPositionHistoryModule,
         DomainEmployeeModule,
+        DomainEmployeeDepartmentPermissionModule,
     ],
     providers: [
         OrganizationManagementContextService,

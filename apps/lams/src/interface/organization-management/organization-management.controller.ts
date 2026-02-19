@@ -1,5 +1,6 @@
-import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Query, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { User } from '../../../libs/decorators/user.decorator';
 import { OrganizationManagementBusinessService } from '../../business/organization-management-business/organization-management-business.service';
 import {
     GetDepartmentListRequestDto,
@@ -50,6 +51,43 @@ export class OrganizationManagementController {
         });
 
         return result;
+    }
+
+    /**
+     * 접근 권한 기반 부서 목록 조회
+     *
+     * 로그인한 직원의 employee_department_permission 접근 권한(has_access_permission)이 있는 부서와
+     * 그 하위 부서만 반환합니다. 권한이 없으면 빈 목록을 반환합니다.
+     */
+    @Get('departments/by-access-permission')
+    @ApiOperation({
+        summary: '접근 권한 기반 부서 목록 조회',
+        description:
+            '로그인한 직원의 접근 권한(has_access_permission)이 있는 부서와 그 하위 부서만 반환합니다. 연월 기준 조직도 형태로 계층·평탄 목록을 제공합니다.',
+    })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
+    @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
+    @ApiResponse({
+        status: 200,
+        description: '접근 권한 기반 부서 목록 조회 성공',
+        type: GetDepartmentListResponseDto,
+    })
+    async getDepartmentListByAccessPermission(
+        @Query() dto: GetDepartmentListRequestDto,
+        @User('id') employeeId: string,
+    ): Promise<IGetDepartmentListResponse> {
+        if (!dto.year || !dto.month) {
+            throw new BadRequestException('연도와 월은 필수입니다.');
+        }
+        if (!employeeId) {
+            throw new UnauthorizedException('로그인이 필요합니다.');
+        }
+
+        return await this.organizationManagementBusinessService.부서목록을조회한다({
+            year: dto.year,
+            month: dto.month,
+            employeeId,
+        });
     }
 
     /**
