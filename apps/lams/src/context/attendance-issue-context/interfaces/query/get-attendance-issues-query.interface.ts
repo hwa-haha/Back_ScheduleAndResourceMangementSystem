@@ -8,4 +8,6 @@ export interface IGetAttendanceIssuesQuery {
     startDate?: string;
     endDate?: string;
     status?: AttendanceIssueStatus;
+    /** 지정 시 해당 ID 목록만 조회 (날짜/상태 필터와 함께 사용 가능) */
+    issueIds?: string[];
 }

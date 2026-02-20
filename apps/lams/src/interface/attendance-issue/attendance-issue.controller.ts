@@ -22,6 +22,9 @@ import {
     RejectAttendanceIssueRequestDto,
     RequestAttendanceIssueRequestDto,
     RequestAttendanceIssueResponseDto,
+    RequestAttendanceIssuesByYearMonthRequestDto,
+    RequestAttendanceIssuesByYearMonthBodyDto,
+    RequestAttendanceIssuesByYearMonthResponseDto,
     ReRequestAttendanceIssuesRequestDto,
     ReRequestAttendanceIssuesResponseDto,
 } from './dto/attendance-issue.dto';
@@ -134,6 +137,48 @@ export class AttendanceIssueController {
         return {
             issues: result.issues,
             requestedCount: result.requestedCount,
+        };
+    }
+
+    /**
+     * 해당 연월의 이슈를 상태별로 일괄 처리한다 (query: 연월, body: 선택 이슈 ID)
+     * - pending → 요청, request → 미동작, not_applied → 재요청, applied → 미동작
+     */
+    @Post('request-by-year-month')
+    @ApiOperation({
+        summary: '연월별 근태 이슈 상태별 일괄 처리 - 직원용',
+        description:
+            '해당 연월의 이슈를 상태별로 처리합니다. body에 issueIds가 있으면 해당 이슈만, 없으면 해당 연월 전체. pending→요청, not_applied→재요청, request/applied→미동작.',
+    })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
+    @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
+    @ApiResponse({
+        status: 200,
+        description: '연월별 상태별 일괄 처리 성공',
+        type: RequestAttendanceIssuesByYearMonthResponseDto,
+    })
+    async requestAttendanceIssuesByYearMonth(
+        @Query() query: RequestAttendanceIssuesByYearMonthRequestDto,
+        @Body() body: RequestAttendanceIssuesByYearMonthBodyDto,
+        @User('id') userId: string,
+    ): Promise<RequestAttendanceIssuesByYearMonthResponseDto> {
+        if (!userId) {
+            throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
+        }
+        if (!query.year || !query.month) {
+            throw new BadRequestException('연도와 월은 필수입니다.');
+        }
+
+        const result = await this.attendanceIssueBusinessService.연월별이슈를상태별일괄처리한다(
+            query.year,
+            query.month,
+            userId,
+            body?.issueIds,
+        );
+        return {
+            issues: result.issues,
+            requestedCount: result.requestedCount,
+            reRequestedCount: result.reRequestedCount,
         };
     }
 

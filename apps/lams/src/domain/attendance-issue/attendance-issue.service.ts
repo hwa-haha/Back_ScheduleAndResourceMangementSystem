@@ -67,6 +67,21 @@ export class DomainAttendanceIssueService {
     }
 
     /**
+     * ID 목록으로 근태 이슈 목록을 조회한다 (존재하는 것만 반환)
+     */
+    async ID목록으로조회한다(ids: string[], manager?: EntityManager): Promise<AttendanceIssueDTO[]> {
+        if (!ids?.length) {
+            return [];
+        }
+        const repository = this.getRepository(manager);
+        const issues = await repository.find({
+            where: { id: In(ids), deleted_at: IsNull() },
+            order: { date: 'DESC', created_at: 'DESC' },
+        });
+        return issues.map((issue) => issue.DTO변환한다());
+    }
+
+    /**
      * 직원 ID로 근태 이슈 목록을 조회한다
      */
     async 직원ID로조회한다(employeeId: string): Promise<AttendanceIssueDTO[]> {

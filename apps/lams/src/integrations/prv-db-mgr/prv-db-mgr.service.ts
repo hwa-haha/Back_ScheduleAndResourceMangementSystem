@@ -905,32 +905,53 @@ export class PrvDbMgrService implements OnModuleInit {
                     const monthlyEventSummaryId = snapshotDataObj.monthlyEventSummaryId || snapshotDataObj.id;
                     const dailySummaries =
                         snapshotDataObj.dailyEventSummary && snapshotDataObj.dailyEventSummary.length > 0
-                            ? snapshotDataObj.dailyEventSummary.map((daily: any) => ({
-                                  id: daily.dailyEventSummaryId || daily.id,
-                                  date: daily.date,
-                                  employeeId: employeeId,
-                                  monthlyEventSummaryId: monthlyEventSummaryId,
-                                  isHoliday: daily.isHoliday,
-                                  enter: daily.enter,
-                                  leave: daily.leave,
-                                  realEnter: daily.realEnter,
-                                  realLeave: daily.realLeave,
-                                  isChecked: daily.isChecked,
-                                  isLate: daily.isLate,
-                                  isEarlyLeave: daily.isEarlyLeave,
-                                  isAbsent: daily.isAbsent,
-                                  hasAttendanceConflict: false,
-                                  hasAttendanceOverlap: false,
-                                  workTime: daily.workTime,
-                                  note: daily.note,
-                                  usedAttendances: daily.usedAttendances || [],
-                                  createdAt: daily.createdAt || snapshotDataObj.createdAt,
-                                  updatedAt: daily.updatedAt || snapshotDataObj.updatedAt,
-                                  deletedAt: null,
-                                  createdBy: null,
-                                  updatedBy: null,
-                                  version: 1,
-                              }))
+                            ? snapshotDataObj.dailyEventSummary.map((daily: any) => {
+                                  const usedAttendances = Array.isArray(daily.usedAttendances)
+                                      ? daily.usedAttendances
+                                            .map((item: { title?: string }) => {
+                                                const mapped = item?.title
+                                                    ? attendanceTypeByTitle.get(item.title)
+                                                    : undefined;
+                                                if (!mapped) return null;
+                                                return {
+                                                    attendanceTypeId: mapped.id,
+                                                    title: mapped.title,
+                                                    workTime: mapped.workTime,
+                                                    isRecognizedWorkTime: mapped.isRecognizedWorkTime,
+                                                    startWorkTime: mapped.startWorkTime,
+                                                    endWorkTime: mapped.endWorkTime,
+                                                    deductedAnnualLeave: mapped.deductedAnnualLeave,
+                                                };
+                                            })
+                                            .filter(Boolean)
+                                      : [];
+                                  return {
+                                      id: daily.dailyEventSummaryId || daily.id,
+                                      date: daily.date,
+                                      employeeId: employeeId,
+                                      monthlyEventSummaryId: monthlyEventSummaryId,
+                                      isHoliday: daily.isHoliday,
+                                      enter: daily.enter,
+                                      leave: daily.leave,
+                                      realEnter: daily.realEnter,
+                                      realLeave: daily.realLeave,
+                                      isChecked: daily.isChecked,
+                                      isLate: daily.isLate,
+                                      isEarlyLeave: daily.isEarlyLeave,
+                                      isAbsent: daily.isAbsent,
+                                      hasAttendanceConflict: false,
+                                      hasAttendanceOverlap: false,
+                                      workTime: daily.workTime,
+                                      note: daily.note,
+                                      usedAttendances,
+                                      createdAt: daily.createdAt || snapshotDataObj.createdAt,
+                                      updatedAt: daily.updatedAt || snapshotDataObj.updatedAt,
+                                      deletedAt: null,
+                                      createdBy: null,
+                                      updatedBy: null,
+                                      version: 1,
+                                  };
+                              })
                             : snapshotDataObj.dailySummaries || [];
 
                     const transformedSnapshotData: any = {

@@ -20,6 +20,7 @@ import {
     IReRequestAttendanceIssueResponse,
     IRequestAttendanceIssueCommand,
     IRequestAttendanceIssueResponse,
+    IRequestAttendanceIssuesByYearMonthResponse,
     IReRequestAttendanceIssuesCommand,
     IReRequestAttendanceIssuesResponse,
 } from '../../context/attendance-issue-context/interfaces';
@@ -196,6 +197,74 @@ export class AttendanceIssueBusinessService {
             ids,
             userId,
         });
+    }
+
+    /**
+     * 해당 연월의 이슈를 상태별로 일괄 처리한다.
+     * - pending → 요청(request), request → 미동작, not_applied → 재요청(re-request), applied → 미동작
+     * issueIds가 있으면 해당 이슈만 대상(해당 연월 내인 것만), 없으면 해당 연월 전체 이슈 대상.
+     */
+    async 연월별이슈를상태별일괄처리한다(
+        year: string,
+        month: string,
+        userId: string,
+        issueIds?: string[],
+    ): Promise<IRequestAttendanceIssuesByYearMonthResponse> {
+        const startDate = `${year}-${month.padStart(2, '0')}-01`;
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
+        const endDate = `${year}-${month.padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+
+        let issues: Awaited<IGetAttendanceIssuesResponse>['issues'];
+        if (issueIds?.length) {
+            const result = await this.attendanceIssueContextService.근태이슈목록을조회한다({
+                issueIds,
+                startDate,
+                endDate,
+            });
+            issues = result.issues;
+        } else {
+            const result = await this.attendanceIssueContextService.근태이슈목록을조회한다({
+                startDate,
+                endDate,
+            });
+            issues = result.issues;
+        }
+
+        const pendingIds = issues.filter((i) => i.status === AttendanceIssueStatus.PENDING).map((i) => i.id);
+        const notAppliedIds = issues
+            .filter((i) => i.status === AttendanceIssueStatus.NOT_APPLIED)
+            .map((i) => i.id);
+
+        const allUpdatedIssues: Awaited<IRequestAttendanceIssueResponse>['issues'] = [];
+        let requestedCount = 0;
+        let reRequestedCount = 0;
+
+        if (pendingIds.length > 0) {
+            const res = await this.attendanceIssueContextService.근태이슈를요청한다({
+                ids: pendingIds,
+                userId,
+            });
+            allUpdatedIssues.push(...res.issues);
+            requestedCount = res.requestedCount;
+        }
+        if (notAppliedIds.length > 0) {
+            const res = await this.attendanceIssueContextService.근태이슈들을재요청한다({
+                ids: notAppliedIds,
+                userId,
+            });
+            allUpdatedIssues.push(...res.issues);
+            reRequestedCount = res.reRequestedCount;
+        }
+
+        this.logger.log(
+            `연월별 이슈 상태별 일괄 처리: year=${year}, month=${month}, 요청=${requestedCount}건, 재요청=${reRequestedCount}건`,
+        );
+
+        return {
+            issues: allUpdatedIssues,
+            requestedCount,
+            reRequestedCount,
+        };
     }
 
     /**

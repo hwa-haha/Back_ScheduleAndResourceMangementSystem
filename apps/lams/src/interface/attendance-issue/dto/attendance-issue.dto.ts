@@ -1,5 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsUUID, IsOptional, IsEnum, IsArray, ArrayMaxSize, ArrayMinSize, ValidateIf } from 'class-validator';
+import {
+    IsString,
+    IsUUID,
+    IsOptional,
+    IsEnum,
+    IsArray,
+    ArrayMaxSize,
+    ArrayMinSize,
+    ValidateIf,
+    IsNotEmpty,
+} from 'class-validator';
 import { AttendanceIssueStatus } from '../../../domain/attendance-issue/attendance-issue.types';
 
 /**
@@ -77,6 +87,39 @@ export class RequestAttendanceIssueRequestDto {
     @ArrayMinSize(1)
     @IsUUID('4', { each: true })
     ids: string[];
+}
+
+/**
+ * 연월별 대기 이슈 일괄 요청 DTO (PENDING → REQUEST, 해당 연월 전체)
+ * @deprecated 연월별 상태별 일괄 처리 API(RequestAttendanceIssuesByYearMonthBodyDto + query) 사용 권장
+ */
+export class RequestAttendanceIssuesByYearMonthRequestDto {
+    @ApiProperty({ description: '연도', example: '2026', required: true })
+    @IsString()
+    @IsNotEmpty()
+    year: string;
+
+    @ApiProperty({ description: '월', example: '01', required: true })
+    @IsString()
+    @IsNotEmpty()
+    month: string;
+}
+
+/**
+ * 연월별 근태 이슈 상태별 일괄 처리 Body DTO
+ * - issueIds가 있으면 해당 이슈만 처리(해당 연월 내), 없으면 해당 연월 전체 이슈 처리
+ * - pending → 요청, not_applied → 재요청, request/applied → 미동작
+ */
+export class RequestAttendanceIssuesByYearMonthBodyDto {
+    @ApiPropertyOptional({
+        description: '처리할 이슈 ID 목록. 없으면 해당 연월 전체 이슈 대상',
+        type: [String],
+        example: ['123e4567-e89b-12d3-a456-426614174000'],
+    })
+    @IsOptional()
+    @IsArray()
+    @IsUUID('4', { each: true })
+    issueIds?: string[];
 }
 
 /**
@@ -168,6 +211,20 @@ export class AttendanceIssueResponseDto {
 
     @ApiProperty({ description: '수정 시간' })
     updatedAt: Date;
+}
+
+/**
+ * 연월별 근태 이슈 상태별 일괄 처리 응답 DTO
+ */
+export class RequestAttendanceIssuesByYearMonthResponseDto {
+    @ApiProperty({ description: '처리된 근태 이슈 목록 (요청+재요청)', type: [AttendanceIssueResponseDto] })
+    issues: AttendanceIssueResponseDto[];
+
+    @ApiProperty({ description: '요청 처리된 개수 (pending → request)', example: 2 })
+    requestedCount: number;
+
+    @ApiProperty({ description: '재요청 처리된 개수 (not_applied → request)', example: 1 })
+    reRequestedCount: number;
 }
 
 /**

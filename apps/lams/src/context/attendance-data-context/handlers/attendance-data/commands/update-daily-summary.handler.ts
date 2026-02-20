@@ -59,12 +59,11 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
             if (!dailySummary) {
                 throw new NotFoundException(`일간 요약을 찾을 수 없습니다. (id: ${dailySummaryId})`);
             }
-
             let changeContent = '';
             let updatedEnter: string | null = dailySummary.enter;
             let updatedLeave: string | null = dailySummary.leave;
-            const originalRealEnter: string | null = dailySummary.real_enter;
-            const originalRealLeave: string | null = dailySummary.real_leave;
+            let originalRealEnter: string | null = dailySummary.real_enter;
+            let originalRealLeave: string | null = dailySummary.real_leave;
             let workTime: number | null = null;
             let usedAttendances = dailySummary.used_attendances || undefined;
 
@@ -74,8 +73,7 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
             const existingAttendanceTypeTitles = hasExistingAttendanceTypes
                 ? dailySummary.used_attendances!.map((ua) => ua.title).join(', ')
                 : null;
-            console.log('isTimeUpdate', isTimeUpdate);
-            console.log('isAttendanceTypeUpdate', isAttendanceTypeUpdate);
+
             // 2-1. 출퇴근 시간 수정인 경우
             if (isTimeUpdate) {
                 const changeParts: string[] = [];
@@ -91,6 +89,7 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                     const newValue = enter;
                     changeParts.push(`출근시간: ${oldValue} → ${newValue}`);
                     updatedEnter = enter;
+                    originalRealEnter = enter;
                 }
 
                 // leave 변경 확인
@@ -99,13 +98,11 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                     const newValue = leave;
                     changeParts.push(`퇴근시간: ${oldValue} → ${newValue}`);
                     updatedLeave = leave;
+                    originalRealLeave = leave;
                 }
 
                 changeContent = changeParts.join(', ');
-
                 // 출퇴근 시간 변경 시 real_enter, real_leave도 동일하게 변경
-                const updatedRealEnter = updatedEnter;
-                const updatedRealLeave = updatedLeave;
 
                 // 근무시간 계산 (enter와 leave가 모두 있어야 계산 가능)
                 if (updatedEnter && updatedLeave) {
@@ -122,8 +119,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                 // 결근, 지각, 조퇴 판정을 다시 계산 (공통 서비스 사용)
                 const 판정결과 = await this.dailySummaryJudgmentService.결근지각조퇴판정한다(
                     dailySummary,
-                    updatedRealEnter,
-                    updatedRealLeave,
+                    originalRealEnter,
+                    originalRealLeave,
                     usedAttendances,
                     manager,
                 );
@@ -134,8 +131,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                     undefined, // is_holiday
                     updatedEnter,
                     updatedLeave,
-                    updatedRealEnter, // real_enter: 출퇴근 시간과 동일하게 변경
-                    updatedRealLeave, // real_leave: 출퇴근 시간과 동일하게 변경
+                    originalRealEnter, // real_enter: 출퇴근 시간과 동일하게 변경
+                    originalRealLeave, // real_leave: 출퇴근 시간과 동일하게 변경
                     undefined, // is_checked
                     판정결과.isLate, // is_late
                     판정결과.isEarlyLeave, // is_early_leave

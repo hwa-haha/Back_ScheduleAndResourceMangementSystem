@@ -19,3 +19,4 @@ export * from './response/reject-attendance-issue-response.interface';
 export * from './response/re-request-attendance-issue-response.interface';
 export * from './response/re-request-attendance-issues-response.interface';
 export * from './response/request-attendance-issue-response.interface';
+export * from './response/request-attendance-issues-by-year-month-response.interface';
