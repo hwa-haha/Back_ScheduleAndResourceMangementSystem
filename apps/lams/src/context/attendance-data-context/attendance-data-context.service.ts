@@ -198,6 +198,14 @@ export class AttendanceDataContextService {
      * @returns 복원된 일일 요약 목록
      */
     async 일일요약을복원한다(command: IRestoreDailySummariesFromSnapshotCommand): Promise<DailyEventSummary[]> {
+        // 1. 일일요약 소프트 삭제 핸들러 호출
+        await this.commandBus.execute(
+            new SoftDeleteDailySummariesCommand({
+                year: command.year,
+                month: command.month,
+                performedBy: command.performedBy,
+            }),
+        );
         return await this.commandBus.execute(new RestoreDailySummariesFromSnapshotCommand(command));
     }
 
@@ -210,6 +218,14 @@ export class AttendanceDataContextService {
      * @returns 복원된 월간 요약 목록
      */
     async 월간요약을복원한다(command: IRestoreMonthlySummariesFromSnapshotCommand): Promise<MonthlyEventSummary[]> {
+        // 1. 월간요약 소프트 삭제 핸들러 호출
+        await this.commandBus.execute(
+            new SoftDeleteMonthlySummariesCommand({
+                year: command.year,
+                month: command.month,
+                performedBy: command.performedBy,
+            }),
+        );
         return await this.commandBus.execute(new RestoreMonthlySummariesFromSnapshotCommand(command));
     }
 
