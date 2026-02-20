@@ -23,7 +23,7 @@ import { FileManagementContextModule } from '../../context/file-management-conte
         DomainEmployeeExtraInfoModule,
         DomainFileModule,
         OrganizationMigrationModule,
-        PrvDbMgrModule,
+        // PrvDbMgrModule,
         FileManagementContextModule.forRoot(),
     ],
     providers: [InitService],
