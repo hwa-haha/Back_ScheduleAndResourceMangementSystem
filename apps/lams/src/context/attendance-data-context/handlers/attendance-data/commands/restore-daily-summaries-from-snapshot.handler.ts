@@ -240,6 +240,16 @@ export class RestoreDailySummariesFromSnapshotHandler implements ICommandHandler
                 }
             }
 
+            // 3. 해당 일간 요약과 연결된 변경 이력 소프트 삭제
+            await manager
+                .createQueryBuilder()
+                .softDelete()
+                .from(DailySummaryChangeHistory)
+                .where('date >= :startDate', { startDate: startDateStr })
+                .andWhere('date <= :endDate', { endDate: endDateStr })
+                .andWhere('deleted_at IS NULL')
+                .execute();
+
             // 6. 변경이력 복원
             let restoredHistoryCount = 0;
             for (const snapshotHistory of snapshotHistories) {

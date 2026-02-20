@@ -94,15 +94,12 @@ export class UpdateMonthlySummaryForEmployeeHandler implements ICommandHandler<
                         earlyLeaveDetails: monthlySummary.earlyLeaveDetails || [],
                     };
                     const note = this.월간요약노트를생성한다(employee, year, month, attendanceResult);
-                    if (note) {
-                        // DTO가 아닌 엔티티를 조회하여 수정
-                        const monthlySummaryEntity = await manager.findOne(MonthlyEventSummary, {
-                            where: { id: monthlySummary.id },
-                        });
-                        if (monthlySummaryEntity) {
-                            monthlySummaryEntity.note = note;
-                            await manager.save(MonthlyEventSummary, monthlySummaryEntity);
-                        }
+                    const monthlySummaryEntity = await manager.findOne(MonthlyEventSummary, {
+                        where: { id: monthlySummary.id },
+                    });
+                    if (monthlySummaryEntity) {
+                        monthlySummaryEntity.note = note;
+                        await manager.save(MonthlyEventSummary, monthlySummaryEntity);
                     }
                 }
 

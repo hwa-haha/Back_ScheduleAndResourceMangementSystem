@@ -319,6 +319,8 @@ export class PrvDbMgrService implements OnModuleInit {
         const employeeIdByNumber = await this.사번매핑을생성한다();
         const departmentIdByCode = await this.부서코드매핑을생성한다();
         const attendanceTypeByTitle = await this.근태유형매핑을생성한다();
+        // console.log(attendanceTypeByTitle);
+        // return;
         await this.휴일맵핑을확인한다();
 
         await this.이벤트정보를마이그레이션한다();
@@ -830,6 +832,7 @@ export class PrvDbMgrService implements OnModuleInit {
 
         // 6. 스냅샷 데이터 저장
         const empIdByNumber = await this.사번매핑을생성한다();
+        const attendanceTypeByTitle = await this.근태유형매핑을생성한다();
         const snapshotRepository = this.dataSource.getRepository(DataSnapshotInfo);
 
         this.logger.log('스냅샷 데이터 저장 시작...');
@@ -845,7 +848,12 @@ export class PrvDbMgrService implements OnModuleInit {
             const approval = approvalBySnapshotId.get(snapshot.dataSnapshotId);
 
             // 해당 연월의 반영 데이터 조회 (EventInfo, UsedAttendance)
-            const rawData = await this.해당연월반영데이터를조회한다(snapshot.yyyy, snapshot.mm, empIdByNumber);
+            const rawData = await this.해당연월반영데이터를조회한다(
+                snapshot.yyyy,
+                snapshot.mm,
+                empIdByNumber,
+                attendanceTypeByTitle,
+            );
 
             // 스냅샷 엔티티 생성
             const snapshotEntity = new DataSnapshotInfo(
@@ -927,6 +935,7 @@ export class PrvDbMgrService implements OnModuleInit {
 
                     const transformedSnapshotData: any = {
                         ...snapshotDataObj,
+                        employeeId: employeeId,
                         id: monthlyEventSummaryId,
                         dailyEventSummary: null,
                         dailySummaries: dailySummaries,
@@ -1025,6 +1034,18 @@ export class PrvDbMgrService implements OnModuleInit {
         year: string,
         month: string,
         employeeIdByNumber: Map<string, string>,
+        attendanceTypeByTitle: Map<
+            string,
+            {
+                id: string;
+                title: string;
+                workTime: number;
+                isRecognizedWorkTime: boolean;
+                startWorkTime: string | null;
+                endWorkTime: string | null;
+                deductedAnnualLeave: number;
+            }
+        >,
     ): Promise<{ year: string; month: string; eventInfo: any[]; usedAttendance: any[] }> {
         // 날짜 범위 계산
         const yearNum = parseInt(year);
@@ -1088,16 +1109,20 @@ export class PrvDbMgrService implements OnModuleInit {
                     hhmmss: firstEvent.hhmmss,
                 });
 
-                // 가장 마지막 기록 (최대 시간) - 첫 번째와 다른 경우에만 추가
+                // 가장 마지막 기록 (최대 시간) - 처음 기록과 실제 시간이 다른 경우에만 추가
                 if (dayEvents.length > 1) {
                     const lastEvent = dayEvents[dayEvents.length - 1];
-                    eventData.push({
-                        employee_name: lastEvent.employeeName,
-                        employee_number: lastEvent.employeeNumber,
-                        event_time: lastEvent.eventTime,
-                        yyyymmdd: lastEvent.yyyymmdd,
-                        hhmmss: lastEvent.hhmmss,
-                    });
+                    const firstTime = firstEvent.eventTime;
+                    const lastTime = lastEvent.eventTime;
+                    if (firstTime !== lastTime) {
+                        eventData.push({
+                            employee_name: lastEvent.employeeName,
+                            employee_number: lastEvent.employeeNumber,
+                            event_time: lastEvent.eventTime,
+                            yyyymmdd: lastEvent.yyyymmdd,
+                            hhmmss: lastEvent.hhmmss,
+                        });
+                    }
                 }
             });
         });
@@ -1126,11 +1151,21 @@ export class PrvDbMgrService implements OnModuleInit {
                     return null;
                 }
 
+                // prv 근태유형명(title)으로 새 DB의 attendance_type_id 매핑
+                const prvTitle = ua.attendanceType?.title ?? '';
+                const mappedType = attendanceTypeByTitle.get(prvTitle);
+                const newAttendanceTypeId = mappedType?.id ?? null;
+
+                if (!newAttendanceTypeId) {
+                    // 근태유형 매핑이 없으면 스킵
+                    return null;
+                }
+
                 return {
                     used_at: ua.usedAt,
                     employee_id: newEmployeeId,
-                    attendance_type_id: ua.attendanceType?.attendanceTypeId || null,
-                    attendance_type_title: ua.attendanceType?.title || null,
+                    attendance_type_id: newAttendanceTypeId,
+                    attendance_type_title: mappedType.title,
                 };
             })
             .filter(Boolean) as Array<{

@@ -106,7 +106,6 @@ export class WorkTimePolicyService {
      * @returns 오후 근무 인정 여부
      */
     hasAfternoonRecognized(attendances: UsedAttendance[]): boolean {
-        console.log('attendances', attendances);
         return attendances.some((ua) => this.isAfternoonRecognized(ua.attendanceType));
     }
 
@@ -225,11 +224,8 @@ export class WorkTimePolicyService {
 
         // HHMMSS 형식을 HH:MM:SS 형식으로 변환하여 비교
         const leaveTimeFormatted = this.HHMMSS를HHMMSS로변환(leaveTime);
-        console.log('hasAfternoonRecognized', hasAfternoonRecognized);
         // 오후 근무가 인정되면 workEndTime을 14시로 설정
         const workEndTime = hasAfternoonRecognized ? '14:00:00' : this.getWorkEndTime(date, workTimeOverride);
-        console.log('workEndTime', workEndTime);
-        console.log('leaveTimeFormatted', leaveTimeFormatted);
         return leaveTimeFormatted < workEndTime;
     }
 

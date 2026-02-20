@@ -233,7 +233,7 @@ export class MonthlyEventSummary extends BaseEntity<MonthlyEventSummaryDTO> {
         this.late_details = late_details || null;
         this.absence_details = absence_details || null;
         this.early_leave_details = early_leave_details || null;
-        this.note = note || null;
+        this.note = note || '';
         this.additional_note = additional_note || '';
         this.validateInvariants();
     }

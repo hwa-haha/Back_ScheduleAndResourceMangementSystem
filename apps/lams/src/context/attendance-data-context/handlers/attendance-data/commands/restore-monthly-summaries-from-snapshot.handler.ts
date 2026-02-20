@@ -11,9 +11,10 @@ import { DomainMonthlyEventSummaryService } from '../../../../../domain/monthly-
  * 스냅샷에 저장된 월간 요약 데이터를 복원합니다.
  */
 @CommandHandler(RestoreMonthlySummariesFromSnapshotCommand)
-export class RestoreMonthlySummariesFromSnapshotHandler
-    implements ICommandHandler<RestoreMonthlySummariesFromSnapshotCommand, MonthlyEventSummary[]>
-{
+export class RestoreMonthlySummariesFromSnapshotHandler implements ICommandHandler<
+    RestoreMonthlySummariesFromSnapshotCommand,
+    MonthlyEventSummary[]
+> {
     private readonly logger = new Logger(RestoreMonthlySummariesFromSnapshotHandler.name);
 
     constructor(
@@ -21,9 +22,7 @@ export class RestoreMonthlySummariesFromSnapshotHandler
         private readonly monthlyEventSummaryService: DomainMonthlyEventSummaryService,
     ) {}
 
-    async execute(
-        command: RestoreMonthlySummariesFromSnapshotCommand,
-    ): Promise<MonthlyEventSummary[]> {
+    async execute(command: RestoreMonthlySummariesFromSnapshotCommand): Promise<MonthlyEventSummary[]> {
         const { snapshotData, year, month, performedBy } = command.data;
 
         return await this.dataSource.transaction(async (manager) => {
@@ -57,7 +56,9 @@ export class RestoreMonthlySummariesFromSnapshotHandler
                 if (snapshotYyyymm !== yyyymm) {
                     continue;
                 }
-
+                if (monthlyDTO.employeeNumber === '20029') {
+                    console.log('monthlyDTO', monthlyDTO.note, typeof monthlyDTO.note);
+                }
                 // MonthlyEventSummary 엔티티 생성 (생성자 파라미터 순서에 맞춤)
                 const summary = new MonthlyEventSummary(
                     monthlyDTO.employeeNumber,
@@ -74,10 +75,12 @@ export class RestoreMonthlySummariesFromSnapshotHandler
                     monthlyDTO.lateDetails || undefined,
                     monthlyDTO.absenceDetails || undefined,
                     monthlyDTO.earlyLeaveDetails || undefined,
-                    monthlyDTO.note || undefined,
-                    monthlyDTO.additionalNote || undefined,
+                    monthlyDTO.note,
+                    monthlyDTO.additionalNote,
                 );
-
+                if (summary.employee_number === '20029') {
+                    console.log('summary', summary.note, typeof summary.note);
+                }
                 summaries.push(summary);
             }
 
@@ -102,6 +105,9 @@ export class RestoreMonthlySummariesFromSnapshotHandler
 
                 if (existing) {
                     // 기존 데이터 복원 및 업데이트
+                    if (summary.employee_number === '20029') {
+                        console.log('existing', summary.note, typeof summary.note);
+                    }
                     existing.deleted_at = null; // 소프트 삭제 해제
                     existing.업데이트한다(
                         summary.employee_number,
@@ -116,8 +122,8 @@ export class RestoreMonthlySummariesFromSnapshotHandler
                         summary.late_details || undefined,
                         summary.absence_details || undefined,
                         summary.early_leave_details || undefined,
-                        summary.note || undefined,
-                        summary.additional_note || undefined,
+                        summary.note,
+                        summary.additional_note,
                     );
                     existing.수정자설정한다(performedBy);
                     existing.메타데이터업데이트한다(performedBy);
@@ -137,9 +143,7 @@ export class RestoreMonthlySummariesFromSnapshotHandler
                 await manager.save(MonthlyEventSummary, batch);
             }
 
-            this.logger.log(
-                `월간요약 복원 완료: year=${year}, month=${month}, summaries=${toSave.length}`,
-            );
+            this.logger.log(`월간요약 복원 완료: year=${year}, month=${month}, summaries=${toSave.length}`);
 
             return toSave;
         });
