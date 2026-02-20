@@ -37,12 +37,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
         const dbSchema =
             this.configService.get<string>('database.schema') ||
             this.configService.get<string>('POSTGRES_SCHEMA', 'public');
-        console.log('dbHost', dbHost);
-        console.log('dbPort', dbPort);
-        console.log('dbUsername', dbUsername);
-        console.log('dbPassword', dbPassword);
-        console.log('dbDatabase', dbDatabase);
-        console.log('dbSchema', dbSchema);
+
         return {
             type: 'postgres',
             host: dbHost,
@@ -85,7 +80,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             autoLoadEntities: true,
 
             // 스키마 드롭 (개발 환경에서만)
-            dropSchema: isDevelopment && isDropSchema,
+            // dropSchema: isDevelopment && isDropSchema,
         };
     }
 }

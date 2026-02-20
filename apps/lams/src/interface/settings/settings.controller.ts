@@ -257,16 +257,16 @@ export class SettingsController {
     }
 
     /**
-     * 직원-부서 권한 변경
+     * 부서별 직원 권한 변경
      *
-     * 직원의 여러 부서에 대한 접근권한과 검토권한을 변경합니다.
-     * 해당 직원의 모든 기존 권한을 삭제한 후 요청된 부서 권한들을 재생성합니다.
+     * 특정 부서에 대한 직원들의 접근권한과 검토권한을 설정합니다.
+     * 해당 부서의 모든 기존 권한을 삭제한 후 요청된 직원 권한들을 재생성합니다.
      */
     @Patch('permissions')
     @ApiOperation({
-        summary: '직원-부서 권한 변경',
+        summary: '부서별 직원 권한 변경',
         description:
-            '직원의 여러 부서에 대한 접근권한과 검토권한을 변경합니다. 해당 직원의 모든 기존 권한을 삭제한 후 요청된 부서 권한들을 재생성합니다.',
+            '부서별로 직원들의 접근권한과 검토권한을 설정합니다. 해당 부서의 모든 기존 권한을 삭제한 후 요청된 직원 권한들을 재생성합니다.',
     })
     @ApiResponse({
         status: 200,
@@ -278,11 +278,11 @@ export class SettingsController {
         @User('id') userId: string,
     ): Promise<IUpdateEmployeeDepartmentPermissionResponse> {
         return await this.settingsBusinessService.직원부서권한을변경한다({
-            employeeId: dto.employeeId,
-            departments: dto.departments.map((dept) => ({
-                departmentId: dept.departmentId,
-                hasAccessPermission: dept.hasAccessPermission,
-                hasReviewPermission: dept.hasReviewPermission,
+            departmentId: dto.departmentId,
+            employees: dto.employees.map((emp) => ({
+                employeeId: emp.employeeId,
+                hasAccessPermission: emp.hasAccessPermission,
+                hasReviewPermission: emp.hasReviewPermission,
             })),
             performedBy: userId,
         });

@@ -258,4 +258,13 @@ export class DomainEmployeeDepartmentPermissionService {
         // Hard Delete: 직원 ID로 일괄 삭제
         await repository.delete({ employee_id: employeeId });
     }
+
+    /**
+     * 부서 ID로 모든 권한을 일괄 삭제한다 (Hard Delete)
+     */
+    async 부서로일괄삭제한다(departmentId: string, manager?: EntityManager): Promise<void> {
+        const repository = this.getRepository(manager);
+        // Hard Delete: 부서 ID로 일괄 삭제
+        await repository.delete({ department_id: departmentId });
+    }
 }

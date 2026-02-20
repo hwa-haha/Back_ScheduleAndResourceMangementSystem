@@ -12,7 +12,7 @@ import {
 import { Type } from 'class-transformer';
 
 /**
- * 부서 권한 정보 DTO
+ * 부서 권한 정보 DTO (직원 기준 요청 시 부서별 권한)
  */
 export class DepartmentPermissionDto {
     @ApiProperty({ description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174001' })
@@ -32,20 +32,40 @@ export class DepartmentPermissionDto {
 }
 
 /**
- * 직원-부서 권한 변경 요청 DTO
+ * 직원 권한 정보 DTO (부서 기준 요청 시 직원별 권한)
  */
-export class UpdateEmployeeDepartmentPermissionRequestDto {
-    @ApiProperty({ description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+export class EmployeePermissionDto {
+    @ApiProperty({ description: '직원 ID', example: '123e4567-e89b-12d3-a456-426614174001' })
     @IsUUID()
     @IsNotEmpty()
     employeeId: string;
 
+    @ApiProperty({ description: '접근 권한', example: true })
+    @IsBoolean()
+    @IsNotEmpty()
+    hasAccessPermission: boolean;
+
+    @ApiProperty({ description: '검토 권한', example: false })
+    @IsBoolean()
+    @IsNotEmpty()
+    hasReviewPermission: boolean;
+}
+
+/**
+ * 직원-부서 권한 변경 요청 DTO (부서별로 직원 권한 설정)
+ */
+export class UpdateEmployeeDepartmentPermissionRequestDto {
+    @ApiProperty({ description: '부서 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+    @IsUUID()
+    @IsNotEmpty()
+    departmentId: string;
+
     @ApiProperty({
-        description: '부서별 권한 목록',
-        type: [DepartmentPermissionDto],
+        description: '직원별 권한 목록',
+        type: [EmployeePermissionDto],
         example: [
             {
-                departmentId: '123e4567-e89b-12d3-a456-426614174001',
+                employeeId: '123e4567-e89b-12d3-a456-426614174001',
                 hasAccessPermission: true,
                 hasReviewPermission: false,
             },
@@ -54,8 +74,8 @@ export class UpdateEmployeeDepartmentPermissionRequestDto {
     @IsArray()
     @ArrayMinSize(0)
     @ValidateNested({ each: true })
-    @Type(() => DepartmentPermissionDto)
-    departments: DepartmentPermissionDto[];
+    @Type(() => EmployeePermissionDto)
+    employees: EmployeePermissionDto[];
 }
 
 /**
