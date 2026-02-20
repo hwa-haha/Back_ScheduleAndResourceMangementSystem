@@ -63,6 +63,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
             let changeContent = '';
             let updatedEnter: string | null = dailySummary.enter;
             let updatedLeave: string | null = dailySummary.leave;
+            const originalRealEnter: string | null = dailySummary.real_enter;
+            const originalRealLeave: string | null = dailySummary.real_leave;
             let workTime: number | null = null;
             let usedAttendances = dailySummary.used_attendances || undefined;
 
@@ -72,7 +74,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
             const existingAttendanceTypeTitles = hasExistingAttendanceTypes
                 ? dailySummary.used_attendances!.map((ua) => ua.title).join(', ')
                 : null;
-
+            console.log('isTimeUpdate', isTimeUpdate);
+            console.log('isAttendanceTypeUpdate', isAttendanceTypeUpdate);
             // 2-1. 출퇴근 시간 수정인 경우
             if (isTimeUpdate) {
                 const changeParts: string[] = [];
@@ -244,8 +247,8 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
                 // 결근, 지각, 조퇴 판정을 다시 계산 (공통 서비스 사용)
                 const 판정결과 = await this.dailySummaryJudgmentService.결근지각조퇴판정한다(
                     dailySummary,
-                    null, // real_enter: 근태유형 변경 시 null
-                    null, // real_leave: 근태유형 변경 시 null
+                    originalRealEnter,
+                    originalRealLeave,
                     usedAttendances,
                     manager,
                 );

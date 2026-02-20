@@ -4,6 +4,7 @@ import {
     GetDepartmentListQuery,
     GetDepartmentListWithEmployeesQuery,
     GetAssignmentHistoryByYearMonthDepartmentQuery,
+    GetEmployeeDepartmentPositionHistoryListQuery,
 } from './handlers/department/queries';
 import { GetEmployeeIdsByNumbersQuery } from './handlers/employee/queries';
 import {
@@ -12,6 +13,7 @@ import {
     IGetDepartmentListWithEmployeesResponse,
     IGetEmployeeIdsByNumbersResponse,
     IGetAssignmentHistoryByYearMonthDepartmentQuery,
+    IGetEmployeeDepartmentPositionHistoryListQuery,
 } from './interfaces';
 import { EmployeeDepartmentPositionHistory } from '@libs/modules/employee-department-position-history/employee-department-position-history.entity';
 
@@ -65,5 +67,20 @@ export class OrganizationManagementContextService {
         query: IGetAssignmentHistoryByYearMonthDepartmentQuery,
     ): Promise<EmployeeDepartmentPositionHistory[]> {
         return await this.queryBus.execute(new GetAssignmentHistoryByYearMonthDepartmentQuery(query));
+    }
+
+    /**
+     * 연월별 직원배치이력 목록을 조회한다
+     *
+     * get-department-list와 동일한 방식으로 해당 연월의 부서 계층을 구성한 뒤,
+     * 유효한 배치이력 목록을 반환합니다. departmentId를 주면 해당 부서와 하위 부서의 배치이력만 반환합니다.
+     *
+     * @param query 연도, 월, 부서 ID(선택)
+     * @returns 배치이력 엔티티 배열
+     */
+    async 연월별직원배치이력목록을조회한다(
+        query: IGetEmployeeDepartmentPositionHistoryListQuery,
+    ): Promise<EmployeeDepartmentPositionHistory[]> {
+        return await this.queryBus.execute(new GetEmployeeDepartmentPositionHistoryListQuery(query));
     }
 }

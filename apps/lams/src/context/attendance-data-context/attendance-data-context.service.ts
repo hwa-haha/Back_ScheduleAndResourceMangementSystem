@@ -41,6 +41,7 @@ import {
 } from './interfaces';
 import { DailyEventSummary } from '../../domain/daily-event-summary/daily-event-summary.entity';
 import { MonthlyEventSummary } from '../../domain/monthly-event-summary/monthly-event-summary.entity';
+import { GetEmployeeDepartmentPositionHistoryListQuery } from '../organization-management-context/handlers/department/queries';
 
 /**
  * 출입/근태 데이터 가공 Context Service
@@ -230,7 +231,17 @@ export class AttendanceDataContextService {
      * @returns 월간 요약 조회 결과
      */
     async 월간요약을조회한다(query: IGetMonthlySummariesQuery): Promise<IGetMonthlySummariesResponse> {
-        const queryCommand = new GetMonthlySummariesQuery(query);
+        const employeeHistories = await this.queryBus.execute(
+            new GetEmployeeDepartmentPositionHistoryListQuery({
+                year: query.year,
+                month: query.month,
+                departmentId: query.departmentId,
+            }),
+        );
+        const queryCommand = new GetMonthlySummariesQuery({
+            ...query,
+            employeeHistories,
+        });
         return await this.queryBus.execute(queryCommand);
     }
 

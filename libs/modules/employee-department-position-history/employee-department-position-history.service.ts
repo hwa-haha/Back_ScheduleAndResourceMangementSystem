@@ -83,12 +83,14 @@ export class DomainEmployeeDepartmentPositionHistoryService {
 
         return this.repository
             .createQueryBuilder('eh')
+            .leftJoinAndSelect('eh.department', 'dept')
             .leftJoinAndSelect('eh.employee', 'emp')
             .leftJoinAndSelect('eh.position', 'pos')
             .leftJoinAndSelect('eh.rank', 'rank')
             .where('eh.departmentId = :departmentId', { departmentId })
             .andWhere('eh.effectiveStartDate <= :targetDate', { targetDate })
             .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :targetDate)', { targetDate })
+            .andWhere('dept.departmentName != :excludedDepartmentName', { excludedDepartmentName: '퇴사자' })
             .getMany();
     }
 
@@ -99,49 +101,52 @@ export class DomainEmployeeDepartmentPositionHistoryService {
         departmentId: string,
         targetDate: string,
     ): Promise<EmployeeDepartmentPositionHistory[]> {
-        const allHistories = await this.repository
-            .createQueryBuilder('eh')
-            .select('eh.departmentId', 'departmentId')
-            .addSelect('eh.parentDepartmentId', 'parentDepartmentId')
-            .where('eh.effectiveStartDate <= :targetDate', { targetDate })
-            .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :targetDate)', { targetDate })
-            .distinct(true)
-            .getRawMany();
-        const parentToChildrenMap = new Map<string, Set<string>>();
-        for (const history of allHistories) {
-            const deptId = history.departmentId;
-            const parentDeptId = history.parentDepartmentId;
-            if (parentDeptId) {
-                if (!parentToChildrenMap.has(parentDeptId)) {
-                    parentToChildrenMap.set(parentDeptId, new Set());
-                }
-                parentToChildrenMap.get(parentDeptId)!.add(deptId);
-            }
-        }
+        // const allHistories = await this.repository
+        //     .createQueryBuilder('eh')
+        //     .select('eh.departmentId', 'departmentId')
+        //     .addSelect('eh.parentDepartmentId', 'parentDepartmentId')
+        //     .where('eh.effectiveStartDate <= :targetDate', { targetDate })
+        //     .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :targetDate)', { targetDate })
+        //     .distinct(true)
+        //     .getRawMany();
+        // const parentToChildrenMap = new Map<string, Set<string>>();
+        // for (const history of allHistories) {
+        //     const deptId = history.departmentId;
+        //     const parentDeptId = history.parentDepartmentId;
+        //     if (parentDeptId) {
+        //         if (!parentToChildrenMap.has(parentDeptId)) {
+        //             parentToChildrenMap.set(parentDeptId, new Set());
+        //         }
+        //         parentToChildrenMap.get(parentDeptId)!.add(deptId);
+        //     }
+        // }
 
-        const departmentIds: string[] = [departmentId];
-        const findChildDepartments = (parentId: string): void => {
-            const children = parentToChildrenMap.get(parentId);
-            if (children) {
-                for (const childId of children) {
-                    if (!departmentIds.includes(childId)) {
-                        departmentIds.push(childId);
-                        findChildDepartments(childId);
-                    }
-                }
-            }
-        };
-        findChildDepartments(departmentId);
-
-        return this.repository
-            .createQueryBuilder('eh')
-            .leftJoinAndSelect('eh.employee', 'emp')
-            .leftJoinAndSelect('eh.position', 'pos')
-            .leftJoinAndSelect('eh.rank', 'rank')
-            .where('eh.departmentId IN (:...departmentIds)', { departmentIds })
-            .andWhere('eh.effectiveStartDate <= :targetDate', { targetDate })
-            .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :targetDate)', { targetDate })
-            .getMany();
+        // const departmentIds: string[] = [departmentId];
+        // const findChildDepartments = (parentId: string): void => {
+        //     const children = parentToChildrenMap.get(parentId);
+        //     if (children) {
+        //         for (const childId of children) {
+        //             if (!departmentIds.includes(childId)) {
+        //                 departmentIds.push(childId);
+        //                 findChildDepartments(childId);
+        //             }
+        //         }
+        //     }
+        // };
+        // findChildDepartments(departmentId);
+        return (
+            this.repository
+                .createQueryBuilder('eh')
+                .leftJoinAndSelect('eh.employee', 'emp')
+                .leftJoinAndSelect('eh.position', 'pos')
+                .leftJoinAndSelect('eh.rank', 'rank')
+                .leftJoinAndSelect('eh.department', 'dept')
+                // .where('eh.departmentId IN (:...departmentIds)', { departmentIds })
+                .where('dept.departmentName != :excludedDepartmentName', { excludedDepartmentName: '퇴사자' })
+                .andWhere('eh.effectiveStartDate <= :targetDate', { targetDate })
+                .andWhere('(eh.effectiveEndDate IS NULL OR eh.effectiveEndDate >= :targetDate)', { targetDate })
+                .getMany()
+        );
     }
 
     /**

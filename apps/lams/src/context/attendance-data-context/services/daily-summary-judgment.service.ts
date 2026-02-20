@@ -99,19 +99,6 @@ export class DailySummaryJudgmentService {
                         }) as any,
                 ) || [];
 
-        // 4. 결근 판정
-        let isAbsent = false;
-        if (isBeforeHireDate || isAfterTerminationDate) {
-            isAbsent = false;
-        } else if (isHoliday) {
-            isAbsent = false;
-        } else if (recognizedAttendances.length > 0 || (realEnter && realLeave)) {
-            // 인정되는 근태가 있거나 출입 기록이 있으면 결근 아님
-            isAbsent = false;
-        } else {
-            isAbsent = true;
-        }
-
         // 5. 지각/조퇴 판정 (출입 기록이 있는 경우에만)
         let isLate = false;
         let isEarlyLeave = false;
@@ -148,6 +135,21 @@ export class DailySummaryJudgmentService {
                 isAfterTerminationDate,
                 workTimeOverride,
             );
+        }
+
+        // 4. 결근 판정
+        let isAbsent = false;
+        if (isBeforeHireDate || isAfterTerminationDate) {
+            isAbsent = false;
+        } else if (isHoliday) {
+            isAbsent = false;
+        } else if (recognizedAttendances.length > 0 || (realEnter && realLeave)) {
+            // 인정되는 근태가 있거나 출입 기록이 있으면 결근 아님
+            isAbsent = false;
+        } else if (isLate || isEarlyLeave) {
+            isAbsent = false;
+        } else {
+            isAbsent = true;
         }
 
         // 6. 근태 충돌/겹침 판정

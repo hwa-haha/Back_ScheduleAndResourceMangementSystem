@@ -5,10 +5,12 @@ import {
     GetDepartmentListHandler,
     GetDepartmentListWithEmployeesHandler,
     GetAssignmentHistoryByYearMonthDepartmentHandler,
+    GetEmployeeDepartmentPositionHistoryListHandler,
 } from './queries';
 
 export const QUERY_HANDLERS = [
     GetDepartmentListHandler,
     GetDepartmentListWithEmployeesHandler,
     GetAssignmentHistoryByYearMonthDepartmentHandler,
+    GetEmployeeDepartmentPositionHistoryListHandler,
 ];
