@@ -7,6 +7,7 @@ import { SettingsInterfaceModule } from './settings/settings-interface.module';
 import { WorkHoursInterfaceModule } from './work-hours/work-hours-interface.module';
 import { DashboardInterfaceModule } from './dashboard/dashboard-interface.module';
 import { ApprovalInterfaceModule } from './approval/approval-interface.module';
+import { UserInterfaceModule } from './user/user-interface.module';
 
 /**
  * 인터페이스 모듈
@@ -23,6 +24,7 @@ import { ApprovalInterfaceModule } from './approval/approval-interface.module';
         WorkHoursInterfaceModule,
         DashboardInterfaceModule,
         ApprovalInterfaceModule,
+        UserInterfaceModule,
     ],
     controllers: [],
     providers: [],

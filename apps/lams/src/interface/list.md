@@ -47,3 +47,7 @@ GET /file-management/files — 파일 목록 + 반영이력 조회
 
 ### 추가 필요 
 파일 - 다운로드, 삭제
+
+user (UserController) — 업무관리시스템 유저용
+GET /user/attendance-issues-to-review — 확인할 근태 이슈 목록
+GET /user/confirmed-monthly-report — 전월 나의 근태현황보고서(스냅샷) 확정 정보 (query: year?, month?)
