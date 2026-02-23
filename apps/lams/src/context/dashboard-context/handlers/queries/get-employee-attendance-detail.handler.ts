@@ -139,8 +139,8 @@ export class GetEmployeeAttendanceDetailHandler implements IQueryHandler<
             })),
         }));
 
-        const weeklyWorkTimeSummary = (snapshotData.weeklyWorkTimeSummary || []).map((week: any) => ({
-            weekNumber: week.weekNumber,
+        const weeklyWorkTimeSummary = (snapshotData.weeklyWorkTimeSummary || []).map((week: any, index: number) => ({
+            weekNumber: index + 1,
             startDate: week.startDate,
             endDate: week.endDate,
             weeklyWorkTime: Math.round((week.weeklyWorkTime / 60) * 100) / 100, // 분을 시간으로 변환

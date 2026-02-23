@@ -98,8 +98,10 @@ export class ComputeDepartmentMonthlyEmployeeAttendanceHandler implements IQuery
             const title = ua.attendanceType?.title || '';
             if (title === '출장') {
                 employeeAttendance.attendanceUsage.businessTrip++;
-            } else if (title === '연차' || title === '오전반차' || title === '오후반차') {
+            } else if (title === '연차') {
                 employeeAttendance.attendanceUsage.annualLeave++;
+            } else if (title.includes('반차')) {
+                employeeAttendance.attendanceUsage.annualLeave += 0.5;
             }
         });
 

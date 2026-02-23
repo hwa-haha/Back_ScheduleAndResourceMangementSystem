@@ -43,8 +43,8 @@ export class ComputeDepartmentWeeklyTopEmployeesHandler implements IQueryHandler
                 const employeeName = child.employee_name || '';
                 const employeeNumber = child.employee_number || '';
 
-                weeklyWorkTimeSummary.forEach((week: any) => {
-                    const weekNumber = week.weekNumber ?? 0;
+                weeklyWorkTimeSummary.forEach((week: any, index: number) => {
+                    const weekNumber = index + 1;
                     if (!weekDataMap.has(weekNumber)) {
                         weekDataMap.set(weekNumber, new Map());
                     }

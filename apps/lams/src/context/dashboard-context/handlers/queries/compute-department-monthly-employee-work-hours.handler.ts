@@ -69,7 +69,7 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                 workHours.totalWorkHours += totalWorkTimeValue;
                 workHours.lateCount += attendanceTypeCount['지각'] || 0;
                 workHours.earlyLeaveCount += attendanceTypeCount['조퇴'] || 0;
-                weeklyWorkTimeSummary.forEach((week: any) => {
+                weeklyWorkTimeSummary.forEach((week: any, index: number) => {
                     const startDate = week.startDate || '';
                     const endDate = week.endDate || '';
                     const weekDailySummaries = dailyWorkTimeSummary.filter((d: any) => {
@@ -86,7 +86,7 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                         (d: any) => d.isAbsent === true || d.is_absent === true,
                     ).length;
                     workHours.weeklyWorkHours.push({
-                        weekNumber: week.weekNumber || 0,
+                        weekNumber: index + 1,
                         startDate,
                         endDate,
                         weeklyWorkHours: Math.round(((week.weeklyWorkTime || 0) / 60) * 100) / 100,
