@@ -9,9 +9,10 @@ import { Employee } from '@libs/modules/employee/employee.entity';
  * 직원 번호 목록으로 직원 ID 목록 조회 Query Handler
  */
 @QueryHandler(GetEmployeeIdsByNumbersQuery)
-export class GetEmployeeIdsByNumbersHandler
-    implements IQueryHandler<GetEmployeeIdsByNumbersQuery, IGetEmployeeIdsByNumbersResponse>
-{
+export class GetEmployeeIdsByNumbersHandler implements IQueryHandler<
+    GetEmployeeIdsByNumbersQuery,
+    IGetEmployeeIdsByNumbersResponse
+> {
     private readonly logger = new Logger(GetEmployeeIdsByNumbersHandler.name);
 
     constructor(private readonly dataSource: DataSource) {}
@@ -40,7 +41,7 @@ export class GetEmployeeIdsByNumbersHandler
         const missingNumbers = uniqueNumbers.filter((number) => !employeeIdByNumber.has(number));
         if (missingNumbers.length > 0) {
             this.logger.warn(`직원 번호 조회 실패: ${missingNumbers.join(', ')}`);
-            throw new BadRequestException(`직원 번호를 찾을 수 없습니다: ${missingNumbers.join(', ')}`);
+            // throw new BadRequestException(`직원 번호를 찾을 수 없습니다: ${missingNumbers.join(', ')}`);
         }
 
         const employeeIds = uniqueNumbers

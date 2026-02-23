@@ -10,7 +10,15 @@ import {
 import { DailyEventSummary } from '../daily-event-summary/daily-event-summary.entity';
 import { UsedAttendance } from '../used-attendance/used-attendance.entity';
 import { DomainAttendanceTypeService } from '../attendance-type/attendance-type.service';
-import { startOfMonth, endOfMonth, format, getWeek, eachDayOfInterval } from 'date-fns';
+import {
+    startOfMonth,
+    endOfMonth,
+    format,
+    eachDayOfInterval,
+    startOfISOWeek,
+    getISOWeek,
+    getISOWeekYear,
+} from 'date-fns';
 
 /**
  * 월간 요약 서비스
@@ -369,6 +377,8 @@ export class DomainMonthlyEventSummaryService {
 
     /**
      * 주간 근무시간 계산 (뷰 로직과 동기화)
+     * ISO 주(월요일 시작)로 그룹하고, 해당 월이 속한 연도(year) 기준으로 weekNumber를 부여한다.
+     * 12월 말처럼 다음 해 1주차에 속하는 일자는 해당 연도 "53주차"로 표시한다.
      */
     private 주간근무시간계산한다(
         dailySummaries: DailyEventSummary[],
@@ -381,22 +391,24 @@ export class DomainMonthlyEventSummaryService {
         endDate: string;
         weeklyWorkTime: number;
     }> {
+        const displayYear = parseInt(year, 10);
         const monthStart = startOfMonth(new Date(`${year}-${month}-01`));
         const monthEnd = endOfMonth(new Date(`${year}-${month}-01`));
         const allDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-        // 주차별로 그룹화
-        const weekGroups = new Map<number, { dates: string[]; workTime: number }>();
+        // ISO 주 시작일(월요일) 문자열로 그룹화
+        const weekGroups = new Map<string, { dates: string[]; workTime: number }>();
 
         allDays.forEach((day) => {
-            const weekNumber = getWeek(day);
+            const weekStart = startOfISOWeek(day);
+            const weekStartStr = format(weekStart, 'yyyy-MM-dd');
             const dateStr = format(day, 'yyyy-MM-dd');
 
-            if (!weekGroups.has(weekNumber)) {
-                weekGroups.set(weekNumber, { dates: [], workTime: 0 });
+            if (!weekGroups.has(weekStartStr)) {
+                weekGroups.set(weekStartStr, { dates: [], workTime: 0 });
             }
 
-            const group = weekGroups.get(weekNumber)!;
+            const group = weekGroups.get(weekStartStr)!;
             group.dates.push(dateStr);
 
             // 해당 날짜의 근무시간 찾기 (뷰 로직과 동일)
@@ -444,7 +456,9 @@ export class DomainMonthlyEventSummaryService {
             group.workTime += dailyWorkTime;
         });
 
-        // 주차별 요약 생성
+        // 주 시작일 기준 정렬 후, 해당 월이 속한 연도(displayYear) 기준으로 ISO 주차 부여
+        // 다음 해 1주차로 넘어가는 주(12월 말)는 53주차로 표시
+        const sortedWeekStarts = Array.from(weekGroups.keys()).sort();
         const weeklyWorkTimeSummary: Array<{
             weekNumber: number;
             startDate: string;
@@ -452,8 +466,15 @@ export class DomainMonthlyEventSummaryService {
             weeklyWorkTime: number;
         }> = [];
 
-        weekGroups.forEach((group, weekNumber) => {
+        sortedWeekStarts.forEach((weekStartStr) => {
+            const group = weekGroups.get(weekStartStr)!;
             const sortedDates = group.dates.sort();
+            const firstDateInWeek = new Date(sortedDates[0]);
+            const isoWeekYear = getISOWeekYear(firstDateInWeek);
+            const isoWeek = getISOWeek(firstDateInWeek);
+            // 해당 월이 속한 연도와 다르면(12월 말 → 다음 해 1주차) 53주차로 표시
+            const weekNumber = isoWeekYear > displayYear ? 53 : isoWeek;
+
             weeklyWorkTimeSummary.push({
                 weekNumber,
                 startDate: sortedDates[0],
