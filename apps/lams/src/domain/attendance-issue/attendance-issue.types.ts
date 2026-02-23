@@ -6,8 +6,8 @@
  * 근태 이슈 상태
  */
 export enum AttendanceIssueStatus {
-    PENDING = 'pending', // 대기
-    REQUEST = 'request', // 요청 (생성 시 기본 상태)
+    PENDING = 'pending', // 대기 (생성 시 기본 상태)
+    REQUEST = 'request', // 요청
     APPLIED = 'applied', // 반영
     NOT_APPLIED = 'not_applied', // 미반영
 }
