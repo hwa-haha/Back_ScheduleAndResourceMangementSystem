@@ -22,6 +22,8 @@ import {
     RejectAttendanceIssueRequestDto,
     RequestAttendanceIssueRequestDto,
     RequestAttendanceIssueResponseDto,
+    RequestAttendanceIssuesRequestDto,
+    RequestAttendanceIssuesResponseDto,
     RequestAttendanceIssuesByYearMonthRequestDto,
     RequestAttendanceIssuesByYearMonthBodyDto,
     RequestAttendanceIssuesByYearMonthResponseDto,
@@ -79,8 +81,7 @@ export class AttendanceIssueController {
     @Get('by-department')
     @ApiOperation({
         summary: '연월/부서별 근태 이슈 조회',
-        description:
-            '해당 연월과 부서에 소속되었던 직원들의 근태 이슈를 조회하고 직원별로 그룹핑하여 반환합니다.',
+        description: '해당 연월과 부서에 소속되었던 직원들의 근태 이슈를 조회하고 직원별로 그룹핑하여 반환합니다.',
     })
     @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
     @ApiQuery({ name: 'month', description: '월', example: '01', required: true })
@@ -112,32 +113,17 @@ export class AttendanceIssueController {
     }
 
     /**
-     * 근태 이슈 요청 (직원용) - PENDING → REQUEST, 복수 ID
+     * 근태 이슈 상세 조회
      */
-    @Post('request')
+    @Get(':id')
     @ApiOperation({
-        summary: '근태 이슈 요청 - 직원용',
-        description:
-            '대기(pending) 상태의 근태 이슈를 요청(request) 상태로 변경합니다. 여러 이슈 ID를 한 번에 보낼 수 있습니다.',
+        summary: '근태 이슈 상세 조회',
+        description: '근태 이슈 상세 정보를 조회합니다.',
     })
-    @ApiResponse({
-        status: 200,
-        description: '근태 이슈 요청 성공',
-        type: RequestAttendanceIssueResponseDto,
-    })
-    async requestAttendanceIssues(
-        @Body() dto: RequestAttendanceIssueRequestDto,
-        @User('id') userId: string,
-    ): Promise<RequestAttendanceIssueResponseDto> {
-        if (!userId) {
-            throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
-        }
-
-        const result = await this.attendanceIssueBusinessService.근태이슈를요청한다(dto.ids, userId);
-        return {
-            issues: result.issues,
-            requestedCount: result.requestedCount,
-        };
+    @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+    async getAttendanceIssue(@Param('id', ParseUUIDPipe) id: string): Promise<AttendanceIssueResponseDto> {
+        const result = await this.attendanceIssueBusinessService.근태이슈를조회한다(id);
+        return result.issue;
     }
 
     /**
@@ -146,7 +132,7 @@ export class AttendanceIssueController {
      */
     @Post('request-by-year-month')
     @ApiOperation({
-        summary: '연월별 근태 이슈 상태별 일괄 처리 - 직원용',
+        summary: '연월별 근태 이슈 상태별 일괄 처리',
         description:
             '해당 연월의 이슈를 상태별로 처리합니다. body에 issueIds가 있으면 해당 이슈만, 없으면 해당 연월 전체. pending→요청, not_applied→재요청, request/applied→미동작.',
     })
@@ -183,11 +169,40 @@ export class AttendanceIssueController {
     }
 
     /**
+     * 근태 이슈 요청 (직원용) - PENDING → REQUEST, 복수
+     */
+    @Post('request')
+    @ApiOperation({
+        summary: '근태 이슈 요청 (복수)',
+        description:
+            '대기(pending) 상태의 근태 이슈를 요청(request) 상태로 일괄 변경합니다. PENDING인 이슈만 처리됩니다.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: '근태 이슈 요청 성공',
+        type: RequestAttendanceIssuesResponseDto,
+    })
+    async requestAttendanceIssues(
+        @Body() dto: RequestAttendanceIssuesRequestDto,
+        @User('id') userId: string,
+    ): Promise<RequestAttendanceIssuesResponseDto> {
+        if (!userId) {
+            throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
+        }
+
+        const result = await this.attendanceIssueBusinessService.근태이슈들을요청한다(dto.ids, userId);
+        return {
+            issues: result.issues,
+            requestedCount: result.requestedCount,
+        };
+    }
+
+    /**
      * 근태 이슈 재요청 (직원용) - 복수 ID
      */
     @Post('re-request')
     @ApiOperation({
-        summary: '근태 이슈 재요청 - 직원용 (복수 ID)',
+        summary: '근태 이슈 재요청 (복수)',
         description:
             '미반영/대기 처리된 근태 이슈를 재요청합니다. 여러 이슈 ID를 한 번에 보낼 수 있습니다. 이미 반영된 이슈는 제외됩니다.',
     })
@@ -212,51 +227,20 @@ export class AttendanceIssueController {
     }
 
     /**
-     * 근태 이슈 상세 조회
+     * 근태 이슈 요청 (직원용) - 경로 파라미터로 단건, PENDING → REQUEST
      */
-    @Get(':id')
+    @Post(':id/request')
     @ApiOperation({
-        summary: '근태 이슈 상세 조회',
-        description: '근태 이슈 상세 정보를 조회합니다.',
-    })
-    @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    async getAttendanceIssue(@Param('id', ParseUUIDPipe) id: string): Promise<AttendanceIssueResponseDto> {
-        const result = await this.attendanceIssueBusinessService.근태이슈를조회한다(id);
-        return result.issue;
-    }
-
-    /**
-     * 근태 이슈 사유 수정 (직원용)
-     */
-    @Patch(':id/description')
-    @ApiOperation({
-        summary: '근태 이슈 사유 수정 - 직원용',
-        description: '근태 이슈의 사유를 작성합니다. 사유를 작성하면 상태가 미반영으로 변경됩니다.',
-    })
-    @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    async updateAttendanceIssueDescription(
-        @Param('id', ParseUUIDPipe) id: string,
-        @Body() dto: UpdateAttendanceIssueDescriptionRequestDto,
-        @User('id') userId: string,
-    ): Promise<AttendanceIssueResponseDto> {
-        if (!userId) {
-            throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
-        }
-
-        const result = await this.attendanceIssueBusinessService.근태이슈사유를수정한다(id, dto.description, userId);
-        return result.issue;
-    }
-
-    /**
-     * 근태 이슈 요청 (직원용) - 단일 ID, PENDING → REQUEST
-     */
-    @Patch(':id/request')
-    @ApiOperation({
-        summary: '근태 이슈 요청 - 직원용 (단일 ID)',
+        summary: '근태 이슈 요청 (단건)',
         description: '대기(pending) 상태의 근태 이슈 하나를 요청(request) 상태로 변경합니다.',
     })
     @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    async requestAttendanceIssue(
+    @ApiResponse({
+        status: 200,
+        description: '근태 이슈 요청 성공',
+        type: AttendanceIssueResponseDto,
+    })
+    async requestAttendanceIssueById(
         @Param('id', ParseUUIDPipe) id: string,
         @User('id') userId: string,
     ): Promise<AttendanceIssueResponseDto> {
@@ -264,8 +248,29 @@ export class AttendanceIssueController {
             throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
         }
 
-        const result = await this.attendanceIssueBusinessService.근태이슈를요청한다([id], userId);
-        return result.issues[0];
+        const result = await this.attendanceIssueBusinessService.근태이슈를요청한다(id, userId);
+        return result.issue as AttendanceIssueResponseDto;
+    }
+
+    /**
+     * 근태 이슈 재요청 (직원용)
+     */
+    @Post(':id/re-request')
+    @ApiOperation({
+        summary: '근태 이슈 재요청 (단건)',
+        description: '미반영 처리된 근태 이슈를 재요청합니다. 이슈 상태가 요청 상태로 변경됩니다.',
+    })
+    @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
+    async reRequest(
+        @Param('id', ParseUUIDPipe) id: string,
+        @User('id') userId: string,
+    ): Promise<AttendanceIssueResponseDto> {
+        if (!userId) {
+            throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
+        }
+
+        const result = await this.attendanceIssueBusinessService.근태이슈를재요청한다(id, userId);
+        return result.issue;
     }
 
     /**
@@ -273,10 +278,10 @@ export class AttendanceIssueController {
      */
     @Patch(':id/apply')
     @ApiOperation({
-        summary: '근태 이슈 반영 - 관리자용',
+        summary: '근태 이슈 반영',
         description: `근태 이슈를 반영합니다. 
-수정 정보를 함께 전달할 수 있으며, 반영 시 일간 요약에 수정 정보가 반영됩니다.
-한번 반영된 이슈는 더 이상 수정할 수 없습니다.`,
+ 수정 정보를 함께 전달할 수 있으며, 반영 시 일간 요약에 수정 정보가 반영됩니다.
+ 한번 반영된 이슈는 더 이상 수정할 수 없습니다.`,
     })
     @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
     async applyAttendanceIssue(
@@ -301,23 +306,24 @@ export class AttendanceIssueController {
     }
 
     /**
-     * 근태 이슈 재요청 (직원용)
+     * 근태 이슈 사유 수정 (직원용)
      */
-    @Patch(':id/re-request')
+    @Patch(':id/description')
     @ApiOperation({
-        summary: '근태 이슈 재요청 - 직원용',
-        description: '미반영 처리된 근태 이슈를 재요청합니다. 이슈 상태가 요청 상태로 변경됩니다.',
+        summary: '근태 이슈 사유 수정',
+        description: '근태 이슈의 사유를 작성합니다. 사유를 작성하면 상태가 미반영으로 변경됩니다.',
     })
     @ApiParam({ name: 'id', description: '근태 이슈 ID', example: '123e4567-e89b-12d3-a456-426614174000' })
-    async reRequest(
+    async updateAttendanceIssueDescription(
         @Param('id', ParseUUIDPipe) id: string,
+        @Body() dto: UpdateAttendanceIssueDescriptionRequestDto,
         @User('id') userId: string,
     ): Promise<AttendanceIssueResponseDto> {
         if (!userId) {
             throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
         }
 
-        const result = await this.attendanceIssueBusinessService.근태이슈를재요청한다(id, userId);
+        const result = await this.attendanceIssueBusinessService.근태이슈사유를수정한다(id, dto.description, userId);
         return result.issue;
     }
 }

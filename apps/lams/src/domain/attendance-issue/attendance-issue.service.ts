@@ -235,6 +235,73 @@ export class DomainAttendanceIssueService {
     }
 
     /**
+     * 근태 이슈를 요청한다 (단건)
+     */
+    async 요청한다(id: string, userId: string, manager?: EntityManager): Promise<AttendanceIssueDTO> {
+        const repository = this.getRepository(manager);
+        const issue = await repository.findOne({ where: { id } });
+        if (!issue) {
+            throw new NotFoundException(`근태 이슈를 찾을 수 없습니다. (id: ${id})`);
+        }
+        issue.요청한다();
+        issue.수정자설정한다(userId);
+        issue.메타데이터업데이트한다(userId);
+
+        const saved = await repository.save(issue);
+        return saved.DTO변환한다();
+    }
+
+    /**
+     * ID 목록으로 근태 이슈를 벌크 요청한다 (PENDING → REQUEST)
+     * PENDING 상태인 이슈만 일괄 변경하며, 한 번에 저장한다.
+     */
+    async ID목록으로요청한다(
+        ids: string[],
+        userId: string,
+        manager?: EntityManager,
+    ): Promise<AttendanceIssueDTO[]> {
+        if (!ids?.length) return [];
+        const repository = this.getRepository(manager);
+        const issues = await repository.find({
+            where: { id: In(ids), deleted_at: IsNull() },
+        });
+        const toUpdate = issues.filter((i) => i.status === AttendanceIssueStatus.PENDING);
+        for (const issue of toUpdate) {
+            issue.요청한다();
+            issue.수정자설정한다(userId);
+            issue.메타데이터업데이트한다(userId);
+        }
+        if (toUpdate.length === 0) return [];
+        const saved = await repository.save(toUpdate);
+        return saved.map((s) => s.DTO변환한다());
+    }
+
+    /**
+     * ID 목록으로 근태 이슈를 벌크 재요청한다 (NOT_APPLIED/PENDING/REQUEST → REQUEST)
+     * APPLIED 상태는 제외하고, 나머지를 REQUEST로 일괄 변경한다.
+     */
+    async ID목록으로재요청한다(
+        ids: string[],
+        userId: string,
+        manager?: EntityManager,
+    ): Promise<AttendanceIssueDTO[]> {
+        if (!ids?.length) return [];
+        const repository = this.getRepository(manager);
+        const issues = await repository.find({
+            where: { id: In(ids), deleted_at: IsNull() },
+        });
+        const toUpdate = issues.filter((i) => i.status !== AttendanceIssueStatus.APPLIED);
+        for (const issue of toUpdate) {
+            issue.요청한다();
+            issue.수정자설정한다(userId);
+            issue.메타데이터업데이트한다(userId);
+        }
+        if (toUpdate.length === 0) return [];
+        const saved = await repository.save(toUpdate);
+        return saved.map((s) => s.DTO변환한다());
+    }
+
+    /**
      * 근태 이슈 반영 처리
      */
     async 반영처리한다(

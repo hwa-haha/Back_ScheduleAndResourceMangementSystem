@@ -12,6 +12,7 @@ import {
     ReRequestAttendanceIssueHandler,
     ReRequestAttendanceIssuesHandler,
     RequestAttendanceIssueHandler,
+    RequestAttendanceIssuesHandler,
 } from './attendance-issue/commands';
 
 export const QUERY_HANDLERS = [
@@ -29,4 +30,5 @@ export const COMMAND_HANDLERS = [
     ReRequestAttendanceIssueHandler,
     ReRequestAttendanceIssuesHandler,
     RequestAttendanceIssueHandler,
+    RequestAttendanceIssuesHandler,
 ];

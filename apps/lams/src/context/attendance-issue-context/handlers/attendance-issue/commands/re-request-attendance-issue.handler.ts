@@ -15,9 +15,7 @@ export class ReRequestAttendanceIssueHandler implements ICommandHandler<
 > {
     constructor(private readonly attendanceIssueService: DomainAttendanceIssueService) {}
 
-    async execute(
-        command: ReRequestAttendanceIssueCommand,
-    ): Promise<IReRequestAttendanceIssueResponse> {
+    async execute(command: ReRequestAttendanceIssueCommand): Promise<IReRequestAttendanceIssueResponse> {
         const { command: cmd } = command;
 
         const issue = await this.attendanceIssueService.ID로조회한다(cmd.id);
@@ -28,13 +26,7 @@ export class ReRequestAttendanceIssueHandler implements ICommandHandler<
         }
 
         // 재요청 시 상태를 REQUEST로 변경
-        const updatedIssue = await this.attendanceIssueService.수정한다(
-            cmd.id,
-            {
-                status: AttendanceIssueStatus.REQUEST,
-            },
-            cmd.userId,
-        );
+        const updatedIssue = await this.attendanceIssueService.요청한다(cmd.id, cmd.userId);
 
         return { issue: updatedIssue };
     }

@@ -21,6 +21,8 @@ import {
     IRequestAttendanceIssueCommand,
     IRequestAttendanceIssueResponse,
     IRequestAttendanceIssuesByYearMonthResponse,
+    IRequestAttendanceIssuesCommand,
+    IRequestAttendanceIssuesResponse,
     IReRequestAttendanceIssuesCommand,
     IReRequestAttendanceIssuesResponse,
 } from '../../context/attendance-issue-context/interfaces';
@@ -189,11 +191,22 @@ export class AttendanceIssueBusinessService {
     }
 
     /**
-     * 근태 이슈를 요청한다 (직원용) - PENDING → REQUEST, 복수 ID
+     * 근태 이슈를 요청한다 (직원용) - PENDING → REQUEST, 단건
      */
-    async 근태이슈를요청한다(ids: string[], userId: string): Promise<IRequestAttendanceIssueResponse> {
-        this.logger.log(`근태 이슈 요청: ids=${ids.join(', ')}`);
+    async 근태이슈를요청한다(id: string, userId: string): Promise<IRequestAttendanceIssueResponse> {
+        this.logger.log(`근태 이슈 요청: id=${id}`);
         return await this.attendanceIssueContextService.근태이슈를요청한다({
+            id,
+            userId,
+        });
+    }
+
+    /**
+     * 근태 이슈들을 요청한다 (직원용) - PENDING → REQUEST, 복수 ID 벌크
+     */
+    async 근태이슈들을요청한다(ids: string[], userId: string): Promise<IRequestAttendanceIssuesResponse> {
+        this.logger.log(`근태 이슈 요청(벌크): ids=${ids.join(', ')}`);
+        return await this.attendanceIssueContextService.근태이슈들을요청한다({
             ids,
             userId,
         });
@@ -235,12 +248,12 @@ export class AttendanceIssueBusinessService {
             .filter((i) => i.status === AttendanceIssueStatus.NOT_APPLIED)
             .map((i) => i.id);
 
-        const allUpdatedIssues: Awaited<IRequestAttendanceIssueResponse>['issues'] = [];
+        const allUpdatedIssues: Awaited<IRequestAttendanceIssuesByYearMonthResponse>['issues'] = [];
         let requestedCount = 0;
         let reRequestedCount = 0;
 
         if (pendingIds.length > 0) {
-            const res = await this.attendanceIssueContextService.근태이슈를요청한다({
+            const res = await this.attendanceIssueContextService.근태이슈들을요청한다({
                 ids: pendingIds,
                 userId,
             });

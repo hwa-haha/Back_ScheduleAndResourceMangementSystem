@@ -312,7 +312,7 @@ export class AttendanceIssue extends BaseEntity<AttendanceIssueDTO> {
         this.problematic_attendance_type_ids = problematic_attendance_type_ids || null;
         this.corrected_attendance_type_ids = corrected_attendance_type_ids || null;
         this.description = description || null;
-        this.status = AttendanceIssueStatus.REQUEST;
+        this.status = AttendanceIssueStatus.PENDING;
         this.confirmed_by = null;
         this.confirmed_at = null;
         this.resolved_at = null;
@@ -362,6 +362,13 @@ export class AttendanceIssue extends BaseEntity<AttendanceIssueDTO> {
             this.rejection_reason = rejection_reason;
         }
         this.validateInvariants();
+    }
+
+    /**
+     * 근태 이슈를 요청한다
+     */
+    요청한다(): void {
+        this.status = AttendanceIssueStatus.REQUEST;
     }
 
     /**

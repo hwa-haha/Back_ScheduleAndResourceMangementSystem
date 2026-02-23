@@ -75,9 +75,21 @@ export class ApplyAttendanceIssueRequestDto {
 }
 
 /**
- * 근태 이슈 요청 DTO (PENDING → REQUEST, 복수 ID)
+ * 근태 이슈 요청 DTO (PENDING → REQUEST, 단건)
  */
 export class RequestAttendanceIssueRequestDto {
+    @ApiProperty({
+        description: '요청할 근태 이슈 ID (대기 상태만 요청 가능)',
+        example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @IsUUID('4')
+    id: string;
+}
+
+/**
+ * 근태 이슈 요청 DTO (PENDING → REQUEST, 복수 ID 벌크)
+ */
+export class RequestAttendanceIssuesRequestDto {
     @ApiProperty({
         description: '요청할 근태 이슈 ID 목록 (대기 상태만 요청 가능)',
         example: ['123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174001'],
@@ -91,7 +103,6 @@ export class RequestAttendanceIssueRequestDto {
 
 /**
  * 연월별 대기 이슈 일괄 요청 DTO (PENDING → REQUEST, 해당 연월 전체)
- * @deprecated 연월별 상태별 일괄 처리 API(RequestAttendanceIssuesByYearMonthBodyDto + query) 사용 권장
  */
 export class RequestAttendanceIssuesByYearMonthRequestDto {
     @ApiProperty({ description: '연도', example: '2026', required: true })
@@ -228,9 +239,17 @@ export class RequestAttendanceIssuesByYearMonthResponseDto {
 }
 
 /**
- * 근태 이슈 요청 응답 DTO (복수 처리 결과)
+ * 근태 이슈 요청 응답 DTO (단건 처리 결과)
  */
 export class RequestAttendanceIssueResponseDto {
+    @ApiProperty({ description: '요청 처리된 근태 이슈', type: AttendanceIssueResponseDto })
+    issue: AttendanceIssueResponseDto;
+}
+
+/**
+ * 근태 이슈 요청 응답 DTO (복수 벌크 처리 결과)
+ */
+export class RequestAttendanceIssuesResponseDto {
     @ApiProperty({ description: '요청 처리된 근태 이슈 목록', type: [AttendanceIssueResponseDto] })
     issues: AttendanceIssueResponseDto[];
 

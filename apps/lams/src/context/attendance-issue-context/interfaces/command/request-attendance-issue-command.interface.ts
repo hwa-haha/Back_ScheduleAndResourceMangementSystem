@@ -1,7 +1,7 @@
 /**
- * 근태 이슈 요청 Command 인터페이스 (PENDING → REQUEST, 복수 ID)
+ * 근태 이슈 요청 Command 인터페이스 (PENDING → REQUEST, 단건)
  */
 export interface IRequestAttendanceIssueCommand {
-    ids: string[];
+    id: string;
     userId: string;
 }

@@ -11,6 +11,7 @@ import {
     ReRequestAttendanceIssueCommand,
     ReRequestAttendanceIssuesCommand,
     RequestAttendanceIssueCommand,
+    RequestAttendanceIssuesCommand,
 } from './handlers/attendance-issue';
 import {
     IGetAttendanceIssuesQuery,
@@ -33,6 +34,8 @@ import {
     IReRequestAttendanceIssuesResponse,
     IRequestAttendanceIssueCommand,
     IRequestAttendanceIssueResponse,
+    IRequestAttendanceIssuesCommand,
+    IRequestAttendanceIssuesResponse,
 } from './interfaces';
 
 /**
@@ -121,12 +124,22 @@ export class AttendanceIssueContextService {
     }
 
     /**
-     * 근태 이슈를 요청한다 (직원용) - PENDING → REQUEST, 복수 ID
+     * 근태 이슈를 요청한다 (직원용) - PENDING → REQUEST, 단건
      */
     async 근태이슈를요청한다(
         command: IRequestAttendanceIssueCommand,
     ): Promise<IRequestAttendanceIssueResponse> {
         const commandInstance = new RequestAttendanceIssueCommand(command);
+        return await this.commandBus.execute(commandInstance);
+    }
+
+    /**
+     * 근태 이슈들을 요청한다 (직원용) - PENDING → REQUEST, 복수 ID 벌크
+     */
+    async 근태이슈들을요청한다(
+        command: IRequestAttendanceIssuesCommand,
+    ): Promise<IRequestAttendanceIssuesResponse> {
+        const commandInstance = new RequestAttendanceIssuesCommand(command);
         return await this.commandBus.execute(commandInstance);
     }
 
