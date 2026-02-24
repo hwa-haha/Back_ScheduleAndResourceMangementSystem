@@ -97,25 +97,24 @@ export class UserController {
     }
 
     /**
-     * 제출된 가장 최신 스냅샷 정보 (id, submittedAt)
+     * 월별 근태현황 보고서 존재 여부
      *
-     * 지정 연·월의 스냅샷 목록 중 submitted_at이 있는 것 중 가장 최신 항목을 반환합니다.
-     * 로그인한 유저에게 해당 연·월의 child 스냅샷 데이터가 있을 때만 응답하며, 없으면 null. 미지정 시 전월 기준.
+     * 지정 연·월에 제출된 보고서(스냅샷)가 있고, 로그인한 유저의 child 스냅샷이 있을 때 id, submittedAt 반환. 없으면 null.
      */
-    @Get('latest-submitted-snapshot')
+    @Get('monthly-report-existence')
     @ApiOperation({
-        summary: '제출된 가장 최신 스냅샷 정보',
+        summary: '월별 근태현황 보고서 존재 여부',
         description:
-            '지정 연·월의 제출된 가장 최신 스냅샷의 id, submittedAt을 반환합니다. 로그인한 유저의 해당 연·월 child 스냅샷이 있을 때만 반환하며, 없으면 null. 연·월 미지정 시 전월 기준.',
+            '지정 연·월에 나의 근태현황 보고서가 존재하는지 확인합니다. 존재하면 스냅샷 id와 제출일(submittedAt)을 반환하고, 없으면 null. 연·월 미지정 시 전월 기준.',
     })
     @ApiQuery({ name: 'year', description: '연도 (미지정 시 전월)', example: '2026', required: false })
     @ApiQuery({ name: 'month', description: '월 01~12 (미지정 시 전월)', example: '01', required: false })
     @ApiResponse({
         status: 200,
-        description: '조회 성공 (제출된 스냅샷 없거나 해당 유저 child 스냅샷 없으면 null)',
+        description: '보고서 존재 시 id, submittedAt / 없으면 null',
         type: GetLatestSubmittedSnapshotResponseDto,
     })
-    async getLatestSubmittedSnapshot(
+    async getMonthlyReportExistence(
         @User('id') userId: string,
         @Query() query: GetLatestSubmittedSnapshotRequestDto,
     ): Promise<GetLatestSubmittedSnapshotResponseDto | null> {
