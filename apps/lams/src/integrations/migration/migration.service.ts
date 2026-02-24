@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { DataSource, QueryRunner, DeepPartial, In } from 'typeorm';
 import { SSOService } from '@libs/integrations/sso/sso.service';
 import {
@@ -48,6 +49,23 @@ export class OrganizationMigrationService {
         private readonly departmentHistoryService: DomainDepartmentHistoryService,
         private readonly dataSource: DataSource,
     ) {}
+
+    /**
+     * 매일 새벽 2시(Asia/Seoul)에 SSO 조직 데이터 마이그레이션을 실행한다
+     */
+    @Cron('0 0 2 * * *', { timeZone: 'Asia/Seoul' })
+    async 매일마이그레이션을실행한다(): Promise<void> {
+        this.logger.log('Cron: 매일 마이그레이션 실행 시작');
+        try {
+            const result = await this.마이그레이션한다({
+                includeTerminated: true,
+                includeInactiveDepartments: true,
+            });
+            this.logger.log(`Cron: 매일 마이그레이션 완료 - ${JSON.stringify(result.statistics)}`);
+        } catch (error) {
+            this.logger.error('Cron: 매일 마이그레이션 실패', error);
+        }
+    }
 
     /**
      * SSO에서 모든 조직 데이터를 가져와서 로컬 DB에 동기화한다

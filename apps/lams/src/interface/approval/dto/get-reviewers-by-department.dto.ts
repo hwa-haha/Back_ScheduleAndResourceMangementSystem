@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * 검토 권한자 정보 DTO
@@ -12,6 +12,18 @@ export class ReviewerInfoDto {
 
     @ApiProperty({ description: '사번' })
     employeeNumber: string;
+
+    @ApiPropertyOptional({ description: '부서 ID' })
+    departmentId?: string;
+
+    @ApiPropertyOptional({ description: '부서명' })
+    departmentName?: string;
+
+    @ApiPropertyOptional({ description: '직책 ID' })
+    positionId?: string;
+
+    @ApiPropertyOptional({ description: '직책명' })
+    positionTitle?: string;
 }
 
 /**
@@ -32,6 +44,12 @@ export class DepartmentReviewersDto {
  * 결재 관련 부서별 권한자 조회 응답 DTO
  */
 export class GetReviewersByDepartmentResponseDto {
-    @ApiProperty({ description: '부서별 권한자 목록', type: [DepartmentReviewersDto] })
+    @ApiProperty({ description: '부서별 권한자 목록 (퇴사자 포함 전체)', type: [DepartmentReviewersDto] })
     departments: DepartmentReviewersDto[];
+
+    @ApiProperty({
+        description: '퇴사 상태·퇴사자 부서 소속 권한자 목록 (퇴사 여부 정보 전달용)',
+        type: [ReviewerInfoDto],
+    })
+    excludedReviewers: ReviewerInfoDto[];
 }

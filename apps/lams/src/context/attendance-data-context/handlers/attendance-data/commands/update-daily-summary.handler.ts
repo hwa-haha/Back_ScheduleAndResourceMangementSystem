@@ -275,10 +275,14 @@ export class UpdateDailySummaryHandler implements ICommandHandler<
 
             // 비고 업데이트 (모든 경우에 대해)
             if (note !== undefined) {
-                const oldNote = dailySummary.note;
+                const oldNote = dailySummary.note ?? '';
                 const newNote = note;
                 if (oldNote !== newNote) {
-                    changeContent += `${changeContent.length > 0 ? ', ' : ''}비고: ${oldNote} → ${newNote}`;
+                    if (oldNote.length > 0) {
+                        changeContent += `${changeContent.length > 0 ? ', ' : ''}비고: ${oldNote} → ${newNote}`;
+                    } else {
+                        changeContent += `${changeContent.length > 0 ? ', ' : ''}비고: ${newNote}`;
+                    }
                 }
                 dailySummary.비고업데이트한다(note ?? '');
             }

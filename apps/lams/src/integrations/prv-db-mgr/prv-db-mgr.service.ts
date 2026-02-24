@@ -480,10 +480,16 @@ export class PrvDbMgrService implements OnModuleInit {
     }
 
     private async 월간요약을마이그레이션한다(employeeIdByNumber: Map<string, string>): Promise<Map<string, string>> {
+        // 현재 연월 기준 직전달까지만 마이그레이션 (예: 2026-02-23이면 2026-01까지)
+        const now = new Date();
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const cutoffYyyymm = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+
         const prvMonthlySummaries = await this.prvDataSource.getRepository(PrvMonthlySummaryEntity).find();
         const latestByEmployeeMonth = new Map<string, PrvMonthlySummaryEntity>();
 
         prvMonthlySummaries.forEach((summary) => {
+            if (summary.yyyymm > cutoffYyyymm) return;
             const key = `${summary.employeeNumber}|${summary.yyyymm}`;
             const existing = latestByEmployeeMonth.get(key);
             if (!existing || summary.createdAt > existing.createdAt) {
@@ -549,11 +555,17 @@ export class PrvDbMgrService implements OnModuleInit {
         >,
         monthlyMap: Map<string, string>,
     ): Promise<void> {
+        // 현재 연월 기준 직전달까지만 (월간요약 마이그레이션과 동일)
+        const now = new Date();
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const cutoffYyyymm = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+
         const prvMonthlySummaries = await this.prvDataSource.getRepository(PrvMonthlySummaryEntity).find();
         const dailyEntities: DailyEventSummary[] = [];
         const latestByEmployeeMonth = new Map<string, PrvMonthlySummaryEntity>();
 
         prvMonthlySummaries.forEach((summary) => {
+            if (summary.yyyymm > cutoffYyyymm) return;
             const key = `${summary.employeeNumber}|${summary.yyyymm}`;
             const existing = latestByEmployeeMonth.get(key);
             if (!existing || summary.createdAt > existing.createdAt) {

@@ -161,9 +161,7 @@ export class DomainEmployeeDepartmentPermissionService {
      *
      * has_review_permission = true 인 모든 권한을 직원·부서 정보와 함께 반환합니다.
      */
-    async 검토권한목록전체조회한다(
-        manager?: EntityManager,
-    ): Promise<
+    async 검토권한목록전체조회한다(manager?: EntityManager): Promise<
         Array<{
             departmentId: string;
             departmentName: string;

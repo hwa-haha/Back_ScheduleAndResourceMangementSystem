@@ -8,6 +8,7 @@ import {
 } from '../../interfaces/response/get-reviewers-by-department-response.interface';
 import { DomainEmployeeDepartmentPermissionService } from '../../../../domain/employee-department-permission/employee-department-permission.service';
 import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/employee-department-position-history/employee-department-position-history.service';
+import { EmployeeStatus } from '@libs/modules/employee/employee.entity';
 
 /**
  * 결재 관련 부서별 권한자(검토 권한자) 조회 Query Handler
@@ -30,24 +31,46 @@ export class GetReviewersByDepartmentHandler implements IQueryHandler<
         this.logger.log('결재 관련 부서별 권한자 조회 시작');
 
         const rows = await this.employeeDepartmentPermissionService.검토권한목록전체조회한다();
-
         const byDepartment = new Map<string, IReviewerInfo[]>();
         const departmentNames = new Map<string, string>();
+        /** 퇴사 상태이거나 퇴사자 부서 소속인 권한자 (퇴사 여부 정보 전달용, employeeId 기준 중복 제거) */
+        const excludedReviewers: IReviewerInfo[] = [];
+        const excludedReviewerIds = new Set<string>();
 
         // 직원 ID 목록 수집
         const employeeIds = [...new Set(rows.map((row) => row.employeeId))];
-
         // 모든 직원의 현재 배치 정보를 배치로 조회 (부서, 직책 정보)
-        const employeeHistoriesMap = new Map<string, { departmentId?: string; departmentName?: string; positionId?: string; positionTitle?: string }>();
-        
+        const employeeHistoriesMap = new Map<
+            string,
+            { departmentId?: string; departmentName?: string; positionId?: string; positionTitle?: string }
+        >();
+
         if (employeeIds.length > 0) {
-            // 현재 유효한 모든 배치 정보를 조회한 후 필터링
             const allCurrentHistories = await this.employeeDepartmentPositionHistoryService.findAllCurrent();
             const employeeIdsSet = new Set(employeeIds);
-            
+
             for (const history of allCurrentHistories) {
-                if (employeeIdsSet.has(history.employeeId)) {
-                    employeeHistoriesMap.set(history.employeeId, {
+                if (!employeeIdsSet.has(history.employeeId)) continue;
+                if (employeeHistoriesMap.has(history.employeeId)) continue;
+
+                // employeeHistoriesMap에는 퇴사자 포함 모두 동일하게 넣는다
+                employeeHistoriesMap.set(history.employeeId, {
+                    departmentId: history.departmentId,
+                    departmentName: history.department?.departmentName,
+                    positionId: history.positionId,
+                    positionTitle: history.position?.positionTitle,
+                });
+
+                // 퇴사 여부 전달을 위해 excludedReviewers에만 추가 (employeeId 기준 중복 제거)
+                const isTerminated =
+                    history.employee?.status === EmployeeStatus.Terminated ||
+                    history.department?.departmentCode === '퇴사자';
+                if (isTerminated && !excludedReviewerIds.has(history.employeeId)) {
+                    excludedReviewerIds.add(history.employeeId);
+                    excludedReviewers.push({
+                        employeeId: history.employeeId,
+                        employeeName: history.employee?.name ?? '',
+                        employeeNumber: history.employee?.employeeNumber ?? '',
                         departmentId: history.departmentId,
                         departmentName: history.department?.departmentName,
                         positionId: history.positionId,
@@ -85,8 +108,10 @@ export class GetReviewersByDepartmentHandler implements IQueryHandler<
             }),
         );
 
-        this.logger.log(`결재 관련 부서별 권한자 조회 완료: departments=${departments.length}`);
+        this.logger.log(
+            `결재 관련 부서별 권한자 조회 완료: departments=${departments.length}, excludedReviewers=${excludedReviewers.length}`,
+        );
 
-        return { departments };
+        return { departments, excludedReviewers };
     }
 }

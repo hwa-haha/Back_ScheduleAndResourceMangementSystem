@@ -27,16 +27,17 @@ export class ApprovalController {
      * 결재 관련 부서별 권한자 조회
      *
      * 권한 테이블에서 검토(review) 권한이 있는 직원들을 부서별로 그룹핑하여 반환합니다.
+     * departments에는 퇴사자 포함 전체를 넣고, 퇴사 여부 전달용으로 excludedReviewers를 별도 반환합니다.
      */
     @Get('reviewers-by-department')
     @ApiOperation({
         summary: '결재 관련 부서별 권한자 조회',
         description:
-            '권한 테이블(employee_department_permission)에서 has_review_permission = true 인 직원들을 부서별로 그룹핑하여 반환합니다.',
+            '권한 테이블(employee_department_permission)에서 has_review_permission = true 인 직원들을 부서별로 그룹핑하여 반환합니다. departments에는 퇴사자 포함 전체가 포함되며, 퇴사 여부 정보 전달을 위해 excludedReviewers를 별도로 반환합니다.',
     })
     @ApiResponse({
         status: 200,
-        description: '부서별 권한자 조회 성공',
+        description: '부서별 권한자 조회 성공 (departments: 전체, excludedReviewers: 퇴사 여부 전달용)',
         type: GetReviewersByDepartmentResponseDto,
     })
     async getReviewersByDepartment(): Promise<IGetReviewersByDepartmentResponse> {
