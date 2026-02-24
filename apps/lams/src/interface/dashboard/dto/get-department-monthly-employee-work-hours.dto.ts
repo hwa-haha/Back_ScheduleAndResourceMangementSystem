@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
+import { AttendanceUsageDto } from './get-department-monthly-employee-attendance.dto';
 
 /**
  * 부서별 월별 직원별 근무시간 조회 요청 DTO
@@ -57,6 +58,12 @@ export class WeeklyWorkHoursDto {
 
     @ApiProperty({ description: '주별 결근 횟수', example: 0 })
     absentCount: number;
+
+    @ApiProperty({
+        description: '주차별 근태 사용 내역 (출장·연차·결근·지각·조퇴)',
+        type: AttendanceUsageDto,
+    })
+    attendanceUsage: AttendanceUsageDto;
 }
 
 /**

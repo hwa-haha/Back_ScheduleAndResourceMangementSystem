@@ -3,10 +3,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@ne
 import { User } from '../../../libs/decorators/user.decorator';
 import { UserBusinessService } from '../../business/user-business/user-business.service';
 import type { IGetAttendanceIssuesResponse } from '../../context/attendance-issue-context/interfaces/response/get-attendance-issues-response.interface';
-import type {
-    IGetSnapshotListResponse,
-    ICheckEmployeeSnapshotExistsResponse,
-} from '../../context/data-snapshot-context/interfaces';
 import {
     GetAttendanceIssuesToReviewRequestDto,
     GetAttendanceIssuesToReviewResponseDto,
@@ -15,6 +11,10 @@ import {
     GetConfirmedMonthlyReportRequestDto,
     GetConfirmedMonthlyReportResponseDto,
 } from './dto/get-confirmed-monthly-report.dto';
+import {
+    GetLatestSubmittedSnapshotRequestDto,
+    GetLatestSubmittedSnapshotResponseDto,
+} from './dto/get-latest-submitted-snapshot.dto';
 import { IGetEmployeeAttendanceDetailResponse } from '../../context/dashboard-context/interfaces/response/get-employee-attendance-detail-response.interface';
 
 /**
@@ -94,5 +94,34 @@ export class UserController {
             throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
         }
         return await this.userBusinessService.확정된전월근태보고서를조회한다(userId, query);
+    }
+
+    /**
+     * 제출된 가장 최신 스냅샷 정보 (id, submittedAt)
+     *
+     * 지정 연·월의 스냅샷 목록 중 submitted_at이 있는 것 중 가장 최신 항목을 반환합니다.
+     * 로그인한 유저에게 해당 연·월의 child 스냅샷 데이터가 있을 때만 응답하며, 없으면 null. 미지정 시 전월 기준.
+     */
+    @Get('latest-submitted-snapshot')
+    @ApiOperation({
+        summary: '제출된 가장 최신 스냅샷 정보',
+        description:
+            '지정 연·월의 제출된 가장 최신 스냅샷의 id, submittedAt을 반환합니다. 로그인한 유저의 해당 연·월 child 스냅샷이 있을 때만 반환하며, 없으면 null. 연·월 미지정 시 전월 기준.',
+    })
+    @ApiQuery({ name: 'year', description: '연도 (미지정 시 전월)', example: '2026', required: false })
+    @ApiQuery({ name: 'month', description: '월 01~12 (미지정 시 전월)', example: '01', required: false })
+    @ApiResponse({
+        status: 200,
+        description: '조회 성공 (제출된 스냅샷 없거나 해당 유저 child 스냅샷 없으면 null)',
+        type: GetLatestSubmittedSnapshotResponseDto,
+    })
+    async getLatestSubmittedSnapshot(
+        @User('id') userId: string,
+        @Query() query: GetLatestSubmittedSnapshotRequestDto,
+    ): Promise<GetLatestSubmittedSnapshotResponseDto | null> {
+        if (!userId) {
+            throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
+        }
+        return await this.userBusinessService.제출된가장최신스냅샷정보를조회한다(userId, query);
     }
 }

@@ -1,4 +1,15 @@
 /**
+ * 주차별 근태 사용 내역 (출장·연차·결근·지각·조퇴)
+ */
+export interface IWeeklyAttendanceUsage {
+    businessTrip: number;
+    annualLeave: number;
+    absence: number;
+    late: number;
+    earlyLeave: number;
+}
+
+/**
  * 주차별 근무시간 정보
  */
 export interface IWeeklyWorkHours {
@@ -12,6 +23,8 @@ export interface IWeeklyWorkHours {
     earlyLeaveCount: number;
     /** 주별 결근 횟수 */
     absentCount: number;
+    /** 주차별 근태 사용 내역 */
+    attendanceUsage: IWeeklyAttendanceUsage;
 }
 
 /**

@@ -42,12 +42,9 @@ export class GetSnapshotByIdHandler implements IQueryHandler<GetSnapshotByIdQuer
             const filteredChildren = snapshot.children
                 .filter((child) => employeeIds.has(child.employeeId))
                 .sort((a, b) => a.employeeNumber.localeCompare(b.employeeNumber));
-            this.logger.log(
-                `스냅샷 조회 완료: snapshotId=${snapshotId}, filteredChildren=${filteredChildren.length}`,
-            );
+            this.logger.log(`스냅샷 조회 완료: snapshotId=${snapshotId}, filteredChildren=${filteredChildren.length}`);
             return { snapshot: { ...snapshot, children: filteredChildren } };
         }
-
         this.logger.log(`스냅샷 조회 완료: snapshotId=${snapshotId}, children=${snapshot.children?.length || 0}`);
         return { snapshot };
     }

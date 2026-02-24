@@ -3,15 +3,10 @@ import { AttendanceIssueContextService } from '../../context/attendance-issue-co
 import { DataSnapshotContextService } from '../../context/data-snapshot-context/data-snapshot-context.service';
 import type { IGetAttendanceIssuesQuery } from '../../context/attendance-issue-context/interfaces/query/get-attendance-issues-query.interface';
 import type { IGetAttendanceIssuesResponse } from '../../context/attendance-issue-context/interfaces/response/get-attendance-issues-response.interface';
-import type {
-    IGetSnapshotListResponse,
-    ICheckEmployeeSnapshotExistsResponse,
-} from '../../context/data-snapshot-context/interfaces';
 import { AttendanceIssueStatus } from '../../domain/attendance-issue/attendance-issue.types';
-import type {
-    GetAttendanceIssuesToReviewRequestDto,
-} from '../../interface/user/dto/get-attendance-issues-to-review.dto';
+import type { GetAttendanceIssuesToReviewRequestDto } from '../../interface/user/dto/get-attendance-issues-to-review.dto';
 import type { GetConfirmedMonthlyReportRequestDto } from '../../interface/user/dto/get-confirmed-monthly-report.dto';
+import type { GetLatestSubmittedSnapshotRequestDto } from '../../interface/user/dto/get-latest-submitted-snapshot.dto';
 import { DashboardContextService } from '../../context/dashboard-context/dashboard-context.service';
 import { IGetEmployeeAttendanceDetailResponse } from '../../context/dashboard-context/interfaces/response/get-employee-attendance-detail-response.interface';
 
@@ -29,6 +24,7 @@ export class UserBusinessService {
 
     constructor(
         private readonly attendanceIssueContextService: AttendanceIssueContextService,
+        private readonly dataSnapshotContextService: DataSnapshotContextService,
         private readonly dashboardContextService: DashboardContextService,
     ) {}
 
@@ -52,7 +48,9 @@ export class UserBusinessService {
             params.startDate = `${y}-${m}-01`;
             params.endDate = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
         }
-        this.logger.log(`확인할 근태 이슈 목록 조회: userId=${userId}, status=request, params=${JSON.stringify(params)}`);
+        this.logger.log(
+            `확인할 근태 이슈 목록 조회: userId=${userId}, status=request, params=${JSON.stringify(params)}`,
+        );
         return await this.attendanceIssueContextService.근태이슈목록을조회한다(params);
     }
 
@@ -69,5 +67,48 @@ export class UserBusinessService {
         const year = query?.year ?? String(prevMonth.getFullYear());
         const month = query?.month ?? String(prevMonth.getMonth() + 1).padStart(2, '0');
         return await this.dashboardContextService.연도월별직원근태상세를조회한다({ employeeId: userId, year, month });
+    }
+
+    /**
+     * 스냅샷 목록 조회 후 submitted_at이 있는 것 중 가장 최신 스냅샷의 id, submittedAt을 반환한다.
+     * 해당 유저(직원)의 child 스냅샷 데이터가 있을 때만 응답하며, 없으면 null을 반환한다.
+     * year/month 미지정 시 전월 기준으로 조회한다.
+     */
+    async 제출된가장최신스냅샷정보를조회한다(
+        userId: string,
+        query?: GetLatestSubmittedSnapshotRequestDto,
+    ): Promise<{ id: string; submittedAt: Date } | null> {
+        const returnData = { id: null, submittedAt: null };
+        const now = new Date();
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const year = query?.year ?? String(prevMonth.getFullYear());
+        const month = query?.month ?? String(prevMonth.getMonth() + 1).padStart(2, '0');
+
+        this.logger.log(`제출된 가장 최신 스냅샷 조회: userId=${userId}, year=${year}, month=${month}`);
+
+        const result = await this.dataSnapshotContextService.스냅샷목록을조회한다({ year, month });
+        const withSubmitted = (result.snapshots ?? []).filter(
+            (s): s is typeof s & { submittedAt: Date } => s.submittedAt != null,
+        );
+        if (withSubmitted.length === 0) return returnData;
+
+        const sorted = [...withSubmitted].sort(
+            (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+        );
+        const latest = sorted[0];
+        // 해당 스냅샷에 이 직원의 child가 있는지 확인
+        const snapshotDetail = await this.dataSnapshotContextService.스냅샷을ID로조회한다({
+            snapshotId: latest.id,
+        });
+        const hasChildForEmployee = snapshotDetail.snapshot.children?.some((c) => c.employeeId === userId) ?? false;
+        if (!hasChildForEmployee) {
+            this.logger.log(
+                `제출된 가장 최신 스냅샷: 해당 스냅샷에 직원 child 없음 snapshotId=${latest.id}, userId=${userId}`,
+            );
+            return returnData;
+        }
+        returnData.id = latest.id;
+        returnData.submittedAt = latest.submittedAt;
+        return returnData;
     }
 }

@@ -176,7 +176,6 @@ export class DomainDataSnapshotInfoService {
             .andWhere('snapshot.deleted_at IS NULL')
             .orderBy('snapshot.created_at', 'DESC')
             .getMany();
-
         return snapshots.map((snapshot) => snapshot.DTO변환한다());
     }
 
@@ -302,7 +301,16 @@ export class DomainDataSnapshotInfoService {
 
         if (snapshotsToUpdate.length > 0) {
             for (const snapshot of snapshotsToUpdate) {
-                snapshot.업데이트한다(undefined, undefined, undefined, undefined, undefined, undefined, undefined, false);
+                snapshot.업데이트한다(
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    undefined,
+                    false,
+                );
                 snapshot.수정자설정한다(userId);
                 snapshot.메타데이터업데이트한다(userId);
             }
@@ -329,13 +337,7 @@ export class DomainDataSnapshotInfoService {
         }
 
         // 1. 동일 연월의 다른 스냅샷들을 비현재로 설정
-        await this.동일연월다른스냅샷들을비현재로설정한다(
-            snapshot.yyyy,
-            snapshot.mm,
-            snapshotId,
-            userId,
-            manager,
-        );
+        await this.동일연월다른스냅샷들을비현재로설정한다(snapshot.yyyy, snapshot.mm, snapshotId, userId, manager);
 
         // 2. 현재 스냅샷을 is_current = true로 설정
         snapshot.업데이트한다(undefined, undefined, undefined, undefined, undefined, undefined, undefined, true);

@@ -30,7 +30,6 @@ export class CheckEmployeeSnapshotExistsHandler implements IQueryHandler<
             SnapshotType.MONTHLY,
             [employeeId],
         );
-
         const exists = snapshots.length > 0 && snapshots.some((s) => s.children != null && s.children.length > 0);
 
         this.logger.log(`직원 스냅샷 존재 여부: employeeId=${employeeId}, year=${year}, month=${mm}, exists=${exists}`);

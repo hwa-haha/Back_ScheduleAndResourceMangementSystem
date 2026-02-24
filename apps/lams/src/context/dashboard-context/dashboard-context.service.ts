@@ -75,6 +75,7 @@ export class DashboardContextService {
         const snapshotResult = await this.queryBus.execute(
             new GetDepartmentMonthlySnapshotChildrenQuery({ departmentId, year, month }),
         );
+
         return await this.queryBus.execute(
             new ComputeDepartmentMonthlyEmployeeWorkHoursQuery({
                 departmentId,

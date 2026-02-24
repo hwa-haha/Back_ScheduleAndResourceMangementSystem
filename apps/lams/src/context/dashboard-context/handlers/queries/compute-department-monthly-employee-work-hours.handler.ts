@@ -40,6 +40,13 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                     lateCount: number;
                     earlyLeaveCount: number;
                     absentCount: number;
+                    attendanceUsage: {
+                        businessTrip: number;
+                        annualLeave: number;
+                        absence: number;
+                        late: number;
+                        earlyLeave: number;
+                    };
                 }>;
             }
         >();
@@ -85,6 +92,19 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                     const absentCount = weekDailySummaries.filter(
                         (d: any) => d.isAbsent === true || d.is_absent === true,
                     ).length;
+                    const businessTrip = weekDailySummaries.filter((d: any) =>
+                        (d.usedAttendances || []).some((ua: any) => (ua.title || '').trim().includes('출장')),
+                    ).length;
+                    let annualLeave = 0;
+                    weekDailySummaries.forEach((d: any) => {
+                        const uas = d.usedAttendances || [];
+                        const has연차 = uas.some((ua: any) => (ua.title || '').trim() === '연차');
+                        const has반차 = uas.some((ua: any) => (ua.title || '').trim().includes('반차'));
+                        if (has연차) annualLeave += 1;
+                        else if (has반차) annualLeave += 0.5;
+                    });
+                    annualLeave = Math.round(annualLeave * 100) / 100;
+
                     workHours.weeklyWorkHours.push({
                         weekNumber: index + 1,
                         startDate,
@@ -93,6 +113,13 @@ export class ComputeDepartmentMonthlyEmployeeWorkHoursHandler implements IQueryH
                         lateCount,
                         earlyLeaveCount,
                         absentCount,
+                        attendanceUsage: {
+                            businessTrip,
+                            annualLeave,
+                            absence: absentCount,
+                            late: lateCount,
+                            earlyLeave: earlyLeaveCount,
+                        },
                     });
                 });
             } catch (error) {

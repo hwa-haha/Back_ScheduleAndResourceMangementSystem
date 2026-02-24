@@ -88,32 +88,6 @@ export class GetEmployeeAttendanceDetailHandler implements IQueryHandler<
         // 스냅샷 데이터가 없으면 월간 요약에서 조회
         if (!snapshotData) {
             return null;
-            // const yyyymm = `${year}-${month}`;
-            // const monthlySummary = await this.monthlyEventSummaryService.일일요약포함조회한다(employeeId, yyyymm);
-
-            // if (!monthlySummary) {
-            //     throw new NotFoundException('해당 기간의 근태 데이터를 찾을 수 없습니다.');
-            // }
-            // // 월간 요약 데이터를 스냅샷 형식으로 변환
-            // snapshotData = {
-            //     monthlyEventSummaryId: monthlySummary.id,
-            //     employeeNumber: monthlySummary.employeeNumber,
-            //     employeeId: monthlySummary.employeeId,
-            //     employeeName: monthlySummary.employeeName || '',
-            //     yyyymm: monthlySummary.yyyymm,
-            //     note: monthlySummary.note || '',
-            //     additionalNote: monthlySummary.additionalNote || '',
-            //     workDaysCount: monthlySummary.workDaysCount,
-            //     totalWorkableTime: monthlySummary.totalWorkableTime,
-            //     totalWorkTime: monthlySummary.totalWorkTime,
-            //     avgWorkTimes: monthlySummary.avgWorkTimes,
-            //     attendanceTypeCount: monthlySummary.attendanceTypeCount || {},
-            //     dailySummaries: monthlySummary.dailyEventSummary || [],
-            //     weeklyWorkTimeSummary: monthlySummary.weeklyWorkTimeSummary || [],
-            //     lateDetails: monthlySummary.lateDetails || [],
-            //     absenceDetails: monthlySummary.absenceDetails || [],
-            //     earlyLeaveDetails: monthlySummary.earlyLeaveDetails || [],
-            // };
         }
 
         // 2. DTO 변환
