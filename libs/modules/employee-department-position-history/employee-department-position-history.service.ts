@@ -164,6 +164,23 @@ export class DomainEmployeeDepartmentPositionHistoryService {
     }
 
     /**
+     * 지정한 직원 ID 목록에 대해 현재 유효한 배치만 조회한다
+     * 권한자 퇴사 여부 등 일부 직원만 필요할 때 findAllCurrent 대신 사용하면 효율적이다.
+     */
+    async findCurrentByEmployeeIds(employeeIds: string[]): Promise<EmployeeDepartmentPositionHistory[]> {
+        if (employeeIds.length === 0) return [];
+        return this.repository
+            .createQueryBuilder('eh')
+            .leftJoinAndSelect('eh.employee', 'emp')
+            .leftJoinAndSelect('eh.department', 'dept')
+            .leftJoinAndSelect('eh.position', 'pos')
+            .leftJoinAndSelect('eh.rank', 'rank')
+            .where('eh.isCurrent = :isCurrent', { isCurrent: true })
+            .andWhere('eh.employeeId IN (:...employeeIds)', { employeeIds })
+            .getMany();
+    }
+
+    /**
      * 특정 연월에 유효한 배치이력 목록을 조회한다
      *
      * 해당 월의 범위(첫 날짜 ~ 마지막 날짜) 내에 유효한 배치 정보를 조회하여 배치이력 엔티티를 반환합니다.

@@ -5,6 +5,7 @@ import { FileContextModule } from '../../context/file/file.context.module';
 
 // Business Services
 import { FileManagementService } from './file-management.service';
+import { FileCronService } from './services/file-cron.service';
 
 // Controllers
 import { FileController } from './controllers/file.controller';
@@ -31,7 +32,7 @@ import { CronFileController } from './controllers/cron.file.controller';
         FileContextModule,
     ],
     controllers: [FileController, CronFileController],
-    providers: [FileManagementService],
+    providers: [FileManagementService, FileCronService],
     exports: [FileManagementService],
 })
 export class FileManagementModule {}

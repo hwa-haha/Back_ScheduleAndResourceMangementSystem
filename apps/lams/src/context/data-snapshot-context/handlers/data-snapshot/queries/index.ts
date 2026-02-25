@@ -1,5 +1,7 @@
 export * from './get-snapshot-list.query';
 export * from './get-snapshot-list.handler';
+export * from './get-snapshot-list-by-submitted-year-month.query';
+export * from './get-snapshot-list-by-submitted-year-month.handler';
 export * from './get-snapshot-list-with-department-children.query';
 export * from './get-snapshot-list-with-department-children.handler';
 export * from './get-snapshot-by-id.query';

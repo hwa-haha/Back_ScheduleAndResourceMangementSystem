@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import * as path from 'path';
 
 // 프로젝트 내부 라이브러리
@@ -32,6 +33,7 @@ import { MigrationModule } from './intergration/migration/migration.module';
             load: [FIREBASE_CONFIG, DB_CONFIG, JWT_CONFIG],
         }),
         EventEmitterModule.forRoot(),
+        ScheduleModule.forRoot(),
         JwtModule.registerAsync({
             global: true,
             useFactory: jwtConfig,

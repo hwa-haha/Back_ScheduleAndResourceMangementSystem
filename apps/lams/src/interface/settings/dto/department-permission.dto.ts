@@ -12,6 +12,9 @@ export class EmployeeInfoForPermissionResponseDto {
 
     @ApiProperty({ description: '직원명' })
     employeeName: string;
+
+    @ApiProperty({ description: '퇴사 여부 (직원 상태 퇴사 또는 퇴사자 부서 소속)' })
+    isTerminated: boolean;
 }
 
 /**
@@ -44,6 +47,9 @@ export class DepartmentInfoForPermissionResponseDto {
         type: [EmployeeInfoForPermissionResponseDto],
     })
     reviewPermissionEmployees: EmployeeInfoForPermissionResponseDto[];
+
+    @ApiProperty({ description: '해당 부서 권한자 중 퇴사자가 한 명이라도 있는지 여부' })
+    hasTerminatedPermissionHolder: boolean;
 }
 
 /**
@@ -75,6 +81,9 @@ export class DepartmentPermissionEmployeeInfoDto {
 
     @ApiProperty({ description: '검토권한 여부' })
     hasReviewPermission: boolean;
+
+    @ApiProperty({ description: '퇴사 여부 (직원 상태 퇴사 또는 퇴사자 부서 소속)' })
+    isTerminated: boolean;
 }
 
 /**

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleController } from './controllers/schedule.controllers';
 import { ScheduleManagementService } from './schedule-management.service';
+import { ScheduleCronService } from './services/schedule-cron.service';
 import { ScheduleContextModule } from '../../context/schedule/schedule.context.module';
 import { ResourceContextModule } from '../../context/resource/resource.context.module';
 import { ReservationContextModule } from '../../context/reservation/reservation.context.module';
@@ -21,7 +22,7 @@ import { createSimpleScheduleTestData } from './test-data/schedule-test-data';
         EmployeeContextModule,
     ],
     controllers: [ScheduleController],
-    providers: [ScheduleManagementService],
+    providers: [ScheduleManagementService, ScheduleCronService],
     exports: [],
 })
 export class ScheduleManagementModule {}

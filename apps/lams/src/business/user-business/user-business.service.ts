@@ -111,4 +111,41 @@ export class UserBusinessService {
         returnData.submittedAt = latest.submittedAt;
         return returnData;
     }
+
+    /**
+     * 연도·월을 받아 해당 연월에 제출된 스냅샷을 조회한 뒤, 연월별로 최신 스냅샷만 필터링하여
+     * 각 스냅샷의 연월(yyyy, mm)과 제출일(submittedAt)을 반환한다.
+     */
+    async 연월별제출된최신스냅샷목록을조회한다(
+        year: string,
+        month: string,
+    ): Promise<Array<{ id: string; yyyy: string; mm: string; submittedAt: Date }>> {
+        const monthStr = month.padStart(2, '0');
+        this.logger.log(`연월별 제출된 최신 스냅샷 목록 조회: year=${year}, month=${monthStr}`);
+
+        const result = await this.dataSnapshotContextService.스냅샷을제출연월로목록조회한다({ year, month: monthStr });
+        const withSubmitted = (result.snapshots ?? []).filter(
+            (s): s is typeof s & { submittedAt: Date } => s.submittedAt != null,
+        );
+        if (withSubmitted.length === 0) return [];
+
+        const byYearMonth = new Map<string, { id: string; yyyy: string; mm: string; submittedAt: Date }>();
+        for (const s of withSubmitted) {
+            const key = `${s.yyyy}-${s.mm}`;
+            const existing = byYearMonth.get(key);
+            const submittedAt = s.submittedAt instanceof Date ? s.submittedAt : new Date(s.submittedAt);
+            if (
+                !existing ||
+                submittedAt.getTime() > (existing.submittedAt instanceof Date ? existing.submittedAt : new Date(existing.submittedAt)).getTime()
+            ) {
+                byYearMonth.set(key, {
+                    id: s.id,
+                    yyyy: s.yyyy,
+                    mm: s.mm,
+                    submittedAt,
+                });
+            }
+        }
+        return Array.from(byYearMonth.values());
+    }
 }

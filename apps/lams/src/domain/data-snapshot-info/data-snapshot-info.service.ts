@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, IsNull, Repository } from 'typeorm';
+import { Between, EntityManager, IsNull, Repository } from 'typeorm';
 import { DataSnapshotInfo } from './data-snapshot-info.entity';
 import {
     CreateDataSnapshotInfoData,
@@ -115,6 +115,29 @@ export class DomainDataSnapshotInfoService {
             relations: ['dataSnapshotChildInfoList'],
             order: {
                 created_at: 'DESC',
+            },
+        });
+        return snapshots.map((snapshot) => snapshot.DTO변환한다());
+    }
+
+    /**
+     * 제출일(submitted_at) 기준 연·월로 스냅샷 목록을 조회한다
+     * 해당 연월에 제출된 스냅샷만 반환한다.
+     */
+    async 제출연월로목록조회한다(year: string, month: string): Promise<DataSnapshotInfoDTO[]> {
+        const yearNum = parseInt(year, 10);
+        const monthNum = parseInt(month.padStart(2, '0'), 10);
+        const start = new Date(yearNum, monthNum - 1, 1);
+        const end = new Date(yearNum, monthNum, 0, 23, 59, 59, 999);
+
+        const snapshots = await this.repository.find({
+            where: {
+                submitted_at: Between(start, end),
+                deleted_at: IsNull(),
+            },
+            relations: ['dataSnapshotChildInfoList'],
+            order: {
+                submitted_at: 'DESC',
             },
         });
         return snapshots.map((snapshot) => snapshot.DTO변환한다());

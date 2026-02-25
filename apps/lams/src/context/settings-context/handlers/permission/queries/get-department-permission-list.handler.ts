@@ -7,6 +7,8 @@ import {
 } from '../../../interfaces/response/get-department-permission-list-response.interface';
 import { DomainDepartmentService } from '@libs/modules/department/department.service';
 import { DomainEmployeeDepartmentPermissionService } from '../../../../../domain/employee-department-permission/employee-department-permission.service';
+import { DomainEmployeeDepartmentPositionHistoryService } from '@libs/modules/employee-department-position-history/employee-department-position-history.service';
+import { EmployeeStatus } from '@libs/modules/employee/employee.entity';
 
 /**
  * 특정 부서별 직원 권한 목록 조회 Query Handler
@@ -22,6 +24,7 @@ export class GetDepartmentPermissionListHandler
     constructor(
         private readonly departmentService: DomainDepartmentService,
         private readonly permissionService: DomainEmployeeDepartmentPermissionService,
+        private readonly employeeDepartmentPositionHistoryService: DomainEmployeeDepartmentPositionHistoryService,
     ) {}
 
     async execute(
@@ -40,6 +43,22 @@ export class GetDepartmentPermissionListHandler
             departmentId,
         ]);
 
+        // 권한자 직원 ID 목록으로 퇴사 여부 조회 (배치 이력 기준, permission 직원만 조회)
+        const permissionEmployeeIds = [...new Set(permissions.map((p) => p.employee_id))];
+        const terminatedEmployeeIds = new Set<string>();
+        if (permissionEmployeeIds.length > 0) {
+            const currentHistories =
+                await this.employeeDepartmentPositionHistoryService.findCurrentByEmployeeIds(
+                    permissionEmployeeIds,
+                );
+            for (const history of currentHistories) {
+                const isTerminated =
+                    history.employee?.status === EmployeeStatus.Terminated ||
+                    history.department?.departmentCode === '퇴사자';
+                if (isTerminated) terminatedEmployeeIds.add(history.employeeId);
+            }
+        }
+
         const employees: IDepartmentPermissionEmployeeInfo[] = permissions.map((p) => {
             const emp = p.employee as { id: string; employeeNumber?: string; name?: string } | undefined;
             return {
@@ -48,6 +67,7 @@ export class GetDepartmentPermissionListHandler
                 employeeName: emp?.name ?? '',
                 hasAccessPermission: p.has_access_permission,
                 hasReviewPermission: p.has_review_permission,
+                isTerminated: terminatedEmployeeIds.has(p.employee_id),
             };
         });
 
