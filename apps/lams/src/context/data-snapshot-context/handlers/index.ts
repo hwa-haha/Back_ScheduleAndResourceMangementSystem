@@ -4,6 +4,7 @@ export * from './data-snapshot';
 import { SaveCompanyMonthlySnapshotHandler } from './data-snapshot/commands';
 import {
     GetSnapshotListHandler,
+    GetSnapshotListBySubmittedYearMonthHandler,
     GetSnapshotListWithDepartmentChildrenHandler,
     GetSnapshotByIdHandler,
     CheckEmployeeSnapshotExistsHandler,
@@ -13,6 +14,7 @@ export const COMMAND_HANDLERS = [SaveCompanyMonthlySnapshotHandler];
 
 export const QUERY_HANDLERS = [
     GetSnapshotListHandler,
+    GetSnapshotListBySubmittedYearMonthHandler,
     GetSnapshotListWithDepartmentChildrenHandler,
     GetSnapshotByIdHandler,
     CheckEmployeeSnapshotExistsHandler,

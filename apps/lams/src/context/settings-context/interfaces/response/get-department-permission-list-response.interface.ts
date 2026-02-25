@@ -7,6 +7,8 @@ export interface IDepartmentPermissionEmployeeInfo {
     employeeName: string;
     hasAccessPermission: boolean;
     hasReviewPermission: boolean;
+    /** 퇴사 여부 (직원 상태 퇴사 또는 퇴사자 부서 소속) */
+    isTerminated: boolean;
 }
 
 /**

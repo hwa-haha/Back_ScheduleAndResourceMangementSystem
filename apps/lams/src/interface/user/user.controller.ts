@@ -15,6 +15,10 @@ import {
     GetLatestSubmittedSnapshotRequestDto,
     GetLatestSubmittedSnapshotResponseDto,
 } from './dto/get-latest-submitted-snapshot.dto';
+import {
+    GetMonthlySubmittedSnapshotsRequestDto,
+    MonthlySubmittedSnapshotItemDto,
+} from './dto/get-monthly-submitted-snapshots.dto';
 import { IGetEmployeeAttendanceDetailResponse } from '../../context/dashboard-context/interfaces/response/get-employee-attendance-detail-response.interface';
 
 /**
@@ -122,5 +126,29 @@ export class UserController {
             throw new BadRequestException('직원 정보를 찾을 수 없습니다.');
         }
         return await this.userBusinessService.제출된가장최신스냅샷정보를조회한다(userId, query);
+    }
+
+    /**
+     * 연월별 제출된 최신 스냅샷 목록
+     *
+     * 지정 연·월에 제출된 스냅샷을 조회한 뒤, 연월별로 최신 스냅샷만 필터링하여 연월(yyyy, mm)과 제출일을 반환한다.
+     */
+    @Get('monthly-submitted-snapshots')
+    @ApiOperation({
+        summary: '연월별 제출된 최신 스냅샷 목록',
+        description:
+            '지정 연·월에 제출된 스냅샷을 조회하고, 연월별로 최신 스냅샷만 필터링하여 각 스냅샷의 연월(yyyy, mm)과 제출일(submittedAt)을 반환합니다.',
+    })
+    @ApiQuery({ name: 'year', description: '연도', example: '2026', required: true })
+    @ApiQuery({ name: 'month', description: '월 (01~12)', example: '02', required: true })
+    @ApiResponse({
+        status: 200,
+        description: '조회 성공 (연월별 최신 스냅샷 목록, 없으면 빈 배열)',
+        type: [MonthlySubmittedSnapshotItemDto],
+    })
+    async getMonthlySubmittedSnapshots(
+        @Query() query: GetMonthlySubmittedSnapshotsRequestDto,
+    ): Promise<MonthlySubmittedSnapshotItemDto[]> {
+        return await this.userBusinessService.연월별제출된최신스냅샷목록을조회한다(query.year, query.month);
     }
 }

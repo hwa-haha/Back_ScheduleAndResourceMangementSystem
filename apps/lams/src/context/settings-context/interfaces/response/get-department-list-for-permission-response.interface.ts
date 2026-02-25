@@ -5,6 +5,8 @@ export interface IEmployeeInfoForPermission {
     id: string;
     employeeNumber: string;
     employeeName: string;
+    /** 퇴사 여부 (직원 상태 퇴사 또는 퇴사자 부서 소속) */
+    isTerminated: boolean;
 }
 
 /**
@@ -20,6 +22,8 @@ export interface IDepartmentInfoForPermission {
     accessPermissionEmployees: IEmployeeInfoForPermission[];
     /** 검토권한(has_review_permission)을 가진 직원 목록 */
     reviewPermissionEmployees: IEmployeeInfoForPermission[];
+    /** 해당 부서 권한자 중 퇴사자가 한 명이라도 있는지 여부 */
+    hasTerminatedPermissionHolder: boolean;
 }
 
 /**

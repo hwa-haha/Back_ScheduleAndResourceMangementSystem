@@ -6,6 +6,7 @@ import { ScheduleContextModule } from '../../context/schedule/schedule.context.m
 
 // Business Services
 import { NotificationManagementService } from './notification-management.service';
+import { NotificationCronService } from './services/notification-cron.service';
 
 // Controllers
 import { NotificationController } from './controllers/notification.controller';
@@ -31,7 +32,7 @@ import { CronNotificationController } from './controllers/cron.notification.cont
         ScheduleContextModule,
     ],
     controllers: [NotificationController, CronNotificationController],
-    providers: [NotificationManagementService],
+    providers: [NotificationManagementService, NotificationCronService],
     exports: [NotificationManagementService],
 })
 export class NotificationManagementModule {}

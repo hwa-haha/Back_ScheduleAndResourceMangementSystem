@@ -3,6 +3,7 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
     SaveCompanyMonthlySnapshotCommand,
     GetSnapshotListQuery,
+    GetSnapshotListBySubmittedYearMonthQuery,
     GetSnapshotByIdQuery,
     CheckEmployeeSnapshotExistsQuery,
 } from './handlers';
@@ -50,6 +51,19 @@ export class DataSnapshotContextService {
      */
     async 스냅샷목록을조회한다(query: IGetSnapshotListQuery): Promise<IGetSnapshotListResponse> {
         const queryInstance = new GetSnapshotListQuery(query);
+        return await this.queryBus.execute(queryInstance);
+    }
+
+    /**
+     * 제출일(submitted_at) 기준 연·월로 스냅샷 목록을 조회한다
+     *
+     * 해당 연월에 제출된 스냅샷만 조회하며, 최신 제출순으로 반환합니다.
+     *
+     * @param query year, month (제출 연·월)
+     * @returns 스냅샷 목록 조회 결과
+     */
+    async 스냅샷을제출연월로목록조회한다(query: IGetSnapshotListQuery): Promise<IGetSnapshotListResponse> {
+        const queryInstance = new GetSnapshotListBySubmittedYearMonthQuery(query);
         return await this.queryBus.execute(queryInstance);
     }
 
