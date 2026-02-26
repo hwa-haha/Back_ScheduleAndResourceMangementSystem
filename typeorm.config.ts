@@ -13,8 +13,11 @@ export default new DataSource({
     password: process.env.POSTGRES_PASSWORD || 'postgres',
     database: process.env.POSTGRES_DB || 'resource_management',
     schema: process.env.POSTGRES_SCHEMA || 'public',
-    entities: [join(__dirname, 'apps/lams/src/domain/**/*.entity.{ts,js}')],
-    migrations: [join(__dirname, 'apps/lams/libs/migrations/*.{ts,js}')],
+    entities: [
+        join(__dirname, 'apps/lams/src/domain/**/*.entity.{ts,js}'),
+        join(__dirname, 'apps/lsms/src/domain/**/*.entity.{ts,js}'),
+    ],
+    migrations: [join(__dirname, 'libs/migrations/*.{ts,js}')],
 
     synchronize: false,
     ssl: isProduction ? { rejectUnauthorized: false } : false,

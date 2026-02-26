@@ -34,12 +34,12 @@ export class UpdateEmployeeDepartmentPermissionHandler implements ICommandHandle
                     `부서별 직원 권한 변경 시작: departmentId=${departmentId}, employees=${employees.length}명`,
                 );
 
-                // 해당 부서의 모든 기존 권한 일괄 삭제 (Hard Delete)
-                await this.permissionService.부서로일괄삭제한다(departmentId, manager);
+                // 해당 부서의 모든 기존 권한 일괄 삭제 (Hard Delete, 이력 기록)
+                await this.permissionService.부서로일괄삭제한다(departmentId, manager, performedBy);
 
                 this.logger.log(`기존 권한 일괄 삭제 완료`);
 
-                // 요청된 직원 권한들 재생성
+                // 요청된 직원 권한들 재생성 (이력 기록)
                 const createdPermissions = [];
                 for (const employee of employees) {
                     const permission = await this.permissionService.생성한다(
@@ -50,6 +50,7 @@ export class UpdateEmployeeDepartmentPermissionHandler implements ICommandHandle
                             hasReviewPermission: employee.hasReviewPermission,
                         },
                         manager,
+                        performedBy,
                     );
                     createdPermissions.push(permission);
                 }
