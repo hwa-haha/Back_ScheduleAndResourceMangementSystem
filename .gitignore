@@ -9,6 +9,7 @@
 # .env
 .env
 apps/lams/.env
+apps/lsms/.env
 
 # Logs
 logs
