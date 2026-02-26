@@ -1,5 +1,6 @@
 import {
     GetAttendanceIssuesHandler,
+    GetAttendanceIssuesToReviewHandler,
     GetAttendanceIssueHandler,
     GetAttendanceIssuesByDepartmentHandler,
 } from './attendance-issue/queries';
@@ -17,6 +18,7 @@ import {
 
 export const QUERY_HANDLERS = [
     GetAttendanceIssuesHandler,
+    GetAttendanceIssuesToReviewHandler,
     GetAttendanceIssueHandler,
     GetAttendanceIssuesByDepartmentHandler,
 ];

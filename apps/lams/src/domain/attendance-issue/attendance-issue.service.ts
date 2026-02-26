@@ -255,11 +255,7 @@ export class DomainAttendanceIssueService {
      * ID 목록으로 근태 이슈를 벌크 요청한다 (PENDING → REQUEST)
      * PENDING 상태인 이슈만 일괄 변경하며, 한 번에 저장한다.
      */
-    async ID목록으로요청한다(
-        ids: string[],
-        userId: string,
-        manager?: EntityManager,
-    ): Promise<AttendanceIssueDTO[]> {
+    async ID목록으로요청한다(ids: string[], userId: string, manager?: EntityManager): Promise<AttendanceIssueDTO[]> {
         if (!ids?.length) return [];
         const repository = this.getRepository(manager);
         const issues = await repository.find({
@@ -280,11 +276,7 @@ export class DomainAttendanceIssueService {
      * ID 목록으로 근태 이슈를 벌크 재요청한다 (NOT_APPLIED/PENDING/REQUEST → REQUEST)
      * APPLIED 상태는 제외하고, 나머지를 REQUEST로 일괄 변경한다.
      */
-    async ID목록으로재요청한다(
-        ids: string[],
-        userId: string,
-        manager?: EntityManager,
-    ): Promise<AttendanceIssueDTO[]> {
+    async ID목록으로재요청한다(ids: string[], userId: string, manager?: EntityManager): Promise<AttendanceIssueDTO[]> {
         if (!ids?.length) return [];
         const repository = this.getRepository(manager);
         const issues = await repository.find({

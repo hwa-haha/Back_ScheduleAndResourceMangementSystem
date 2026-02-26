@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
     GetAttendanceIssuesQuery,
+    GetAttendanceIssuesToReviewQuery,
     GetAttendanceIssueQuery,
     GetAttendanceIssuesByDepartmentQuery,
     UpdateAttendanceIssueDescriptionCommand,
@@ -15,6 +16,7 @@ import {
 } from './handlers/attendance-issue';
 import {
     IGetAttendanceIssuesQuery,
+    IGetAttendanceIssuesToReviewQuery,
     IGetAttendanceIssuesResponse,
     IGetAttendanceIssueQuery,
     IGetAttendanceIssueResponse,
@@ -56,6 +58,16 @@ export class AttendanceIssueContextService {
     async 근태이슈목록을조회한다(query: IGetAttendanceIssuesQuery): Promise<IGetAttendanceIssuesResponse> {
         const queryInstance = new GetAttendanceIssuesQuery(query);
         return await this.queryBus.execute(queryInstance);
+    }
+
+    /**
+     * 확인할 근태 이슈 목록을 조회한다 (본인, status=request, 선택적 날짜 범위)
+     * Repository 직접 조회 전용 Handler 사용.
+     */
+    async 확인할근태이슈목록을조회한다(
+        query: IGetAttendanceIssuesToReviewQuery,
+    ): Promise<IGetAttendanceIssuesResponse> {
+        return await this.queryBus.execute(new GetAttendanceIssuesToReviewQuery(query));
     }
 
     /**
