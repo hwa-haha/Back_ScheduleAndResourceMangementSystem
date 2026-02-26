@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AttendanceIssueContextService } from '../../context/attendance-issue-context/attendance-issue-context.service';
 import { DataSnapshotContextService } from '../../context/data-snapshot-context/data-snapshot-context.service';
-import type { IGetAttendanceIssuesQuery } from '../../context/attendance-issue-context/interfaces/query/get-attendance-issues-query.interface';
+import type { IGetAttendanceIssuesToReviewQuery } from '../../context/attendance-issue-context/interfaces/query/get-attendance-issues-to-review-query.interface';
 import type { IGetAttendanceIssuesResponse } from '../../context/attendance-issue-context/interfaces/response/get-attendance-issues-response.interface';
-import { AttendanceIssueStatus } from '../../domain/attendance-issue/attendance-issue.types';
 import type { GetAttendanceIssuesToReviewRequestDto } from '../../interface/user/dto/get-attendance-issues-to-review.dto';
 import type { GetConfirmedMonthlyReportRequestDto } from '../../interface/user/dto/get-confirmed-monthly-report.dto';
 import type { GetLatestSubmittedSnapshotRequestDto } from '../../interface/user/dto/get-latest-submitted-snapshot.dto';
@@ -30,28 +29,25 @@ export class UserBusinessService {
 
     /**
      * 로그인한 유저가 확인해야 할 근태 이슈 목록을 조회한다
-     * attendance-issue-context 근태이슈목록을조회한다를 그대로 반환한다 (employeeId=userId, status=request 고정).
+     * attendance-issue-context 확인할근태이슈목록을조회한다 사용 (employeeId=userId, status=request 고정, Repository 직접 조회).
      * year/month 지정 시 해당 월의 startDate~endDate로 필터한다.
      */
     async 확인할근태이슈목록을조회한다(
         userId: string,
         query?: GetAttendanceIssuesToReviewRequestDto,
     ): Promise<IGetAttendanceIssuesResponse> {
-        const params: IGetAttendanceIssuesQuery = {
-            employeeId: userId,
-            status: AttendanceIssueStatus.REQUEST,
-        };
+        const params: IGetAttendanceIssuesToReviewQuery = { employeeId: userId };
         if (query?.year && query?.month) {
             const y = query.year;
             const m = query.month;
             const lastDay = new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
-            params.startDate = `${y}-${m}-01`;
-            params.endDate = `${y}-${m}-${String(lastDay).padStart(2, '0')}`;
+            params.startDate = `${y}-${m.padStart(2, '0')}-01`;
+            params.endDate = `${y}-${m.padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
         }
         this.logger.log(
-            `확인할 근태 이슈 목록 조회: userId=${userId}, status=request, params=${JSON.stringify(params)}`,
+            `확인할 근태 이슈 목록 조회: userId=${userId}, params=${JSON.stringify(params)}`,
         );
-        return await this.attendanceIssueContextService.근태이슈목록을조회한다(params);
+        return await this.attendanceIssueContextService.확인할근태이슈목록을조회한다(params);
     }
 
     /**

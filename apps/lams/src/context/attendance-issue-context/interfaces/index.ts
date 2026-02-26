@@ -1,4 +1,5 @@
 export * from './query/get-attendance-issues-query.interface';
+export * from './query/get-attendance-issues-to-review-query.interface';
 export * from './query/get-attendance-issue-query.interface';
 export * from './query/get-attendance-issues-by-department-query.interface';
 export * from './command/create-attendance-issues-command.interface';
