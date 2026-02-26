@@ -27,7 +27,7 @@
         "test:scenarios2": "node ./apps/lams/test/scenarios/config/run-scenarios.cjs",
         "test:unit": "jest",
         "typeorm": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-        "migration:build": "node -e \"require('fs').rmSync('dist/lams-migrations', { recursive: true, force: true })\" && tsc -p tsconfig.migrations.json",
+        "migration:build": "node -e \"require('fs').rmSync('dist/migrations', { recursive: true, force: true })\" && tsc -p tsconfig.migrations.json",
         "migration:create": "npm run typeorm -- migration:create",
         "migration:generate": "npm run typeorm -- migration:generate -d ./typeorm.config.ts",
         "migration:run": "npm run migration:build && node ./node_modules/typeorm/cli.js migration:run -d ./typeorm.config.js",

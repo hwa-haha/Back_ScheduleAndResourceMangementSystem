@@ -11,6 +11,11 @@ import { RolesGuard } from '../libs/guards/role.guard';
 import { ValidationPipe } from '@nestjs/common';
 import * as fs from 'fs';
 
+import { config } from 'dotenv';
+
+// 환경 변수 로드 (프로젝트 루트의 .env 파일)
+config();
+
 // RequestInterceptor는 AppModule에서 APP_INTERCEPTOR로 등록됨
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, In, IsNull, Repository } from 'typeorm';
 import { EmployeeDepartmentPermission } from './employee-department-permission.entity';
+import { EmployeeDepartmentPermissionHistory } from './employee-department-permission-history.entity';
 import {
     CreateEmployeeDepartmentPermissionData,
     UpdateEmployeeDepartmentPermissionData,
@@ -12,6 +13,7 @@ import {
  * 직원-부서 권한 서비스
  *
  * 직원-부서 권한 엔티티에 대한 CRUD 기능을 제공합니다.
+ * CUD 및 일괄 삭제 시 변경 이력을 자동으로 기록합니다.
  * 상위 로직에서 제공하는 트랜잭션(EntityManager)을 받아서 사용할 수 있습니다.
  */
 @Injectable()
@@ -19,6 +21,8 @@ export class DomainEmployeeDepartmentPermissionService {
     constructor(
         @InjectRepository(EmployeeDepartmentPermission)
         private readonly repository: Repository<EmployeeDepartmentPermission>,
+        @InjectRepository(EmployeeDepartmentPermissionHistory)
+        private readonly historyRepository: Repository<EmployeeDepartmentPermissionHistory>,
     ) {}
 
     /**
@@ -29,11 +33,50 @@ export class DomainEmployeeDepartmentPermissionService {
     }
 
     /**
+     * 이력 Repository를 가져온다 (트랜잭션 지원)
+     */
+    private getHistoryRepository(manager?: EntityManager): Repository<EmployeeDepartmentPermissionHistory> {
+        return manager ? manager.getRepository(EmployeeDepartmentPermissionHistory) : this.historyRepository;
+    }
+
+    /**
+     * 권한 변경 이력을 저장한다
+     */
+    private async 이력을저장한다(
+        employeeId: string,
+        departmentId: string,
+        action: 'CREATE' | 'UPDATE' | 'DELETE',
+        hasAccessPermission: boolean,
+        hasReviewPermission: boolean,
+        changedBy: string | null,
+        manager?: EntityManager,
+        previousHasAccessPermission?: boolean | null,
+        previousHasReviewPermission?: boolean | null,
+    ): Promise<void> {
+        const historyRepo = this.getHistoryRepository(manager);
+        const now = new Date();
+        const history = new EmployeeDepartmentPermissionHistory(
+            employeeId,
+            departmentId,
+            action,
+            hasAccessPermission,
+            hasReviewPermission,
+            now,
+            changedBy ?? null,
+            previousHasAccessPermission ?? null,
+            previousHasReviewPermission ?? null,
+        );
+        await historyRepo.save(history);
+    }
+
+    /**
      * 직원-부서 권한을 생성한다
+     * @param performedBy 이력 기록용 변경자 (선택)
      */
     async 생성한다(
         data: CreateEmployeeDepartmentPermissionData,
         manager?: EntityManager,
+        performedBy?: string,
     ): Promise<EmployeeDepartmentPermissionDTO> {
         const repository = this.getRepository(manager);
 
@@ -45,6 +88,17 @@ export class DomainEmployeeDepartmentPermissionService {
         );
 
         const saved = await repository.save(permission);
+
+        await this.이력을저장한다(
+            saved.employee_id,
+            saved.department_id,
+            'CREATE',
+            saved.has_access_permission,
+            saved.has_review_permission,
+            performedBy ?? saved.created_by ?? null,
+            manager,
+        );
+
         return saved.DTO변환한다();
     }
 
@@ -204,6 +258,9 @@ export class DomainEmployeeDepartmentPermissionService {
             throw new NotFoundException(`직원-부서 권한을 찾을 수 없습니다. (id: ${id})`);
         }
 
+        const prevAccess = permission.has_access_permission;
+        const prevReview = permission.has_review_permission;
+
         permission.업데이트한다(data.hasAccessPermission, data.hasReviewPermission);
 
         // 수정자 정보 설정
@@ -211,6 +268,19 @@ export class DomainEmployeeDepartmentPermissionService {
         permission.메타데이터업데이트한다(userId);
 
         const saved = await repository.save(permission);
+
+        await this.이력을저장한다(
+            saved.employee_id,
+            saved.department_id,
+            'UPDATE',
+            saved.has_access_permission,
+            saved.has_review_permission,
+            userId,
+            manager,
+            prevAccess,
+            prevReview,
+        );
+
         return saved.DTO변환한다();
     }
 
@@ -223,9 +293,19 @@ export class DomainEmployeeDepartmentPermissionService {
         if (!permission) {
             throw new NotFoundException(`직원-부서 권한을 찾을 수 없습니다. (id: ${id})`);
         }
+
+        await this.이력을저장한다(
+            permission.employee_id,
+            permission.department_id,
+            'DELETE',
+            permission.has_access_permission,
+            permission.has_review_permission,
+            userId,
+            manager,
+        );
+
         // Soft Delete: deleted_at 필드를 설정
         permission.deleted_at = new Date();
-        // 삭제자 정보 설정
         permission.수정자설정한다(userId);
         permission.메타데이터업데이트한다(userId);
         await repository.save(permission);
@@ -236,7 +316,6 @@ export class DomainEmployeeDepartmentPermissionService {
      */
     async 완전삭제한다(id: string, userId: string, manager?: EntityManager): Promise<void> {
         const repository = this.getRepository(manager);
-        // Soft Delete된 데이터도 조회할 수 있도록 withDeleted 옵션 사용
         const permission = await repository.findOne({
             where: { id },
             withDeleted: true,
@@ -244,25 +323,65 @@ export class DomainEmployeeDepartmentPermissionService {
         if (!permission) {
             throw new NotFoundException(`직원-부서 권한을 찾을 수 없습니다. (id: ${id})`);
         }
-        // Hard Delete: 데이터베이스에서 완전히 삭제
-        await repository.remove(permission);
+
+        await this.이력을저장한다(
+            permission.employee_id,
+            permission.department_id,
+            'DELETE',
+            permission.has_access_permission,
+            permission.has_review_permission,
+            userId ?? permission.created_by ?? null,
+            manager,
+        );
     }
 
     /**
      * 직원 ID로 모든 권한을 일괄 삭제한다 (Hard Delete)
+     * @param performedBy 이력 기록용 변경자 (선택)
      */
-    async 직원으로일괄삭제한다(employeeId: string, manager?: EntityManager): Promise<void> {
+    async 직원으로일괄삭제한다(employeeId: string, manager?: EntityManager, performedBy?: string): Promise<void> {
         const repository = this.getRepository(manager);
-        // Hard Delete: 직원 ID로 일괄 삭제
+        const list = await repository.find({
+            where: { employee_id: employeeId },
+            withDeleted: true,
+        });
+        const changedBy = performedBy ?? null;
+        for (const p of list) {
+            await this.이력을저장한다(
+                p.employee_id,
+                p.department_id,
+                'DELETE',
+                p.has_access_permission,
+                p.has_review_permission,
+                changedBy,
+                manager,
+            );
+        }
         await repository.delete({ employee_id: employeeId });
     }
 
     /**
      * 부서 ID로 모든 권한을 일괄 삭제한다 (Hard Delete)
+     * @param performedBy 이력 기록용 변경자 (선택)
      */
-    async 부서로일괄삭제한다(departmentId: string, manager?: EntityManager): Promise<void> {
+    async 부서로일괄삭제한다(departmentId: string, manager?: EntityManager, performedBy?: string): Promise<void> {
         const repository = this.getRepository(manager);
-        // Hard Delete: 부서 ID로 일괄 삭제
+        const list = await repository.find({
+            where: { department_id: departmentId },
+            withDeleted: true,
+        });
+        const changedBy = performedBy ?? null;
+        for (const p of list) {
+            await this.이력을저장한다(
+                p.employee_id,
+                p.department_id,
+                'DELETE',
+                p.has_access_permission,
+                p.has_review_permission,
+                changedBy,
+                manager,
+            );
+        }
         await repository.delete({ department_id: departmentId });
     }
 }

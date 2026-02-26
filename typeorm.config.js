@@ -16,7 +16,7 @@ module.exports = new DataSource({
     database: process.env.POSTGRES_DB || 'resource_management',
     schema: process.env.POSTGRES_SCHEMA || 'public',
     entities: [],
-    migrations: [path.join(__dirname, 'dist/lams-migrations/*.js')],
+    migrations: [path.join(__dirname, 'dist/migrations/*.js')],
     synchronize: false,
     ssl: isProduction ? { rejectUnauthorized: false } : false,
     logging: true,
