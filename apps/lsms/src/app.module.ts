@@ -29,7 +29,7 @@ import { MigrationModule } from './intergration/migration/migration.module';
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: [path.resolve('.env'), path.resolve('apps', 'lsms', '.env')],
+            envFilePath: [path.resolve('apps', 'lsms', '.env')],
             load: [FIREBASE_CONFIG, DB_CONFIG, JWT_CONFIG],
         }),
         EventEmitterModule.forRoot(),
