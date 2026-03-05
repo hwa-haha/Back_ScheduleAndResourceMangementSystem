@@ -122,7 +122,8 @@ export function deleteScenarioBackupFile(fileName: string): void {
 }
 
 /**
- * 엔티티 인스턴스를 컬럼만 가진 plain object 배열로 변환 (관계 제외, 모든 컬럼 포함)
+ * 엔티티 인스턴스를 컬럼만 가진 plain object 배열로 변환 (관계 제외, 모든 컬럼 포함).
+ * DataSnapshotChild만 parentSnapshot 등 FK 프로퍼티가 없어, 관계 객체(relation.id)에서 값을 채운다.
  */
 function entitiesToPlainRows<T extends ObjectLiteral>(
     dataSource: DataSource,
@@ -130,14 +131,44 @@ function entitiesToPlainRows<T extends ObjectLiteral>(
     rows: T[],
 ): ObjectLiteral[] {
     const repo = dataSource.getRepository(entityClass);
+    const isDataSnapshotChild = entityClass === DataSnapshotChild;
     return rows.map((e) => {
         const plain: ObjectLiteral = {};
+        const record = e as Record<string, unknown>;
         for (const col of repo.metadata.columns) {
-            const val = (e as Record<string, unknown>)[col.propertyName];
+            let val = record[col.propertyName];
+            if (isDataSnapshotChild && val === undefined && col.relationMetadata) {
+                const rel = record[col.relationMetadata.propertyName];
+                if (rel && typeof rel === 'object' && 'id' in rel) {
+                    val = (rel as { id: unknown }).id;
+                }
+            }
             if (val !== undefined) plain[col.propertyName] = val;
         }
         return plain;
     });
+}
+
+/**
+ * 복원용 row에서 관계 컬럼은 FK(id)만 남긴다. DataSnapshotChild일 때만 관계 객체를 id로 치환해 INSERT가 FK에 연결되도록 한다.
+ */
+function rowToInsertValues<T extends ObjectLiteral>(
+    dataSource: DataSource,
+    entityClass: EntityTarget<T>,
+    row: ObjectLiteral,
+): ObjectLiteral {
+    const repo = dataSource.getRepository(entityClass);
+    const isDataSnapshotChild = entityClass === DataSnapshotChild;
+    const out: ObjectLiteral = {};
+    for (const col of repo.metadata.columns) {
+        const key = col.propertyName;
+        let val = row[key];
+        if (isDataSnapshotChild && col.relationMetadata && val && typeof val === 'object' && 'id' in val) {
+            val = (val as { id: unknown }).id;
+        }
+        if (val !== undefined) out[key] = val;
+    }
+    return out;
 }
 
 /**
@@ -178,7 +209,9 @@ export const backupScenarioDataToFile = async (dataSource: DataSource, filePath?
     for (let i = 0; i < entityList.length; i++) {
         const entity = entityList[i];
         const repo = dataSource.getRepository(entity);
-        const rows = await repo.find({ withDeleted: true });
+        const findOptions =
+            entity === DataSnapshotChild ? { withDeleted: true, relations: ['parentSnapshot'] } : { withDeleted: true };
+        const rows = await repo.find(findOptions);
         const entityName = repo.metadata.name;
         const plainRows = entitiesToPlainRows(dataSource, entity, rows as ObjectLiteral[]);
         const safeKey = JSON.stringify(entityName);
@@ -223,7 +256,7 @@ export const restoreScenarioDataFromFile = async (dataSource: DataSource, filePa
     }
 
     /** 한 번에 INSERT할 행 수 (트랜잭션 + 큰 배치로 round-trip 감소) */
-    const INSERT_BATCH_SIZE = 200;
+    const INSERT_BATCH_SIZE = 500;
 
     const queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -240,7 +273,8 @@ export const restoreScenarioDataFromFile = async (dataSource: DataSource, filePa
             if (!Array.isArray(rows) || rows.length === 0) continue;
 
             for (let i = 0; i < rows.length; i += INSERT_BATCH_SIZE) {
-                const batch = rows.slice(i, i + INSERT_BATCH_SIZE);
+                const chunk = rows.slice(i, i + INSERT_BATCH_SIZE);
+                const batch = chunk.map((row) => rowToInsertValues(dataSource, entity, row));
                 await repo.createQueryBuilder().insert().into(entity).values(batch).execute();
             }
         }
