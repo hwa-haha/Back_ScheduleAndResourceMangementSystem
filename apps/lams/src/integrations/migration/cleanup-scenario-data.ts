@@ -62,16 +62,20 @@ export interface ScenarioBackupPayload {
 
 const BACKUP_VERSION = 1;
 
-/** migration 소스 폴더 내 backups (실행 위치가 apps/lams 또는 모노레포 루트인 경우 모두 대응) */
+/**
+ * 시나리오 백업 파일을 저장할 디렉터리.
+ * - 소스 기준: apps/lams 또는 모노레포 루트에서 migration/backups 사용
+ * - EC2 등 dist 전용 배포: migration 폴더가 없으면 cwd/scenario-backups 사용 (항상 전용 폴더)
+ * 반환하는 경로가 없으면 생성한다.
+ */
 function getMigrationBackupDir(): string {
     const cwd = process.cwd();
-    const fromLams = path.join(cwd, 'src', 'integrations', 'migration', 'backups');
-    const fromRoot = path.join(cwd, 'apps', 'lams', 'src', 'integrations', 'migration', 'backups');
-    const migrationDirFromLams = path.join(cwd, 'src', 'integrations', 'migration');
-    const migrationDirFromRoot = path.join(cwd, 'apps', 'lams', 'src', 'integrations', 'migration');
-    if (fs.existsSync(migrationDirFromLams)) return fromLams;
-    if (fs.existsSync(migrationDirFromRoot)) return fromRoot;
-    return fromLams;
+    const dir = path.join(cwd, 'apps', 'lams', 'src', 'integrations', 'migration', 'backups');
+
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+    return dir;
 }
 const DEFAULT_BACKUP_DIR = getMigrationBackupDir();
 
@@ -156,12 +160,12 @@ export const cleanupScenarioData = async (dataSource: DataSource): Promise<void>
  * @returns 저장된 파일의 절대 경로
  */
 export const backupScenarioDataToFile = async (dataSource: DataSource, filePath?: string): Promise<string> => {
-    const resolvedPath =
-        filePath ||
-        path.join(
-            DEFAULT_BACKUP_DIR,
-            `scenario-backup-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`,
-        );
+    const defaultFileName = `scenario-backup-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)}.json`;
+    const resolvedPath = filePath
+        ? path.isAbsolute(filePath)
+            ? filePath
+            : path.join(DEFAULT_BACKUP_DIR, path.basename(filePath))
+        : path.join(DEFAULT_BACKUP_DIR, defaultFileName);
     const dir = path.dirname(resolvedPath);
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
