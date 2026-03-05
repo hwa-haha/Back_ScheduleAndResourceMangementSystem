@@ -24,6 +24,8 @@ import { DomainDepartmentModule } from '@libs/modules/department/department.modu
 import { DomainPositionModule } from '@libs/modules/position/position.module';
 import { DomainRankModule } from '@libs/modules/rank/rank.module';
 import { DomainEmployeeDepartmentPositionModule } from '@libs/modules/employee-department-position/employee-department-position.module';
+import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
+import { DomainDepartmentHistoryModule } from '@libs/modules/department-history/department-history.module';
 
 /**
  * 도메인 모듈 통합 모듈
@@ -36,8 +38,10 @@ import { DomainEmployeeDepartmentPositionModule } from '@libs/modules/employee-d
     imports: [
         // 메타데이터 관련 (공유 가능) - @libs/modules에서 import
         DomainDepartmentModule,
+        DomainDepartmentHistoryModule,
         DomainEmployeeModule,
         DomainEmployeeDepartmentPositionModule,
+        DomainEmployeeDepartmentPositionHistoryModule,
         DomainPositionModule,
         DomainRankModule,
 

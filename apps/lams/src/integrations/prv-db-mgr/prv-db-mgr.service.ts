@@ -18,7 +18,7 @@ import { MonthlyEmployeeAttendanceInfoEntity as PrvMonthlySummaryEntity } from '
 import { DataSnapshotInfoEntity as PrvDataSnapshotInfoEntity } from './entities/data-snapshot-info.entity';
 import { DataSnapshotChildInfoEntity as PrvDataSnapshotChildInfoEntity } from './entities/data-snapshot-child.entity';
 import { DataSnapshotApprovalRequestInfoEntity as PrvDataSnapshotApprovalRequestInfoEntity } from './entities/approval/data-snapshot-approval-request-info.entity';
-import { cleanupScenarioData } from '../../../test/scenarios/utils/cleanup-scenario-data';
+import { cleanupScenarioData } from '../migration/cleanup-scenario-data';
 import { ApprovalStatus } from '../../domain/data-snapshot-info/data-snapshot-info.types';
 
 @Injectable()

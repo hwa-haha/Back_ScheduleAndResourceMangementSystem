@@ -25,7 +25,7 @@ export class PrvDbMgrController {
 
     @Public()
     @Post('cleanup-scenarios')
-    @ApiOperation({ summary: '시나리오 테스트 데이터 정리' })
+    @ApiOperation({ summary: '시나리오 테스트 데이터 정리 (migration 모듈의 POST /migration/scenarios/cleanup 과 동일)' })
     async 시나리오데이터를정리한다(): Promise<{ message: string }> {
         await this.prvDbMgrService.시나리오데이터를정리한다();
         return { message: '시나리오 데이터 정리 완료' };

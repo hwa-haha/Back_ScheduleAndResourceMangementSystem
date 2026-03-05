@@ -65,7 +65,7 @@ export class InitService implements OnApplicationBootstrap {
             await this.직원추가정보기본데이터생성();
 
             // 6. 초기 파일 업로드 (2026년 1월 더미 데이터)
-            await this.초기파일업로드();
+            // await this.초기파일업로드();
 
             this.logger.log('✅ 기본 데이터 초기화 완료');
         } catch (error) {
