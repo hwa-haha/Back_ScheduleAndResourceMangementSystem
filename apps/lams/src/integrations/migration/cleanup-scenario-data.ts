@@ -202,7 +202,7 @@ export const backupScenarioDataToFile = async (dataSource: DataSource, filePath?
 
 /**
  * 백업 파일에서 시나리오 데이터를 복원한다.
- * 기존 시나리오 데이터는 먼저 cleanupScenarioData 로 삭제한 뒤, 파일 내용을 INSERT 한다.
+ * 단일 트랜잭션으로 삭제·INSERT를 수행하고, 배치 크기를 키워 성능을 높인다.
  *
  * @param dataSource TypeORM DataSource
  * @param filePath backupScenarioDataToFile 에서 저장한 JSON 파일 경로
@@ -222,20 +222,33 @@ export const restoreScenarioDataFromFile = async (dataSource: DataSource, filePa
         throw new Error(`지원하지 않는 백업 형식입니다. version=${payload.version}`);
     }
 
-    await cleanupScenarioData(dataSource);
+    /** 한 번에 INSERT할 행 수 (트랜잭션 + 큰 배치로 round-trip 감소) */
+    const INSERT_BATCH_SIZE = 200;
 
-    /** 한 번에 INSERT할 행 수 (PostgreSQL 파라미터 수 제한 회피) */
-    const INSERT_BATCH_SIZE = 50;
-
-    for (const entity of SCENARIO_ENTITIES_INSERT_ORDER) {
-        const repo = dataSource.getRepository(entity);
-        const entityName = repo.metadata.name;
-        const rows = payload.tables[entityName];
-        if (!Array.isArray(rows) || rows.length === 0) continue;
-
-        for (let i = 0; i < rows.length; i += INSERT_BATCH_SIZE) {
-            const batch = rows.slice(i, i + INSERT_BATCH_SIZE);
-            await repo.createQueryBuilder().insert().into(entity).values(batch).execute();
+    const queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+        for (const entity of SCENARIO_ENTITIES_DELETE_ORDER) {
+            await queryRunner.manager.createQueryBuilder().delete().from(entity).execute();
         }
+
+        for (const entity of SCENARIO_ENTITIES_INSERT_ORDER) {
+            const repo = queryRunner.manager.getRepository(entity);
+            const entityName = repo.metadata.name;
+            const rows = payload.tables[entityName];
+            if (!Array.isArray(rows) || rows.length === 0) continue;
+
+            for (let i = 0; i < rows.length; i += INSERT_BATCH_SIZE) {
+                const batch = rows.slice(i, i + INSERT_BATCH_SIZE);
+                await repo.createQueryBuilder().insert().into(entity).values(batch).execute();
+            }
+        }
+        await queryRunner.commitTransaction();
+    } catch (e) {
+        await queryRunner.rollbackTransaction();
+        throw e;
+    } finally {
+        await queryRunner.release();
     }
 };
