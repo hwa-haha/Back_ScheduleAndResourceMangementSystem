@@ -23,18 +23,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         }
 
         const request = context.switchToHttp().getRequest();
-
-        if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
-            request.user = {
-                id: 'test-user-id',
-                employeeNumber: 'TEST001',
-                name: '테스트 사용자',
-                email: 'test@example.com',
-            };
-            this.logger.debug('테스트 환경 - 인증 건너뜀');
-            return true;
-        }
-
         const authHeader = request.headers.authorization;
         this.logger.debug(
             `인증 시도: ${request.method} ${request.url}, Authorization: ${authHeader ? '있음' : '없음'}`,
