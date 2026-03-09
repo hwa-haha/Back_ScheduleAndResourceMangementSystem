@@ -25,8 +25,9 @@ import { EmployeeExtraInfo } from '../../domain/employee-extra-info/employee-ext
 /**
  * domain.module.ts (48~79) 와 1:1 대응하는 엔티티 목록.
  * 삭제 시 자식 → 부모 순서, 복원 시 부모 → 자식 순서로 사용.
+ * e2e teardown 복원용 DataSource에서도 사용한다.
  */
-const SCENARIO_ENTITIES_DELETE_ORDER: EntityTarget<ObjectLiteral>[] = [
+export const SCENARIO_ENTITIES_DELETE_ORDER: EntityTarget<ObjectLiteral>[] = [
     FileContentReflectionHistory,
     DataSnapshotChild,
     DataSnapshotInfo,

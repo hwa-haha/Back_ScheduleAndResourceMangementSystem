@@ -1,18 +1,15 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": "../../..",
-  "testEnvironment": "node",
-  "setupFilesAfterEnv": ["<rootDir>/apps/lams/test/e2e/setup-e2e-env.ts"],
-  "testMatch": [
-    "<rootDir>/apps/lams/test/e2e/**/*.e2e-spec.ts",
-    "<rootDir>/apps/lams/test/e2e/unit/**/*.spec.ts"
-  ],
-  "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
-  },
-  "moduleNameMapper": {
-    "^@libs/(.*)$": "<rootDir>/libs/$1",
-    "^@lumir-company/(.*)$": "<rootDir>/node_modules/@lumir-company/$1"
-  },
-  "testPathIgnorePatterns": ["/node_modules/", "/dist/"]
+    "moduleFileExtensions": ["js", "json", "ts"],
+    "rootDir": "../../..",
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/apps/lams/test/e2e/setup-e2e-env.ts"],
+    "testMatch": ["<rootDir>/apps/lams/test/e2e/**/*.e2e-spec.ts", "<rootDir>/apps/lams/test/e2e/unit/**/*.spec.ts"],
+    "transform": {
+        "^.+\\.ts$": "ts-jest"
+    },
+    "moduleNameMapper": {
+        "^@libs/(.*)$": "<rootDir>/libs/$1",
+        "^@lumir-company/(.*)$": "<rootDir>/node_modules/@lumir-company/$1"
+    },
+    "testPathIgnorePatterns": ["/node_modules/", "/dist/"]
 }
