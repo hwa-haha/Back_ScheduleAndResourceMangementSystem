@@ -441,6 +441,8 @@ export class OrganizationMigrationService {
             employee.hireDate = new Date(empDto.hireDate);
             employee.status = empDto.status as EmployeeStatus;
             employee.currentRankId = empDto.currentRankId || undefined;
+            employee.terminationDate = empDto.terminationDate ? new Date(empDto.terminationDate) : undefined;
+            employee.terminationReason = empDto.terminationReason || undefined;
             employee.isInitialPasswordSet = empDto.isInitialPasswordSet;
             await this.employeeService.save(employee, { queryRunner });
             count++;
