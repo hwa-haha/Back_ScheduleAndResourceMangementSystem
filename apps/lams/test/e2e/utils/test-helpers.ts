@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
-/** e2e용 테스트 사용자. id는 도메인 검증(UUID) 통과를 위해 UUID 형식 사용 */
+/** e2e용 테스트 사용자 (52100·52200·52300) */
 const TEST_USER_PAYLOAD = {
     id: '839e6f06-8d44-43a1-948c-095253c4cf8c',
     employeeNumber: '24016',

@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from '../../../src/app.module';
 
 /**
- * e2e 테스트용 앱 생성/종료
+ * e2e 테스트용 앱 생성/종료 (52200·52300)
  */
 export class TestSetup {
     static async createTestApp(): Promise<INestApplication> {
