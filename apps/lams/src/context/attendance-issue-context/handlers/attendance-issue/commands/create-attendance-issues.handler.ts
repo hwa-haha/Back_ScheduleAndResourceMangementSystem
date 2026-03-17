@@ -41,12 +41,10 @@ export class CreateAttendanceIssuesHandler implements ICommandHandler<CreateAtte
         manager: any,
     ): Promise<any[]> {
         const issues: any[] = [];
-
-        const summaryIds = summaries.map((s) => s.id);
-
-        if (summaryIds.length === 0) {
+        if (summaries.length === 0) {
             return issues;
         }
+        const summaryIds = summaries.map((s) => s.id);
 
         // 기존 이슈 조회 (소프트 삭제된 것 포함)
         const existingIssues = await manager

@@ -303,16 +303,22 @@ export class LiveMigrationService implements OnModuleDestroy {
         const repo = this.liveDataSource.getRepository(LiveDepartment);
         const all = await repo.find(MIGRATION_FIND_OPTIONS);
         const ordered = this.부서계층순정렬(all);
-        await this.upsertBulk(this.domainDepartmentService, 'id', ordered, (row) => ({
-            id: row.id,
-            departmentName: row.departmentName,
-            departmentCode: row.departmentCode,
-            type: row.type,
-            parentDepartmentId: row.parentDepartmentId ?? undefined,
-            order: row.order ?? 0,
-            createdAt: row.createdAt,
-            updatedAt: row.updatedAt,
-        }));
+        await this.upsertBulk(
+            this.domainDepartmentService,
+            'id',
+            ordered,
+            (row) => ({
+                id: row.id,
+                departmentName: row.departmentName,
+                departmentCode: row.departmentCode,
+                type: row.type,
+                parentDepartmentId: row.parentDepartmentId ?? undefined,
+                order: row.order ?? 0,
+                createdAt: row.createdAt,
+                updatedAt: row.updatedAt,
+            }),
+            { sequential: true },
+        );
         return ordered.length;
     }
 
@@ -374,14 +380,20 @@ export class LiveMigrationService implements OnModuleDestroy {
         const repo = this.liveDataSource.getRepository(LiveResourceGroup);
         const all = await repo.find(MIGRATION_FIND_OPTIONS);
         const ordered = this.리소스그룹계층순정렬(all);
-        await this.upsertBulk(this.domainResourceGroupService, 'resourceGroupId', ordered, (row) => ({
-            resourceGroupId: row.resourceGroupId,
-            title: row.title,
-            description: row.description ?? undefined,
-            parentResourceGroupId: row.parentResourceGroupId ?? undefined,
-            type: row.type,
-            order: row.order ?? 0,
-        }));
+        await this.upsertBulk(
+            this.domainResourceGroupService,
+            'resourceGroupId',
+            ordered,
+            (row) => ({
+                resourceGroupId: row.resourceGroupId,
+                title: row.title,
+                description: row.description ?? undefined,
+                parentResourceGroupId: row.parentResourceGroupId ?? undefined,
+                type: row.type,
+                order: row.order ?? 0,
+            }),
+            { sequential: true },
+        );
         return ordered.length;
     }
 
@@ -510,7 +522,7 @@ export class LiveMigrationService implements OnModuleDestroy {
         }
     }
 
-    /** 청크 단위로 병렬 upsert (속도 개선) */
+    /** 청크 단위로 upsert. sequential이 true면 부모→자식 FK 등 순서 보장을 위해 청크 내에서 순차 실행 */
     private async upsertBulk(
         service: {
             findOne: (opts: any) => Promise<any>;
@@ -520,10 +532,18 @@ export class LiveMigrationService implements OnModuleDestroy {
         pkKey: string,
         rows: Record<string, any>[],
         toPayload: (row: Record<string, any>) => Record<string, any>,
+        options?: { sequential?: boolean },
     ): Promise<void> {
+        const sequential = options?.sequential ?? false;
         for (let i = 0; i < rows.length; i += UPSERT_BATCH_SIZE) {
             const chunk = rows.slice(i, i + UPSERT_BATCH_SIZE);
-            await Promise.all(chunk.map((row) => this.upsertOne(service, pkKey, row, toPayload(row))));
+            if (sequential) {
+                for (const row of chunk) {
+                    await this.upsertOne(service, pkKey, row, toPayload(row));
+                }
+            } else {
+                await Promise.all(chunk.map((row) => this.upsertOne(service, pkKey, row, toPayload(row))));
+            }
         }
     }
 
