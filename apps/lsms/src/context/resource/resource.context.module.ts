@@ -12,7 +12,7 @@ import { DomainFileModule } from '../../domain/file/file.module';
 import { DomainConsumableModule } from '../../domain/consumable/consumable.module';
 import { DomainMaintenanceModule } from '../../domain/maintenance/maintenance.module';
 import { DomainReservationVehicleModule } from '../../domain/reservation-vehicle/reservation-vehicle.module';
-import { DomainEmployeeModule } from '../../domain/employee/employee.module';
+import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
 import { FileContextModule } from '../file/file.context.module';
 
 // Context Services

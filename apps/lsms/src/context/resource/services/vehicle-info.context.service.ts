@@ -9,7 +9,7 @@ import { ReservationVehicle } from '../../../domain/reservation-vehicle/reservat
 import { DomainFileService } from '../../../domain/file/file.service';
 import { DomainConsumableService } from '../../../domain/consumable/consumable.service';
 import { Consumable } from '../../../domain/consumable/consumable.entity';
-import { DomainEmployeeService } from '../../../domain/employee/employee.service';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { FileContextService } from '../../file/services/file.context.service';
 
 // DTOs
@@ -23,7 +23,6 @@ export class VehicleInfoContextService {
         private readonly domainReservationVehicleService: DomainReservationVehicleService,
         private readonly domainFileService: DomainFileService,
         private readonly domainConsumableService: DomainConsumableService,
-        private readonly domainEmployeeService: DomainEmployeeService,
         private readonly fileContextService: FileContextService,
         private readonly dataSource: DataSource,
     ) {}
@@ -193,10 +192,10 @@ export class VehicleInfoContextService {
                 returnedAt: 'DESC',
             },
         });
-        const employees = await this.domainEmployeeService.findAll({
-            where: { employeeId: In(reservationVehicles.map((reservationVehicle) => reservationVehicle.returnedBy)) },
+        const employees = await this.dataSource.getRepository(Employee).find({
+            where: { id: In(reservationVehicles.map((reservationVehicle) => reservationVehicle.returnedBy)) },
         });
-        const employeeMap = new Map(employees.map((employee) => [employee.employeeId, employee]));
+        const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
         // 각 반납 정보에 직원 이름과 반납 이미지 추가
         for (const reservationVehicle of reservationVehicles) {
@@ -219,9 +218,9 @@ export class VehicleInfoContextService {
     async 반납_상세정보를_조회한다(reservationVehicleId: string): Promise<ReservationVehicle> {
         const reservationVehicle =
             await this.domainReservationVehicleService.findByReservationVehicleId(reservationVehicleId);
-        const employee = await this.domainEmployeeService.findOne({
-            where: { employeeId: reservationVehicle.returnedBy },
-        });
+        const employee = await this.dataSource
+            .getRepository(Employee)
+            .findOne({ where: { id: reservationVehicle.returnedBy } });
         reservationVehicle.returnedBy = employee.name;
 
         return reservationVehicle;

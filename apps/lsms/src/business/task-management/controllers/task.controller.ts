@@ -1,6 +1,6 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { User } from '../../../../libs/decorators/user.decorator';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ApiDataResponse } from '../../../../libs/decorators/api-responses.decorator';
 import { TaskManagementService } from '../task-management.service';

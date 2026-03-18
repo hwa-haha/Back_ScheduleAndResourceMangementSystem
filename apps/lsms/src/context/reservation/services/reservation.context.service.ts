@@ -8,7 +8,7 @@ import { DomainVehicleInfoService } from '../../../domain/vehicle-info/vehicle-i
 import { DomainFileService } from '../../../domain/file/file.service';
 import { FileContextService } from '../../file/services/file.context.service';
 import { DataSource, QueryRunner } from 'typeorm';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { Reservation } from '../../../domain/reservation/reservation.entity';
 import { ReservationVehicle } from '../../../domain/reservation-vehicle/reservation-vehicle.entity';
 import { PaginationData } from '../../../../libs/dtos/pagination-response.dto';
@@ -167,7 +167,7 @@ export class ReservationContextService {
                     (alias) => `${alias} -> 'reservation' ->> 'reservationId' = '${reservation.reservationId}'`,
                 ),
                 employees: {
-                    employeeId: user.employeeId,
+                    employeeId: user.id,
                     isRead: false,
                 },
             },
@@ -276,7 +276,7 @@ export class ReservationContextService {
                     isReturned: true,
                     returnedAt: DateUtil.now().toDate(),
                     location: returnDto.location,
-                    returnedBy: user.employeeId,
+                    returnedBy: user.id,
                     ...(returnDto.parkingCoordinates && { parkingCoordinates: returnDto.parkingCoordinates }),
                 },
                 { queryRunner },
@@ -726,7 +726,7 @@ export class ReservationContextService {
                     endOdometer: reservationVehicle.vehicleInfo.totalMileage, // 차량 데이터의 totalMileage
                     remarks: remarks, // body로 들어온 미사용 사유
                     isReturned: true,
-                    returnedBy: user.employeeId, // 요청자 정보
+                    returnedBy: user.id, // 요청자 정보
                     returnedAt: new Date(), // 현재 시간
                     location: reservation.resource.location, // 자원 데이터의 location
                 },

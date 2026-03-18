@@ -1,7 +1,7 @@
 import { Controller, Get, Body, Param, Patch, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
 import { User } from '../../../../libs/decorators/user.decorator';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ReservationWithRelationsResponseDto, ReservationResponseDto } from '../dtos/reservation-response.dto';
 import { PaginationQueryDto } from '../../../../libs/dtos/pagination-query.dto';
 import { PaginationData } from '../../../../libs/dtos/pagination-response.dto';

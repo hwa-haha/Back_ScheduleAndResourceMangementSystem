@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { EmployeeMicroserviceAdapter } from '../../../domain/employee/adapters/employee-microservice.adapter';
 import { ResourceType } from '../../../../libs/enums/resource-type.enum';
 import { ReservationStatus } from '../../../../libs/enums/reservation-type.enum';
@@ -15,7 +16,8 @@ import { DataSource, In, Raw } from 'typeorm';
 import { DomainNotificationService } from '../../../domain/notification/notification.service';
 import { DomainNotificationTypeService } from '../../../domain/notification-type/notification-type.service';
 import { DomainEmployeeNotificationService } from '../../../domain/employee-notification/employee-notification.service';
-import { DomainEmployeeService } from '../../../domain/employee/employee.service';
+import { DomainEmployeeExtraInfoService } from '../../../domain/employee-extra-info/employee-extra-info.service';
+import { EmployeeExtraInfo } from '../../../domain/employee-extra-info/employee-extra-info.entity';
 import { NotificationType } from '../../../../libs/enums/notification-type.enum';
 import { CreateNotificationDataDto, CreateNotificationDto } from '../dtos/create-notification.dto';
 import { DateUtil } from '../../../../libs/utils/date.util';
@@ -63,7 +65,7 @@ export class NotificationContextService {
         private readonly domainNotificationService: DomainNotificationService,
         private readonly domainNotificationTypeService: DomainNotificationTypeService,
         private readonly domainEmployeeNotificationService: DomainEmployeeNotificationService,
-        private readonly domainEmployeeService: DomainEmployeeService,
+        private readonly domainEmployeeExtraInfoService: DomainEmployeeExtraInfoService,
         private readonly dataSource: DataSource,
     ) {}
 
@@ -108,6 +110,9 @@ export class NotificationContextService {
         });
         return {
             items: notifications.map((notification) => {
+                const employeeNotification = notification.employees?.find(
+                    (en) => en.employeeId === employeeId,
+                );
                 return {
                     notificationId: notification.notificationId,
                     title: notification.title,
@@ -115,7 +120,7 @@ export class NotificationContextService {
                     notificationData: notification.notificationData,
                     notificationType: notification.notificationType,
                     createdAt: notification.createdAt,
-                    isRead: notification.employees.find((employee) => employee.employeeId === employeeId).isRead,
+                    isRead: employeeNotification?.isRead ?? false,
                 };
             }),
             meta: {
@@ -208,21 +213,24 @@ export class NotificationContextService {
     }
 
     async PUSH_알림을_구독한다(employeeId: string, subscription: PushSubscriptionDto): Promise<boolean> {
-        const employee = await this.domainEmployeeService.findOne({
-            where: { employeeId },
-        });
+        const employee = await this.dataSource
+            .getRepository(Employee)
+            .findOne({ where: { id: employeeId } });
 
         if (!employee) {
             throw new BadRequestException('Employee not found');
         }
 
-        // SSO 서버 오류 대비 RMS 서버에서 구독 정보 저장
-        employee.subscriptions = [subscription as any];
-        await this.domainEmployeeService.save(employee);
+        // employee_extra_info에 구독 정보 저장
+        const extraInfoRepo = this.dataSource.getRepository(EmployeeExtraInfo);
+        let extra = await extraInfoRepo.findOne({ where: { employee_id: employeeId } });
+        if (!extra) {
+            extra = extraInfoRepo.create({ employee_id: employeeId, is_excluded_from_summary: false });
+        }
+        extra.subscriptions = [subscription as any];
+        await extraInfoRepo.save(extra);
 
-        // return updatedEmployee.subscriptions.length > 0;
         try {
-            // SSO 서버로 FCM 토큰 구독 요청
             const fcmSubscribeDto = {
                 fcmToken: subscription.fcm?.token,
             };
@@ -249,10 +257,19 @@ export class NotificationContextService {
     }
 
     async 구독_목록을_조회한다(employeeIds: string[]): Promise<EmployeeTokensDto[]> {
-        const employees = await this.domainEmployeeService.findAll({
-            where: { employeeId: In(employeeIds), isPushNotificationEnabled: true },
-            select: { subscriptions: true, isPushNotificationEnabled: true, employeeNumber: true },
+        // employee_extra_info에서 푸시 알림 활성화된 직원의 구독 정보 조회
+        const extraInfoRepo = this.dataSource.getRepository(EmployeeExtraInfo);
+        const extras = await extraInfoRepo.find({
+            where: { employee_id: In(employeeIds), is_push_notification_enabled: true },
         });
+        const enabledEmployeeIds = extras.map((e) => e.employee_id);
+
+        if (enabledEmployeeIds.length === 0) return [];
+
+        const employees = await this.dataSource
+            .getRepository(Employee)
+            .find({ where: { id: In(enabledEmployeeIds) } });
+
         if (!employees || employees.length === 0) {
             return [];
         }

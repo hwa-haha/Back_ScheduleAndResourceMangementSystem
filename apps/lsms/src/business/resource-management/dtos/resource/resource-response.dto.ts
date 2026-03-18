@@ -70,7 +70,7 @@ export class ResourceResponseDto {
         this.notifyParticipantChange = resource?.notifyParticipantChange;
         this.notifyReservationChange = resource?.notifyReservationChange;
         this.order = resource?.order;
-        this.managers = resource?.resourceManagers;
+        this.managers = resource?.resourceManagers as any;
         this.resourceGroup = resource?.resourceGroup;
         this.imageFiles = resource?.images ? resource['imageFiles'] : [];
 

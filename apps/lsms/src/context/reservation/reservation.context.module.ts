@@ -2,14 +2,14 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Reservation } from '../../domain/reservation/reservation.entity';
 import { ReservationParticipant } from '../../domain/reservation-participant/reservation-participant.entity';
-import { Employee } from '../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { Resource } from '../../domain/resource/resource.entity';
 import { ReservationVehicle } from '../../domain/reservation-vehicle/reservation-vehicle.entity';
 
 // Domain Modules
 import { DomainReservationModule } from '../../domain/reservation/reservation.module';
 import { DomainReservationParticipantModule } from '../../domain/reservation-participant/reservation-participant.module';
-import { DomainEmployeeModule } from '../../domain/employee/employee.module';
+import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
 import { DomainResourceModule } from '../../domain/resource/resource.module';
 import { DomainNotificationModule } from '../../domain/notification/notification.module';
 import { DomainEmployeeNotificationModule } from '../../domain/employee-notification/employee-notification.module';

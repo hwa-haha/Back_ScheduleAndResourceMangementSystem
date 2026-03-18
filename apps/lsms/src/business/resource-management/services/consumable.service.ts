@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 
 // Context Services
 import { ConsumableContextService } from '../../../context/resource/services/consumable.context.service';

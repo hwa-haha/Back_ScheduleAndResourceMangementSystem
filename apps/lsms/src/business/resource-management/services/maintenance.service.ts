@@ -34,7 +34,7 @@ export class MaintenanceService {
 
         await this.resourceNotificationContextService.정비완료_알림을_전송한다(
             { resource: consumable.vehicleInfo.resource, consumable: consumable },
-            systemAdmins.map((admin) => admin.employeeId),
+            systemAdmins.map((admin) => admin.id),
         );
         return maintenance;
     }

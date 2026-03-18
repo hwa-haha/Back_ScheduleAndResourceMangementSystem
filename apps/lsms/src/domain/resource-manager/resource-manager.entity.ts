@@ -1,5 +1,5 @@
 import { Entity, PrimaryColumn, ManyToOne, JoinColumn, Column } from 'typeorm';
-import { Employee } from '../employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { Resource } from '../resource/resource.entity';
 
 @Entity('resource_managers')

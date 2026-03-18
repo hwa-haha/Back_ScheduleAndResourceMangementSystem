@@ -5,7 +5,7 @@ import {
     NotFoundException,
     InternalServerErrorException,
 } from '@nestjs/common';
-import { Employee } from '../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 
 // 기존 DTO들 import
 import { ScheduleCalendarQueryDto } from './dtos/schedule-calendar-query.dto';
@@ -109,7 +109,7 @@ export class ScheduleManagementService {
      */
     async findCalendar(user: Employee, query: ScheduleCalendarQueryDto): Promise<ScheduleCalendarResponseDto> {
         this.logger.log(
-            `캘린더 조회 요청 - 사용자: ${user.employeeId}, 날짜: ${query.date}, 직원필터: ${query.employeeIds?.join(',') || '없음'}`,
+            `캘린더 조회 요청 - 사용자: ${user.id}, 날짜: ${query.date}, 직원필터: ${query.employeeIds?.join(',') || '없음'}`,
         );
 
         // 1. 권한: 조회는 별도 권한 체크 없음 (모든 직원이 캘린더 조회 가능)
@@ -154,8 +154,8 @@ export class ScheduleManagementService {
                 // 해당 일정에 지정된 직원 중 하나라도 참여하는지 확인
                 return participants.some(
                     (participant) =>
-                        participant.employee?.employeeId &&
-                        query.employeeIds!.includes(participant.employee.employeeId),
+                        participant.employee?.id &&
+                        query.employeeIds!.includes(participant.employee.id),
                 );
             });
         }
@@ -164,7 +164,7 @@ export class ScheduleManagementService {
         const unreadNotificationMap =
             await this.scheduleNotificationContextService.여러_스케줄의_읽지않은_알림을_확인한다(
                 calendarScheduleIds,
-                user.employeeId,
+                user.id,
             );
 
         const scheduleCalendarItems = filteredScheduleDataList.map(
@@ -200,14 +200,14 @@ export class ScheduleManagementService {
                             : null,
                     hasUnreadNotification: notificationInfo.hasUnreadNotification,
                     notificationId: notificationInfo.notificationId,
-                    participants:
-                        participants?.map((participant) => ({
-                            participantId: participant.participantId,
-                            type: participant.type,
-                            employeeId: participant.employee?.employeeId,
-                            employeeName: participant.employee?.name,
-                            department: participant.employee?.department,
-                        })) || [],
+                        participants:
+                            participants?.map((participant) => ({
+                                participantId: participant.participantId,
+                                type: participant.type,
+                                employeeId: participant.employee?.id,
+                                employeeName: participant.employee?.name,
+                                department: (participant.employee as any)?.department ?? '',
+                            })) || [],
                 };
             },
         );
@@ -384,7 +384,7 @@ export class ScheduleManagementService {
      * 내 일정 조회 (표준 파이프라인 적용)
      */
     async findMySchedules(user: Employee, query: MyScheduleQueryDto): Promise<MyScheduleResponseDto> {
-        this.logger.log(`내 일정 조회 요청 - 사용자: ${user.employeeId}`);
+        this.logger.log(`내 일정 조회 요청 - 사용자: ${user.id}`);
 
         const page = query.page || 1;
         const limit = query.limit || 20;
@@ -445,13 +445,13 @@ export class ScheduleManagementService {
         user: Employee,
         query: MyScheduleHistoryQueryDto,
     ): Promise<MyScheduleHistoryResponseDto> {
-        this.logger.log(`내 일정 내역 조회 요청 - 사용자: ${user.employeeId}`);
+        this.logger.log(`내 일정 내역 조회 요청 - 사용자: ${user.id}`);
 
         const page = query.page || 1;
         const limit = query.limit || 20;
 
         const { scheduleIds, filteredCount, totalPages, hasNext, hasPrevious } =
-            await this.scheduleQueryContextService.내_일정_내역을_조회한다(user.employeeId, query);
+            await this.scheduleQueryContextService.내_일정_내역을_조회한다(user.id, query);
         // 3. 벌크 데이터 조회 (한 번의 호출로 모든 관련 데이터 조회)
         const scheduleDataList = await this.scheduleQueryContextService.복수_일정과_관계정보들을_조회한다(scheduleIds, {
             withProject: true,
@@ -509,7 +509,7 @@ export class ScheduleManagementService {
      * 자원별 일정 조회 (표준 파이프라인 적용 - 최적화 버전)
      */
     async findResourceSchedules(user: Employee, query: ResourceScheduleQueryDto): Promise<ResourceScheduleResponseDto> {
-        this.logger.log(`자원별 일정 조회 요청 - 사용자: ${user.employeeId}, 자원타입: ${query.resourceType}`);
+        this.logger.log(`자원별 일정 조회 요청 - 사용자: ${user.id}, 자원타입: ${query.resourceType}`);
 
         // 1. 권한: 자원별 일정 조회는 모든 직원이 가능
 
@@ -528,7 +528,7 @@ export class ScheduleManagementService {
             resourceGroups,
             resourceMap,
             scheduleDataList,
-            user.employeeId,
+            user.id,
         );
 
         return {
@@ -541,7 +541,7 @@ export class ScheduleManagementService {
      * 일정 상세 조회 (표준 파이프라인 적용)
      */
     async findScheduleDetail(user: Employee, query: ScheduleDetailQueryDto): Promise<ScheduleDetailResponseDto> {
-        this.logger.log(`일정 상세 조회 요청 - 사용자: ${user.employeeId}, 일정ID: ${query.scheduleId}`);
+        this.logger.log(`일정 상세 조회 요청 - 사용자: ${user.id}, 일정ID: ${query.scheduleId}`);
 
         // 2. 그래프 조회: 컨텍스트에서 데이터 조회
         const { scheduleId, includeProject, includeReservation } = query;
@@ -615,7 +615,7 @@ export class ScheduleManagementService {
             status: schedule.status,
             notifyBeforeStart: schedule.notifyBeforeStart,
             notifyMinutesBeforeStart: schedule.notifyMinutesBeforeStart,
-            isMine: reserver?.employeeId === user.employeeId,
+            isMine: reserver?.employeeId === user.id,
             reserver: reserverDto,
             participants: participantsDto,
             project: projectDto,
@@ -792,13 +792,13 @@ export class ScheduleManagementService {
                         // 3) 참가자 생성
                         await this.scheduleMutationService.일정_참가자를_추가한다(
                             createdSchedule.scheduleId!,
-                            user.employeeId,
+                            user.id,
                             'RESERVER',
                             queryRunner,
                         );
 
                         for (const participant of data.participants || []) {
-                            if (participant.employeeId !== user.employeeId) {
+                            if (participant.employeeId !== user.id) {
                                 await this.scheduleMutationService.일정_참가자를_추가한다(
                                     createdSchedule.scheduleId!,
                                     participant.employeeId,
@@ -835,6 +835,7 @@ export class ScheduleManagementService {
                         // 트랜잭션 롤백
                         await queryRunner.rollbackTransaction();
 
+                        this.logger.error(`일정 생성 트랜잭션 실패: ${error.message}`, error.stack);
                         result.success = false;
                         result.reason = `일정 생성 실패: ${error.message}`;
                     } finally {
@@ -880,7 +881,7 @@ export class ScheduleManagementService {
                     // 알림 전송 대상 조회 (공통 함수 사용)
                     const notificationTargets = await this.일정_종류별_알림_대상을_조회한다(
                         scheduleType,
-                        user.employeeId,
+                        user.id,
                         participants,
                         departmentIds,
                     );
@@ -889,7 +890,7 @@ export class ScheduleManagementService {
                     await this.scheduleNotificationContextService.일정_생성_알림을_전송한다(
                         { schedule, reservation, resource },
                         notificationTargets,
-                        systemAdmins.map((admin) => admin.employeeId),
+                        systemAdmins.map((admin) => admin.id),
                     );
                 }
 
@@ -927,7 +928,7 @@ export class ScheduleManagementService {
      * 일정 취소 (삭제)
      */
     async cancelSchedule(user: Employee, scheduleId: string, cancelDto?: ScheduleCancelRequestDto): Promise<boolean> {
-        this.logger.log(`일정 취소 요청 - 사용자: ${user.employeeId}, 일정: ${scheduleId}`);
+        this.logger.log(`일정 취소 요청 - 사용자: ${user.id}, 일정: ${scheduleId}`);
 
         // 1. 권한: 요청자/역할 확인
         const authResult = await this.scheduleAuthorizationService.일정_권한을_확인한다(
@@ -954,7 +955,7 @@ export class ScheduleManagementService {
 
         // 5. 후처리: 알림/감사/도메인이벤트 - 알림 삭제 시 알림 보내기 안하도록 기획 변경 2025-09-11
         await this.scheduleNotificationContextService.일정_취소_알림을_전송한다({ schedule, reservation, resource }, [
-            user.employeeId,
+            user.id,
             ...participants.map((participant) => participant.employeeId),
         ]);
 
@@ -970,7 +971,7 @@ export class ScheduleManagementService {
         scheduleId: string,
         completeDto?: ScheduleCompleteRequestDto,
     ): Promise<boolean> {
-        this.logger.log(`일정 완료 요청 - 사용자: ${user.employeeId}, 일정: ${scheduleId}`);
+        this.logger.log(`일정 완료 요청 - 사용자: ${user.id}, 일정: ${scheduleId}`);
 
         // 1. 권한: 요청자/역할 확인
         const authResult = await this.scheduleAuthorizationService.일정_권한을_확인한다(
@@ -1012,7 +1013,7 @@ export class ScheduleManagementService {
      * 일정 30분 연장 가능 여부 확인 (표준 파이프라인 적용)
      */
     async checkScheduleExtendable(user: Employee, scheduleId: string): Promise<boolean> {
-        this.logger.log(`일정 연장 가능 여부 확인 요청 - 사용자: ${user.employeeId}, 일정: ${scheduleId}`);
+        this.logger.log(`일정 연장 가능 여부 확인 요청 - 사용자: ${user.id}, 일정: ${scheduleId}`);
 
         try {
             // 1. 권한: 요청자/역할 확인
@@ -1049,7 +1050,7 @@ export class ScheduleManagementService {
      * 일정 30분 연장 (표준 파이프라인 적용)
      */
     async extendSchedule30Min(user: Employee, scheduleId: string): Promise<ScheduleExtendResponseDto> {
-        this.logger.log(`일정 30분 연장 요청 - 사용자: ${user.employeeId}, 일정: ${scheduleId}`);
+        this.logger.log(`일정 30분 연장 요청 - 사용자: ${user.id}, 일정: ${scheduleId}`);
 
         // 1. 권한: 요청자/역할 확인
         const authResult = await this.scheduleAuthorizationService.일정_권한을_확인한다(
@@ -1128,7 +1129,7 @@ export class ScheduleManagementService {
      * 일정 수정 (표준 파이프라인 적용) - 세 가지 수정 시나리오 지원
      */
     async updateSchedule(user: Employee, scheduleId: string, updateDto: ScheduleUpdateRequestDto): Promise<boolean> {
-        this.logger.log(`일정 수정 요청 - 사용자: ${user.employeeId}, 일정: ${scheduleId}`);
+        this.logger.log(`일정 수정 요청 - 사용자: ${user.id}, 일정: ${scheduleId}`);
         // 0. 수정 시나리오 분석 및 검증
         console.log('updateDto', JSON.stringify(updateDto, null, 2));
         const updateScenarios = this.schedulePolicyService.수정_시나리오를_분석한다(updateDto);
@@ -1251,7 +1252,7 @@ export class ScheduleManagementService {
         // 일정 종류별 알림 대상 조회 (공통 함수 사용)
         const employeeIds = await this.일정_종류별_알림_대상을_조회한다(
             newSchedule.scheduleType,
-            user.employeeId,
+            user.id,
             targetParticipants,
             departmentIds,
         );
@@ -1297,7 +1298,7 @@ export class ScheduleManagementService {
                     for (const departmentId of departmentIds) {
                         const departmentEmployees =
                             await this.employeeContextService.부서별_직원_목록을_조회한다(departmentId);
-                        notificationTargets.push(...departmentEmployees.map((emp) => emp.employeeId));
+                        notificationTargets.push(...departmentEmployees.map((emp) => emp.employeeId ?? emp.id));
                     }
                 }
                 break;
@@ -1305,7 +1306,7 @@ export class ScheduleManagementService {
             case ScheduleType.COMPANY:
                 // 회사 일정: 재직중인 모든 직원
                 const activeEmployees = await this.employeeContextService.재직중인_전체_직원을_조회한다();
-                notificationTargets.push(...activeEmployees.map((emp) => emp.employeeId));
+                notificationTargets.push(...activeEmployees.map((emp) => emp.id));
                 break;
 
             default:

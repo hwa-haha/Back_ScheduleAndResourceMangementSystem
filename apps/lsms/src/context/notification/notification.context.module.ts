@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Employee } from '../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { EmployeeNotification } from '../../domain/employee-notification/employee-notification.entity';
 import { Notification } from '../../domain/notification/notification.entity';
 import { Reservation } from '../../domain/reservation/reservation.entity';
@@ -9,7 +9,8 @@ import { DomainNotificationModule } from '../../domain/notification/notification
 import { DomainNotificationTypeModule } from '../../domain/notification-type/notification-type.module';
 import { DomainEmployeeNotificationModule } from '../../domain/employee-notification/employee-notification.module';
 import { NotificationContextService } from './services/notification.context.service';
-import { DomainEmployeeModule } from '../../domain/employee/employee.module';
+import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
+import { DomainEmployeeExtraInfoModule } from '../../domain/employee-extra-info/employee-extra-info.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DomainReservationModule } from '../../domain/reservation/reservation.module';
 import { FCMAdapter } from './adapter/fcm-push.adapter';
@@ -18,6 +19,8 @@ import { ReservationNotificationContextService } from './services/reservation-no
 import { ResourceNotificationContextService } from './services/resource-notification.context.service';
 import { FCMMicroserviceAdapter } from './adapter/fcm.adapter';
 import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
+import { EmployeeMicroserviceAdapter } from '../../domain/employee/adapters/employee-microservice.adapter';
 
 /**
  * 알림 컨텍스트 모듈
@@ -38,7 +41,9 @@ import { HttpModule } from '@nestjs/axios';
         TypeOrmModule.forFeature([Employee, Notification, EmployeeNotification, Reservation, NotificationTypeEntity]),
         ScheduleModule.forRoot(),
         HttpModule,
+        ConfigModule,
         DomainEmployeeModule,
+        DomainEmployeeExtraInfoModule,
         DomainEmployeeNotificationModule,
         DomainNotificationModule,
         DomainNotificationTypeModule,
@@ -52,6 +57,7 @@ import { HttpModule } from '@nestjs/axios';
         ResourceNotificationContextService,
         FCMAdapter,
         FCMMicroserviceAdapter,
+        EmployeeMicroserviceAdapter,
     ],
     exports: [
         NotificationContextService,

@@ -1,7 +1,7 @@
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags, ApiOkResponse } from '@nestjs/swagger';
 import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
 import { User } from '../../../../libs/decorators/user.decorator';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ResourceType } from '../../../../libs/enums/resource-type.enum';
 
 // Business Layer DTOs (중앙집중식 import)
@@ -39,7 +39,7 @@ export class NotificationController {
         // const authorization = Array.isArray(request.headers.authorization)
         //     ? request.headers.authorization[0]
         //     : request.headers.authorization || '';
-        return await this.notificationManagementService.웹푸시를_구독한다(user.employeeId, subscription);
+        return await this.notificationManagementService.웹푸시를_구독한다(user.id, subscription);
     }
 
     @Post('subscribe/success')
@@ -127,7 +127,7 @@ export class NotificationController {
         description: '알람 읽음 처리 성공',
     })
     async markAsRead(@User() user: Employee, @Param('notificationId') notificationId: string) {
-        await this.notificationManagementService.알림을_읽음_처리한다(user.employeeId, notificationId);
+        await this.notificationManagementService.알림을_읽음_처리한다(user.id, notificationId);
     }
 
     @Patch('mark-all-read')

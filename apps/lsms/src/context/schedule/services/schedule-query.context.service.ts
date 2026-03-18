@@ -4,13 +4,13 @@ import { DomainScheduleParticipantService } from '../../../domain/schedule-parti
 import { DomainScheduleRelationService } from '../../../domain/schedule-relation/schedule-relation.service';
 import { DomainScheduleDepartmentService } from '../../../domain/schedule-department/schedule-department.service';
 
-import { Between, In, Like, MoreThanOrEqual, Not, IsNull, LessThanOrEqual } from 'typeorm';
+import { DataSource, In, Like, MoreThanOrEqual, Not, IsNull, LessThanOrEqual, Repository } from 'typeorm';
 import { Schedule } from '../../../domain/schedule/schedule.entity';
 import { ScheduleParticipant } from '../../../domain/schedule-participant/schedule-participant.entity';
 import { ScheduleRelation } from '../../../domain/schedule-relation/schedule-relation.entity';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
+import { EmployeeDepartmentPosition } from '@libs/modules/employee-department-position/employee-department-position.entity';
 import { ParticipantsType } from '../../../../libs/enums/reservation-type.enum';
-import { DomainEmployeeService } from '../../../domain/employee/employee.service';
 import { DomainProjectService } from '../../../domain/project/project.service';
 import { DomainReservationService } from '../../../domain/reservation/reservation.service';
 import { Reservation } from '../../../domain/reservation/reservation.entity';
@@ -39,18 +39,21 @@ export interface ProjectInfo {
 @Injectable()
 export class ScheduleQueryContextService {
     private readonly logger = new Logger(ScheduleQueryContextService.name);
+    private readonly edpRepository: Repository<EmployeeDepartmentPosition>;
 
     constructor(
         private readonly domainScheduleService: DomainScheduleService,
         private readonly domainScheduleParticipantService: DomainScheduleParticipantService,
         private readonly domainScheduleRelationService: DomainScheduleRelationService,
-        private readonly domainEmployeeService: DomainEmployeeService,
         private readonly domainProjectService: DomainProjectService,
         private readonly domainReservationService: DomainReservationService,
         private readonly domainResourceService: DomainResourceService,
         private readonly domainResourceGroupService: DomainResourceGroupService,
         private readonly domainScheduleDepartmentService: DomainScheduleDepartmentService,
-    ) {}
+        private readonly dataSource: DataSource,
+    ) {
+        this.edpRepository = this.dataSource.getRepository(EmployeeDepartmentPosition);
+    }
 
     // 테스트용
     // async onModuleInit(): Promise<void> {
@@ -179,13 +182,15 @@ export class ScheduleQueryContextService {
         if (option?.withParticipants) {
             const scheduleParticipants = await this.domainScheduleParticipantService.findByScheduleId(scheduleId);
             const employeeIds = [...new Set(scheduleParticipants.map((participant) => participant.employeeId))];
-            const employees = await this.domainEmployeeService.findByEmployeeIds(employeeIds);
+            const employees = await this.dataSource
+                .getRepository(Employee)
+                .find({ where: { id: In(employeeIds) } });
             participants = scheduleParticipants.map((participant) => ({
                 participantId: participant.participantId,
                 scheduleId: participant.scheduleId,
                 employeeId: participant.employeeId,
                 type: participant.type,
-                employee: employees.find((employee) => employee.employeeId === participant.employeeId),
+                employee: employees.find((employee) => employee.id === participant.employeeId),
             }));
         }
         return {
@@ -283,8 +288,10 @@ export class ScheduleQueryContextService {
             const employeeIds = [
                 ...new Set(allParticipants.map((participant: any) => participant.employeeId as string)),
             ];
-            const employees = await this.domainEmployeeService.findByEmployeeIds(employeeIds);
-            const employeeMap = new Map(employees.map((employee) => [employee.employeeId, employee]));
+            const employees = await this.dataSource
+                .getRepository(Employee)
+                .find({ where: { id: In(employeeIds) } });
+            const employeeMap = new Map(employees.map((employee) => [employee.id, employee]));
 
             // 일정별 참가자 그룹핑
             const participantGroups = allParticipants.reduce(
@@ -376,18 +383,19 @@ export class ScheduleQueryContextService {
             for (const employee of employeeArray) {
                 // 각 직원의 참여 일정 조회
                 const myParticipants = await this.domainScheduleParticipantService.findByEmployeeIdAndScheduleIds(
-                    employee.employeeId,
+                    employee.id,
                     scheduleIds,
                 );
                 const myScheduleIds = myParticipants.map((participant) => participant.scheduleId);
 
-                // 각 직원의 소속 일정 조회
-                const department = employee.departmentEmployees[0].department;
-                const belongingScheduleIds = await this.직원의_소속_일정ID들을_조회한다(
-                    department.id,
-                    startDateOfMonth,
-                    endDateOfMonth,
-                );
+                const edps = await this.edpRepository.find({
+                    where: { employeeId: employee.id },
+                    relations: ['department'],
+                });
+                const department = edps[0]?.department;
+                const belongingScheduleIds = department
+                    ? await this.직원의_소속_일정ID들을_조회한다(department.id, startDateOfMonth, endDateOfMonth)
+                    : [];
 
                 // 해당 직원의 모든 일정 ID를 Set에 추가
                 myScheduleIds.forEach((id) => allEmployeeScheduleIds.add(id));
@@ -870,19 +878,15 @@ export class ScheduleQueryContextService {
     }
 
     private async 예약자명으로_검색(baseScheduleIds: string[], keyword: string): Promise<string[]> {
-        const employeeIds = await this.domainEmployeeService.findAll({
-            where: {
-                name: Like(keyword),
-            },
-            select: {
-                employeeId: true,
-            },
+        const employeeIds = await this.dataSource.getRepository(Employee).find({
+            where: { name: Like(keyword) },
+            select: { id: true },
         });
         const scheduleRelations = await this.domainScheduleParticipantService.findAll({
             where: {
                 scheduleId: In(baseScheduleIds),
                 type: ParticipantsType.RESERVER,
-                employeeId: In(employeeIds.map((e) => e.employeeId)),
+                employeeId: In(employeeIds.map((e) => e.id)),
             },
             select: {
                 scheduleId: true,
@@ -944,7 +948,7 @@ export class ScheduleQueryContextService {
         hasNext: boolean;
         hasPrevious: boolean;
     }> {
-        const employeeId = employee.employeeId;
+        const employeeId = employee.id;
         const now = new Date();
         /** UTC 기준 15시 이전일 경우 전날 15시로 설정
          * 15시 이후일 경우 15시로 설정
@@ -960,9 +964,15 @@ export class ScheduleQueryContextService {
         // 1. 기본 일정 ID 조회 (역할 조건 포함)
         let scheduleIds = await this.직원의_역할별_일정ID들을_조회한다(employeeId, query.role, now);
         if (query.role !== ParticipantsType.RESERVER) {
-            const department = employee.departmentEmployees[0].department;
-            const belongingScheduleIds = await this.직원의_소속_일정ID들을_조회한다(department.id, now);
-            scheduleIds = Array.from(new Set([...scheduleIds, ...belongingScheduleIds]));
+            const edps = await this.edpRepository.find({
+                where: { employeeId },
+                relations: ['department'],
+            });
+            const department = edps[0]?.department;
+            if (department) {
+                const belongingScheduleIds = await this.직원의_소속_일정ID들을_조회한다(department.id, now);
+                scheduleIds = Array.from(new Set([...scheduleIds, ...belongingScheduleIds]));
+            }
         }
 
         // 2. 카테고리별 필터링
@@ -1027,12 +1037,13 @@ export class ScheduleQueryContextService {
     ): Promise<Map<string, { participant: ScheduleParticipant; employee: Employee }>> {
         const reservers = await this.domainScheduleParticipantService.findReserversByScheduleIds(scheduleIds);
         const employeeIds = [...new Set(reservers.map((reserver) => reserver.employeeId))];
-        const employees = await this.domainEmployeeService.findByEmployeeIds(employeeIds);
+        const employees = await this.dataSource
+            .getRepository(Employee)
+            .find({ where: { id: In(employeeIds) } });
 
-        // Employee 배열을 Map으로 변환 (빠른 조회를 위해)
         const employeeMap = new Map<string, Employee>();
         employees.forEach((employee) => {
-            employeeMap.set(employee.employeeId, employee);
+            employeeMap.set(employee.id, employee);
         });
 
         // 일정별로 예약자 정보를 그룹핑
@@ -1054,12 +1065,13 @@ export class ScheduleQueryContextService {
     ): Promise<Map<string, { participant: ScheduleParticipant; employee: Employee }[]>> {
         const allParticipants = await this.domainScheduleParticipantService.findAllByScheduleIds(scheduleIds);
         const employeeIds = [...new Set(allParticipants.map((participant) => participant.employeeId))];
-        const employees = await this.domainEmployeeService.findByEmployeeIds(employeeIds);
+        const employees = await this.dataSource
+            .getRepository(Employee)
+            .find({ where: { id: In(employeeIds) } });
 
-        // Employee 배열을 Map으로 변환 (빠른 조회를 위해)
         const employeeMap = new Map<string, Employee>();
         employees.forEach((employee) => {
-            employeeMap.set(employee.employeeId, employee);
+            employeeMap.set(employee.id, employee);
         });
 
         // 일정별로 참가자 정보를 그룹핑
@@ -1478,7 +1490,7 @@ export class ScheduleQueryContextService {
         allParticipants.forEach(({ participant, employee }) => {
             const participantDto = {
                 participantId: participant.participantId,
-                employeeId: employee.employeeId,
+                employeeId: employee.id,
                 employeeName: employee.name,
                 participantType: participant.type,
             };

@@ -7,8 +7,8 @@ import {
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import { Department } from '../department/department.entity';
-import { Employee } from '../employee/employee.entity';
+import { Department } from '@libs/modules/department/department.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 
 @Entity('department_employees')
 export class DepartmentEmployee {

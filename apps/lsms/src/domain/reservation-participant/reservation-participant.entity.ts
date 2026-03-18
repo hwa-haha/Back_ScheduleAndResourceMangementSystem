@@ -1,6 +1,6 @@
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Reservation } from '../reservation/reservation.entity';
-import { Employee } from '../employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ParticipantsType } from '../../../libs/enums/reservation-type.enum';
 
 @Entity('reservation_participants')

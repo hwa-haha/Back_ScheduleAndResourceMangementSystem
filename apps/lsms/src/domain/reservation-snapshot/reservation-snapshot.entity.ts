@@ -1,5 +1,5 @@
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, UpdateDateColumn, CreateDateColumn } from 'typeorm';
-import { Employee } from '../employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 
 @Entity('reservation_snapshots')
 export class ReservationSnapshot {

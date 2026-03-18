@@ -113,10 +113,10 @@ export class ReservationWithRelationsResponseDto extends ReservationResponseDto 
         this.resource = reservation?.resource as any;
         this.reservers = reservation?.participants?.filter(
             (participant) => participant.type === ParticipantsType.RESERVER,
-        );
+        ) as any;
         this.participants = reservation?.participants?.filter(
             (participant) => participant.type === ParticipantsType.PARTICIPANT,
-        );
+        ) as any;
         this.reservationVehicles = reservation?.reservationVehicles;
     }
 
