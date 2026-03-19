@@ -3,17 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { catchError, firstValueFrom, map } from 'rxjs';
 import { AxiosError } from 'axios';
-import {
-    ProjectHierarchyResponseDto,
-    ProjectDataDto,
-    GetProjectsByIdsRequestDto,
-    GetProjectsByIdsResponseDto,
-} from './dto';
-import { EmployeeResponseDto } from '../../../../../libs/temp/employee/dtos/employee-response.dto';
-import { EmployeesResponseDto } from '../../../../../libs/temp/employee/dtos/employees-response.dto';
-import { FcmSubscribeRequestDto } from '../../../../../libs/temp/employee/dtos/fcm-subscribe-request.dto';
-import { FcmSubscribeResponseDto } from '../../../../../libs/temp/employee/dtos/fcm-subscribe-response.dto';
-import { FcmTokenResponseDto } from '../../../../../libs/temp/employee/dtos/fcm-token-response.dto';
+import { ProjectHierarchyResponseDto, GetProjectsByIdsRequestDto, GetProjectsByIdsResponseDto } from './dto';
 
 @Injectable()
 export class ProjectMicroserviceAdapter {

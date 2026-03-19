@@ -10,7 +10,7 @@ import {
     PortalNotificationResponseDto,
     RecipientDto,
 } from '../dtos/portal-notification.dto';
-import { EmployeeTokensDto } from '../../../../../../libs/temp/employee/dtos/fcm-token-response.dto';
+import { EmployeeTokensDto } from '../../../domain/employee/dtos/fcm-token-response.dto';
 import { NotificationType } from '../../../../libs/enums/notification-type.enum';
 import { NotificationData } from '../../../domain/notification/notification.entity';
 
