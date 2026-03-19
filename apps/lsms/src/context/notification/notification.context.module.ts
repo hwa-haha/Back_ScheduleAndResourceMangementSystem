@@ -20,7 +20,7 @@ import { ResourceNotificationContextService } from './services/resource-notifica
 import { FCMMicroserviceAdapter } from './adapter/fcm.adapter';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule } from '@nestjs/config';
-import { EmployeeMicroserviceAdapter } from '../../../../../libs/temp/employee/adapters/employee-microservice.adapter';
+import { EmployeeMicroserviceAdapter } from '../../domain/employee/adapters/employee-microservice.adapter';
 
 /**
  * 알림 컨텍스트 모듈

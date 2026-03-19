@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Employee } from '@libs/modules/employee/employee.entity';
-import { EmployeeMicroserviceAdapter } from '../../../../../../libs/temp/employee/adapters/employee-microservice.adapter';
+import { EmployeeMicroserviceAdapter } from '../../../domain/employee/adapters/employee-microservice.adapter';
 import { ResourceType } from '../../../../libs/enums/resource-type.enum';
 import { ReservationStatus } from '../../../../libs/enums/reservation-type.enum';
 import { PushSubscriptionDto } from '../dtos/push-subscription.dto';
@@ -22,7 +22,7 @@ import { NotificationType } from '../../../../libs/enums/notification-type.enum'
 import { CreateNotificationDataDto, CreateNotificationDto } from '../dtos/create-notification.dto';
 import { DateUtil } from '../../../../libs/utils/date.util';
 import { FCMMicroserviceAdapter } from '../adapter/fcm.adapter';
-import { EmployeeTokensDto } from '../../../../../../libs/temp/employee/dtos/fcm-token-response.dto';
+import { EmployeeTokensDto } from '../../../domain/employee/dtos/fcm-token-response.dto';
 import { BatchResponse } from 'firebase-admin/lib/messaging';
 
 export interface NotificationData {
