@@ -13,7 +13,7 @@ import {
     CreateNotificationDataDto,
 } from '../../business.dto.index';
 import { DateUtil } from '../../../libs/utils/date.util';
-import { EmployeeTokensDto } from '../../domain/employee/dtos/fcm-token-response.dto';
+import { EmployeeTokensDto } from '../../../../../libs/temp/employee/dtos/fcm-token-response.dto';
 
 /**
  * 알림 관리 비즈니스 서비스

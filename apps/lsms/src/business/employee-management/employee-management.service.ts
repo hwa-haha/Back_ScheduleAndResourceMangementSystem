@@ -11,7 +11,7 @@ export class EmployeeManagementService {
     constructor(private readonly employeeContextService: EmployeeContextService) {}
 
     async syncEmployees(authorization: string): Promise<void> {
-        await this.employeeContextService.전체_조직_정보를_동기화한다(authorization);
+        // await this.employeeContextService.전체_조직_정보를_동기화한다(authorization);
         // await this.employeeContextService.구독정보를_동기화한다();
     }
 

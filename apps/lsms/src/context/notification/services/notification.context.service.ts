@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Employee } from '@libs/modules/employee/employee.entity';
-import { EmployeeMicroserviceAdapter } from '../../../domain/employee/adapters/employee-microservice.adapter';
+import { EmployeeMicroserviceAdapter } from '../../../../../../libs/temp/employee/adapters/employee-microservice.adapter';
 import { ResourceType } from '../../../../libs/enums/resource-type.enum';
 import { ReservationStatus } from '../../../../libs/enums/reservation-type.enum';
 import { PushSubscriptionDto } from '../dtos/push-subscription.dto';
@@ -22,7 +22,7 @@ import { NotificationType } from '../../../../libs/enums/notification-type.enum'
 import { CreateNotificationDataDto, CreateNotificationDto } from '../dtos/create-notification.dto';
 import { DateUtil } from '../../../../libs/utils/date.util';
 import { FCMMicroserviceAdapter } from '../adapter/fcm.adapter';
-import { EmployeeTokensDto } from '../../../domain/employee/dtos/fcm-token-response.dto';
+import { EmployeeTokensDto } from '../../../../../../libs/temp/employee/dtos/fcm-token-response.dto';
 import { BatchResponse } from 'firebase-admin/lib/messaging';
 
 export interface NotificationData {
@@ -110,9 +110,7 @@ export class NotificationContextService {
         });
         return {
             items: notifications.map((notification) => {
-                const employeeNotification = notification.employees?.find(
-                    (en) => en.employeeId === employeeId,
-                );
+                const employeeNotification = notification.employees?.find((en) => en.employeeId === employeeId);
                 return {
                     notificationId: notification.notificationId,
                     title: notification.title,
@@ -213,9 +211,7 @@ export class NotificationContextService {
     }
 
     async PUSH_알림을_구독한다(employeeId: string, subscription: PushSubscriptionDto): Promise<boolean> {
-        const employee = await this.dataSource
-            .getRepository(Employee)
-            .findOne({ where: { id: employeeId } });
+        const employee = await this.dataSource.getRepository(Employee).findOne({ where: { id: employeeId } });
 
         if (!employee) {
             throw new BadRequestException('Employee not found');
@@ -266,9 +262,7 @@ export class NotificationContextService {
 
         if (enabledEmployeeIds.length === 0) return [];
 
-        const employees = await this.dataSource
-            .getRepository(Employee)
-            .find({ where: { id: In(enabledEmployeeIds) } });
+        const employees = await this.dataSource.getRepository(Employee).find({ where: { id: In(enabledEmployeeIds) } });
 
         if (!employees || employees.length === 0) {
             return [];

@@ -9,11 +9,11 @@ import {
     GetProjectsByIdsRequestDto,
     GetProjectsByIdsResponseDto,
 } from './dto';
-import { EmployeeResponseDto } from '../employee/dtos/employee-response.dto';
-import { EmployeesResponseDto } from '../employee/dtos/employees-response.dto';
-import { FcmSubscribeRequestDto } from '../employee/dtos/fcm-subscribe-request.dto';
-import { FcmSubscribeResponseDto } from '../employee/dtos/fcm-subscribe-response.dto';
-import { FcmTokenResponseDto } from '../employee/dtos/fcm-token-response.dto';
+import { EmployeeResponseDto } from '../../../../../libs/temp/employee/dtos/employee-response.dto';
+import { EmployeesResponseDto } from '../../../../../libs/temp/employee/dtos/employees-response.dto';
+import { FcmSubscribeRequestDto } from '../../../../../libs/temp/employee/dtos/fcm-subscribe-request.dto';
+import { FcmSubscribeResponseDto } from '../../../../../libs/temp/employee/dtos/fcm-subscribe-response.dto';
+import { FcmTokenResponseDto } from '../../../../../libs/temp/employee/dtos/fcm-token-response.dto';
 
 @Injectable()
 export class ProjectMicroserviceAdapter {

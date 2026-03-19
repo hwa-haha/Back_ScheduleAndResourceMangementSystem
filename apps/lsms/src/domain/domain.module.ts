@@ -29,7 +29,7 @@ import { DomainScheduleParticipantModule } from './schedule-participant/schedule
 import { DomainScheduleRelationModule } from './schedule-relation/schedule-relation.module';
 import { DomainVehicleInfoModule } from './vehicle-info/vehicle-info.module';
 
-import { DomainDepartmentEmployeeModule } from './department-employee/department-employee.module';
+import { DomainDepartmentEmployeeModule } from '../../../../libs/temp/department-employee/department-employee.module';
 import { DomainEmployeeExtraInfoModule } from './employee-extra-info/employee-extra-info.module';
 
 import { DomainDepartmentModule } from '@libs/modules/department/department.module';

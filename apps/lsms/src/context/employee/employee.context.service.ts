@@ -16,9 +16,9 @@ import { UpdateNotificationSettingsDto } from '../../business/employee-managemen
 import { ERROR_MESSAGE } from '../../../libs/constants/error-message';
 import * as bcrypt from 'bcryptjs';
 import axios from 'axios';
-import { EmployeeMicroserviceAdapter } from '../../domain/employee/adapters/employee-microservice.adapter';
-import { DepartmentMicroserviceAdapter } from '../../domain/department/adapters/department-microservice.adapter';
-import { DepartmentHierarchyResponseDto } from '../../domain/department/dtos/department-response.dto';
+// import { EmployeeMicroserviceAdapter } from '../../../../../libs/temp/employee/adapters/employee-microservice.adapter';
+// import { DepartmentMicroserviceAdapter } from '../../domain/department/adapters/department-microservice.adapter';
+// import { DepartmentHierarchyResponseDto } from '../../domain/department/dtos/department-response.dto';
 
 /** 루미르 주식회사 최상위 부서 ID (departments-info 기준 고정값) */
 const LUMIR_ROOT_DEPARTMENT_ID = '0152150e-dbdf-45a4-8657-3615bdeaec28';
@@ -37,8 +37,8 @@ export class EmployeeContextService {
     constructor(
         private readonly domainEmployeeExtraInfoService: DomainEmployeeExtraInfoService,
         private readonly domainPositionService: DomainPositionService,
-        private readonly employeeMicroserviceAdapter: EmployeeMicroserviceAdapter,
-        private readonly departmentMicroserviceAdapter: DepartmentMicroserviceAdapter,
+        // private readonly employeeMicroserviceAdapter: EmployeeMicroserviceAdapter,
+        // private readonly departmentMicroserviceAdapter: DepartmentMicroserviceAdapter,
         private readonly dataSource: DataSource,
     ) {
         this.departmentRepository = this.dataSource.getRepository(Department);
@@ -216,7 +216,7 @@ export class EmployeeContextService {
         const employeeWithDept: Array<{ employee: Employee; departmentName: string }> = [];
 
         for (const edp of edps) {
-            if (!edp.employee || edp.employee.status === '퇴사' as any) continue;
+            if (!edp.employee || edp.employee.status === ('퇴사' as any)) continue;
             if (!extraEmployeeIds.has(edp.employeeId)) continue;
             if (seenEmployeeIds.has(edp.employeeId)) continue;
             seenEmployeeIds.add(edp.employeeId);
@@ -224,7 +224,10 @@ export class EmployeeContextService {
         }
 
         const deptNameMap = new Map(employeeWithDept.map((e) => [e.employee.id, e.departmentName]));
-        const dtos = await this.직원DTO를_조립한다(employeeWithDept.map((e) => e.employee), deptNameMap);
+        const dtos = await this.직원DTO를_조립한다(
+            employeeWithDept.map((e) => e.employee),
+            deptNameMap,
+        );
         return this.부서별로_그룹핑한다(dtos);
     }
 
@@ -244,14 +247,17 @@ export class EmployeeContextService {
         const employeeWithDept: Array<{ employee: Employee; departmentName: string }> = [];
 
         for (const edp of edps) {
-            if (!edp.employee || edp.employee.status === '퇴사' as any) continue;
+            if (!edp.employee || edp.employee.status === ('퇴사' as any)) continue;
             if (seenEmployeeIds.has(edp.employeeId)) continue;
             seenEmployeeIds.add(edp.employeeId);
             employeeWithDept.push({ employee: edp.employee, departmentName: edp.department?.departmentName ?? '' });
         }
 
         const deptNameMap = new Map(employeeWithDept.map((e) => [e.employee.id, e.departmentName]));
-        const dtos = await this.직원DTO를_조립한다(employeeWithDept.map((e) => e.employee), deptNameMap);
+        const dtos = await this.직원DTO를_조립한다(
+            employeeWithDept.map((e) => e.employee),
+            deptNameMap,
+        );
         const withRole = dtos.map((e) => ({
             ...e,
             isResourceAdmin: (e.roles ?? []).includes(Role.RESOURCE_ADMIN),
@@ -280,7 +286,7 @@ export class EmployeeContextService {
         const employeeWithDept: Array<{ employee: Employee; departmentName: string }> = [];
 
         for (const edp of edps) {
-            if (!edp.employee || edp.employee.status === '퇴사' as any) continue;
+            if (!edp.employee || edp.employee.status === ('퇴사' as any)) continue;
             if (seenEmployeeIds.has(edp.employeeId)) continue;
             seenEmployeeIds.add(edp.employeeId);
             employeeWithDept.push({
@@ -553,9 +559,7 @@ export class EmployeeContextService {
 
             const hierarchy = buildHierarchy(LUMIR_ROOT_DEPARTMENT_ID);
 
-            this.logger.log(
-                `부서 계층구조 조회 완료: 유효 부서 ${validDepts.length}개`,
-            );
+            this.logger.log(`부서 계층구조 조회 완료: 유효 부서 ${validDepts.length}개`);
 
             return hierarchy;
         } catch (error) {
@@ -586,96 +590,96 @@ export class EmployeeContextService {
     /**
      * 외부 시스템에서 직원 정보를 동기화한다
      */
-    async 직원_정보를_동기화한다(authorization: string): Promise<EmplyeesByDepartmentResponseDto[]> {
-        const { employees } = await this.employeeMicroserviceAdapter.getAllEmployees(authorization);
+    // async 직원_정보를_동기화한다(authorization: string): Promise<EmplyeesByDepartmentResponseDto[]> {
+    //     const { employees } = await this.employeeMicroserviceAdapter.getAllEmployees(authorization);
 
-        for (const employee of employees) {
-            try {
-                const existingRows: any[] = await this.dataSource.query(
-                    `SELECT "employeeId", "employeeNumber" FROM employees WHERE "employeeNumber" = $1`,
-                    [employee.employeeNumber],
-                );
-                const existing = existingRows[0];
+    //     for (const employee of employees) {
+    //         try {
+    //             const existingRows: any[] = await this.dataSource.query(
+    //                 `SELECT "employeeId", "employeeNumber" FROM employees WHERE "employeeNumber" = $1`,
+    //                 [employee.employeeNumber],
+    //             );
+    //             const existing = existingRows[0];
 
-                if (employee.status === '퇴사') {
-                    if (existing) {
-                        await this.dataSource.query(
-                            `UPDATE employees SET department = $1, position = $2, rank = $3, "positionTitle" = $4, status = $5 WHERE "employeeId" = $6`,
-                            [
-                                employee.department ? employee.department.departmentName : undefined,
-                                employee.rank?.rankName ?? '',
-                                employee.rank?.rankName ?? '',
-                                employee.position?.positionTitle ?? '',
-                                employee.status,
-                                existing.employeeId,
-                            ],
-                        );
-                    }
-                    continue;
-                }
+    //             if (employee.status === '퇴사') {
+    //                 if (existing) {
+    //                     await this.dataSource.query(
+    //                         `UPDATE employees SET department = $1, position = $2, rank = $3, "positionTitle" = $4, status = $5 WHERE "employeeId" = $6`,
+    //                         [
+    //                             employee.department ? employee.department.departmentName : undefined,
+    //                             employee.rank?.rankName ?? '',
+    //                             employee.rank?.rankName ?? '',
+    //                             employee.position?.positionTitle ?? '',
+    //                             employee.status,
+    //                             existing.employeeId,
+    //                         ],
+    //                     );
+    //                 }
+    //                 continue;
+    //             }
 
-                if (existing) {
-                    await this.dataSource.query(
-                        `UPDATE employees SET name = $1, "employeeNumber" = $2, department = $3, position = $4, rank = $5, "positionTitle" = $6, mobile = $7, status = $8 WHERE "employeeId" = $9`,
-                        [
-                            employee.name,
-                            employee.employeeNumber,
-                            employee.department?.departmentName ?? '',
-                            employee.rank?.rankName ?? '',
-                            employee.rank?.rankName ?? '',
-                            employee.position?.positionTitle ?? '',
-                            employee.phoneNumber ?? '',
-                            employee.status,
-                            existing.employeeId,
-                        ],
-                    );
-                } else {
-                    await this.dataSource.query(
-                        `INSERT INTO employees ("employeeNumber", name, email, department, position, rank, "positionTitle", mobile, status)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-                        [
-                            employee.employeeNumber,
-                            employee.name,
-                            employee.email ?? '',
-                            employee.department?.departmentName ?? '',
-                            employee.rank?.rankName ?? '',
-                            employee.rank?.rankName ?? '',
-                            employee.position?.positionTitle ?? '',
-                            employee.phoneNumber ?? '',
-                            employee.status,
-                        ],
-                    );
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        }
-        return this.직원_목록을_조회한다();
-    }
+    //             if (existing) {
+    //                 await this.dataSource.query(
+    //                     `UPDATE employees SET name = $1, "employeeNumber" = $2, department = $3, position = $4, rank = $5, "positionTitle" = $6, mobile = $7, status = $8 WHERE "employeeId" = $9`,
+    //                     [
+    //                         employee.name,
+    //                         employee.employeeNumber,
+    //                         employee.department?.departmentName ?? '',
+    //                         employee.rank?.rankName ?? '',
+    //                         employee.rank?.rankName ?? '',
+    //                         employee.position?.positionTitle ?? '',
+    //                         employee.phoneNumber ?? '',
+    //                         employee.status,
+    //                         existing.employeeId,
+    //                     ],
+    //                 );
+    //             } else {
+    //                 await this.dataSource.query(
+    //                     `INSERT INTO employees ("employeeNumber", name, email, department, position, rank, "positionTitle", mobile, status)
+    //                      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    //                     [
+    //                         employee.employeeNumber,
+    //                         employee.name,
+    //                         employee.email ?? '',
+    //                         employee.department?.departmentName ?? '',
+    //                         employee.rank?.rankName ?? '',
+    //                         employee.rank?.rankName ?? '',
+    //                         employee.position?.positionTitle ?? '',
+    //                         employee.phoneNumber ?? '',
+    //                         employee.status,
+    //                     ],
+    //                 );
+    //             }
+    //         } catch (error) {
+    //             console.log(error);
+    //         }
+    //     }
+    //     return this.직원_목록을_조회한다();
+    // }
 
-    /**
-     * 외부 시스템에서 부서 정보를 동기화하고 직원을 배치한다
-     */
-    async 부서_정보를_동기화한다(): Promise<DepartmentHierarchyResponseDto> {
-        try {
-            this.logger.log('외부 시스템에서 부서 및 직원 배치 정보 동기화 시작...');
+    // /**
+    //  * 외부 시스템에서 부서 정보를 동기화하고 직원을 배치한다
+    //  */
+    // async 부서_정보를_동기화한다(): Promise<DepartmentHierarchyResponseDto> {
+    //     try {
+    //         this.logger.log('외부 시스템에서 부서 및 직원 배치 정보 동기화 시작...');
 
-            const departmentHierarchy = await this.departmentMicroserviceAdapter.fetchDepartmentHierarchy();
-            const allDepartments = this.모든_부서를_평면적으로_수집한다(departmentHierarchy.departments);
-            const departmentIdMapping = await this.모든_부서를_저장한다(allDepartments);
-            await this.부서_관계를_설정한다(allDepartments, departmentIdMapping);
-            await this.외부_시스템에_없는_부서를_삭제한다(allDepartments);
+    //         const departmentHierarchy = await this.departmentMicroserviceAdapter.fetchDepartmentHierarchy();
+    //         const allDepartments = this.모든_부서를_평면적으로_수집한다(departmentHierarchy.departments);
+    //         const departmentIdMapping = await this.모든_부서를_저장한다(allDepartments);
+    //         await this.부서_관계를_설정한다(allDepartments, departmentIdMapping);
+    //         await this.외부_시스템에_없는_부서를_삭제한다(allDepartments);
 
-            this.logger.log(
-                `부서 및 직원 배치 정보 동기화 완료: 총 ${departmentHierarchy.totalDepartments}개 부서, ${departmentHierarchy.totalEmployees}명 직원`,
-            );
+    //         this.logger.log(
+    //             `부서 및 직원 배치 정보 동기화 완료: 총 ${departmentHierarchy.totalDepartments}개 부서, ${departmentHierarchy.totalEmployees}명 직원`,
+    //         );
 
-            return departmentHierarchy;
-        } catch (error) {
-            this.logger.error('부서 및 직원 배치 정보 동기화 실패:', error);
-            throw error;
-        }
-    }
+    //         return departmentHierarchy;
+    //     } catch (error) {
+    //         this.logger.error('부서 및 직원 배치 정보 동기화 실패:', error);
+    //         throw error;
+    //     }
+    // }
 
     /**
      * 계층구조를 평면적인 배열로 변환한다
@@ -872,44 +876,44 @@ export class EmployeeContextService {
         }
     }
 
-    /**
-     * 직원 정보와 부서 정보를 모두 동기화한다
-     */
-    async 전체_조직_정보를_동기화한다(authorization: string): Promise<EmplyeesByDepartmentResponseDto[]> {
-        try {
-            this.logger.log('전체 조직 정보 동기화 시작...');
+    // /**
+    //  * 직원 정보와 부서 정보를 모두 동기화한다
+    //  */
+    // async 전체_조직_정보를_동기화한다(authorization: string): Promise<EmplyeesByDepartmentResponseDto[]> {
+    //     try {
+    //         this.logger.log('전체 조직 정보 동기화 시작...');
 
-            const departmentHierarchy = await this.부서_정보를_동기화한다();
-            await this.직원_정보를_동기화한다(authorization);
-            await this.직원_배치_정보를_저장한다(departmentHierarchy.departments);
+    //         const departmentHierarchy = await this.부서_정보를_동기화한다();
+    //         await this.직원_정보를_동기화한다(authorization);
+    //         await this.직원_배치_정보를_저장한다(departmentHierarchy.departments);
 
-            this.logger.log('전체 조직 정보 동기화 완료');
-            return this.직원_목록을_조회한다();
-        } catch (error) {
-            this.logger.error('전체 조직 정보 동기화 실패:', error);
-            throw error;
-        }
-    }
+    //         this.logger.log('전체 조직 정보 동기화 완료');
+    //         return this.직원_목록을_조회한다();
+    //     } catch (error) {
+    //         this.logger.error('전체 조직 정보 동기화 실패:', error);
+    //         throw error;
+    //     }
+    // }
 
-    async 구독정보를_동기화한다(): Promise<void> {
-        const extras = await this.employeeExtraInfoRepository.find({
-            where: { subscriptions: Not(IsNull()) },
-        });
+    // async 구독정보를_동기화한다(): Promise<void> {
+    //     const extras = await this.employeeExtraInfoRepository.find({
+    //         where: { subscriptions: Not(IsNull()) },
+    //     });
 
-        let count = 1;
-        for (const extra of extras) {
-            const employee = await this.employeeRepository.findOne({ where: { id: extra.employee_id } });
-            if (!employee) continue;
+    //     let count = 1;
+    //     for (const extra of extras) {
+    //         const employee = await this.employeeRepository.findOne({ where: { id: extra.employee_id } });
+    //         if (!employee) continue;
 
-            const response = await this.employeeMicroserviceAdapter.subscribeFcm('', employee.employeeNumber, {
-                fcmToken: extra.subscriptions?.[0]?.fcm?.token,
-            });
-            if (response.success) {
-                console.log('구독 정보 동기화 성공', count, employee.name, employee.employeeNumber);
-                count++;
-            }
-        }
-    }
+    //         const response = await this.employeeMicroserviceAdapter.subscribeFcm('', employee.employeeNumber, {
+    //             fcmToken: extra.subscriptions?.[0]?.fcm?.token,
+    //         });
+    //         if (response.success) {
+    //             console.log('구독 정보 동기화 성공', count, employee.name, employee.employeeNumber);
+    //             count++;
+    //         }
+    //     }
+    // }
 
     /**
      * 특정 부서와 하위 부서의 모든 직원 목록을 조회한다 (EDP 기반)
