@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ReservationVehicle } from '../../../domain/reservation-vehicle/reservation-vehicle.entity';
 import { ResourceType } from '../../../../libs/enums/resource-type.enum';
 import { ParticipantsType, ReservationStatus } from '../../../../libs/enums/reservation-type.enum';
@@ -82,18 +82,21 @@ export class ReservationService {
             if (scheduleData.participants) {
                 participantsByScheduleId.set(
                     scheduleData.schedule.scheduleId,
-                    scheduleData.participants.map((participant) => ({
-                        ...participant,
-                        employee: {
-                            employeeId: participant.employeeId,
-                            name: participant.employee.name,
-                            employeeNumber: participant.employee.employeeNumber,
-                            department: participant.employee.department,
-                            position: participant.employee.position,
-                            rank: participant.employee.rank,
-                            positionTitle: participant.employee.positionTitle,
-                        },
-                    })),
+                    scheduleData.participants.map((participant) => {
+                        const emp = participant.employee as any;
+                        return {
+                            ...participant,
+                            employee: {
+                                employeeId: participant.employeeId,
+                                name: emp?.name,
+                                employeeNumber: emp?.employeeNumber,
+                                department: emp?.department ?? '',
+                                position: emp?.position ?? '',
+                                rank: emp?.rank?.rankTitle ?? emp?.rank ?? '',
+                                positionTitle: emp?.positionTitle ?? '',
+                            },
+                        };
+                    }),
                 );
             }
         });
@@ -174,24 +177,27 @@ export class ReservationService {
                 const scheduleParticipants = participantsByScheduleId.get(scheduleId) || [];
 
                 // schedule participants를 reservation participants 형태로 변환
-                const allParticipants = scheduleParticipants.map((participant) => ({
-                    participantId: participant.participantId,
-                    reservationId: reservation.reservationId,
-                    employeeId: participant.employeeId,
-                    type: participant.type,
-                    employee: participant.employee
-                        ? {
-                              employeeId: participant.employee.employeeId,
-                              name: participant.employee.name,
-                              employeeNumber: participant.employee.employeeNumber,
-                              department: participant.employee.department,
-                              position: participant.employee.position,
-                              rank: participant.employee.rank,
-                              positionTitle: participant.employee.positionTitle,
-                          }
-                        : undefined,
-                    reservation: reservation,
-                }));
+                const allParticipants = scheduleParticipants.map((participant) => {
+                    const emp = participant.employee as any;
+                    return {
+                        participantId: participant.participantId,
+                        reservationId: reservation.reservationId,
+                        employeeId: participant.employeeId,
+                        type: participant.type,
+                        employee: emp
+                            ? {
+                                  employeeId: emp.id,
+                                  name: emp.name,
+                                  employeeNumber: emp.employeeNumber,
+                                  department: emp.department ?? '',
+                                  position: emp.position ?? '',
+                                  rank: emp.rank?.rankTitle ?? emp.rank ?? '',
+                                  positionTitle: emp.positionTitle ?? '',
+                              }
+                            : undefined,
+                        reservation: reservation,
+                    };
+                });
 
                 // reservers와 participants로 분리
                 const reservers = allParticipants.filter((p) => p.type === ParticipantsType.RESERVER);
@@ -237,24 +243,27 @@ export class ReservationService {
 
         if (scheduleData && scheduleData.participants) {
             // 4. schedule participants를 reservation participants 형태로 변환
-            const allParticipants = scheduleData.participants.map((participant) => ({
-                participantId: participant.participantId,
-                reservationId: reservationId,
-                employeeId: participant.employeeId,
-                type: participant.type,
-                employee: participant.employee
-                    ? {
-                          employeeId: participant.employee.employeeId,
-                          name: participant.employee.name,
-                          employeeNumber: participant.employee.employeeNumber,
-                          department: participant.employee.department,
-                          position: participant.employee.position,
-                          rank: participant.employee.rank,
-                          positionTitle: participant.employee.positionTitle,
-                      }
-                    : undefined,
-                reservation: basicReservation,
-            }));
+            const allParticipants = scheduleData.participants.map((participant) => {
+                const emp = participant.employee as any;
+                return {
+                    participantId: participant.participantId,
+                    reservationId: reservationId,
+                    employeeId: participant.employeeId,
+                    type: participant.type,
+                    employee: emp
+                        ? {
+                              employeeId: emp.id,
+                              name: emp.name,
+                              employeeNumber: emp.employeeNumber,
+                              department: emp.department ?? '',
+                              position: emp.position ?? '',
+                              rank: emp.rank?.rankTitle ?? emp.rank ?? '',
+                              positionTitle: emp.positionTitle ?? '',
+                          }
+                        : undefined,
+                    reservation: basicReservation,
+                };
+            });
 
             // 5. reservers와 participants로 분리
             const reservers = allParticipants.filter((p) => p.type === ParticipantsType.RESERVER);
@@ -268,7 +277,7 @@ export class ReservationService {
             };
 
             // 7. isMine, returnable, modifiable 로직 추가
-            const isMine = reservers.some((reserver) => reserver.employeeId === user.employeeId);
+            const isMine = reservers.some((reserver) => reserver.employeeId === user.id);
 
             const returnable =
                 (reservationWithParticipants.resource as any).type === ResourceType.VEHICLE
@@ -372,7 +381,7 @@ export class ReservationService {
         );
 
         await this.reservationNotificationContextService.차량반납_알림을_전송한다({ schedule, reservation, resource }, [
-            user.employeeId,
+            user.id,
         ]);
         return result;
     }
@@ -401,7 +410,7 @@ export class ReservationService {
 
         // 미사용 처리 알림 전송 (필요에 따라 추가)
         // await this.reservationNotificationContextService.차량미사용_알림을_전송한다({ schedule, reservation, resource }, [
-        //     user.employeeId,
+        //     user.id,
         // ]);
 
         return result;

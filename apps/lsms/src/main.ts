@@ -34,7 +34,7 @@ async function bootstrap() {
                       'https://rms-backend-git-dev-lumir-web-dev.vercel.app',
                       'https://lrms-dev.lumir.space',
                       'https://lrim.lumir.space',
-                      'http://ec2-43-202-216-71.ap-northeast-2.compute.amazonaws.com:5002',
+                      'https://lsms-prod.lumir.space',
                   ];
                   if (!isProduction || !origin || whitelist.includes(origin)) {
                       callback(null, true);

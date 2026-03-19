@@ -15,7 +15,7 @@ import { ResourceQueryDto } from '../../dtos/resource/resource-query.dto';
 import { CheckAvailabilityQueryDto } from '../../dtos/resource/check-availability.dto';
 import { ResourceMonthAvailabilityQueryDto } from '../../dtos/resource/resource-month-availability-query.dto';
 import { ResourceMonthAvailabilityResponseDto } from '../../dtos/resource/resource-month-availability-response.dto';
-import { Employee } from '../../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { User } from '../../../../../libs/decorators/user.decorator';
 
 @ApiTags('v2 자원')
@@ -55,7 +55,7 @@ export class ResourceController {
         type: MyManagementResourcesResponseDto,
     })
     async findMyManagementResources(@User() user: Employee): Promise<MyManagementResourcesResponseDto> {
-        return this.resourceService.findMyManagementResources(user.employeeId);
+        return this.resourceService.findMyManagementResources(user.id);
     }
 
     @Get('availability')

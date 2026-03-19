@@ -7,7 +7,7 @@ import { CheckPasswordDto } from '../dtos/check-password.dto';
 import { ChangePasswordDto } from '../dtos/change-password.dto';
 import { UpdateNotificationSettingsDto } from '../dtos/notification-settings.dto';
 import { EmployeeManagementService } from '../employee-management.service';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ChangeRoleDto } from '../dtos/change-role.dto';
 
 @ApiTags('v2 유저')
@@ -34,21 +34,21 @@ export class UserController {
     @ApiOperation({ summary: '내 상세 정보 조회' })
     @ApiDataResponse({ status: 200, description: '내 상세 정보 조회 성공', type: UserResponseDto })
     findMe(@User() user: Employee) {
-        return this.employeeManagementService.findEmployeeDetail(user.employeeId);
+        return this.employeeManagementService.findEmployeeDetail(user.id);
     }
 
     @Post('check-password')
     @ApiOperation({ summary: '비밀번호 확인' })
     @ApiDataResponse({ status: 200, description: '비밀번호 확인 성공' })
     checkPassword(@User() user: Employee, @Body() checkPasswordDto: CheckPasswordDto) {
-        return this.employeeManagementService.checkPassword(user.employeeId, checkPasswordDto.password);
+        return this.employeeManagementService.checkPassword(user.id, checkPasswordDto.password);
     }
 
     @Post('change-password')
     @ApiOperation({ summary: '비밀번호 변경' })
     @ApiDataResponse({ status: 200, description: '비밀번호 변경 성공' })
     changePassword(@User() user: Employee, @Body() changePasswordDto: ChangePasswordDto) {
-        return this.employeeManagementService.changePassword(user.employeeId, changePasswordDto.newPassword);
+        return this.employeeManagementService.changePassword(user.id, changePasswordDto.newPassword);
     }
 
     @Patch('me/notification-settings')
@@ -62,6 +62,6 @@ export class UserController {
         @User() user: Employee,
         @Body() updateDto: UpdateNotificationSettingsDto,
     ): Promise<UserResponseDto> {
-        return this.employeeManagementService.changeNotificationSettings(user.employeeId, updateDto);
+        return this.employeeManagementService.changeNotificationSettings(user.id, updateDto);
     }
 }

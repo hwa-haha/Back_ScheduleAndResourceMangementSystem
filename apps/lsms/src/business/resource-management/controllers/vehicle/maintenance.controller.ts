@@ -4,7 +4,7 @@ import { CreateMaintenanceDto } from '../../dtos/vehicle/create-vehicle-info.dto
 import { UpdateMaintenanceDto } from '../../dtos/vehicle/update-vehicle-info.dto';
 import { MaintenanceResponseDto } from '../../dtos/vehicle/vehicle-response.dto';
 import { User } from '../../../../../libs/decorators/user.decorator';
-import { Employee } from '../../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 
 import { PaginationQueryDto } from '../../../../../libs/dtos/pagination-query.dto';
 import { PaginationData } from '../../../../../libs/dtos/pagination-response.dto';

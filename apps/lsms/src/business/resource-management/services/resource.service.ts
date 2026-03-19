@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ResourceType } from '../../../../libs/enums/resource-type.enum';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 
 // Context Services
 import { ResourceContextService } from '../../../context/resource/services/resource.context.service';

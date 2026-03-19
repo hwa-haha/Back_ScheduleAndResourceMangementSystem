@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { Schedule } from '../../../domain/schedule/schedule.entity';
 import { ScheduleParticipant } from '../../../domain/schedule-participant/schedule-participant.entity';
 import { ParticipantsType } from '../../../../libs/enums/reservation-type.enum';
@@ -44,7 +44,7 @@ export class ScheduleAuthorizationService {
 
         // 2. 사용자의 일정 참여 정보 조회
         const reserver = await this.domainScheduleParticipantService.findReserverByScheduleId(
-            user.employeeId,
+            user.id,
             scheduleId,
         );
 
@@ -70,7 +70,7 @@ export class ScheduleAuthorizationService {
      * 사용자가 일정의 예약자인지 확인합니다
      */
     async 예약자인지_확인한다(user: Employee, scheduleId: string): Promise<boolean> {
-        return await this.domainScheduleParticipantService.checkReserverByScheduleId(user.employeeId, scheduleId);
+        return await this.domainScheduleParticipantService.checkReserverByScheduleId(user.id, scheduleId);
     }
 
     /**
@@ -78,7 +78,7 @@ export class ScheduleAuthorizationService {
      */
     async 참가자인지_확인한다(user: Employee, scheduleId: string): Promise<boolean> {
         const participants = await this.domainScheduleParticipantService.findByEmployeeIdAndScheduleIds(
-            user.employeeId,
+            user.id,
             [scheduleId],
         );
 

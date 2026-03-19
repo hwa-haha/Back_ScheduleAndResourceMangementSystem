@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { DomainEmployeeModule } from '../../domain/employee/employee.module';
+import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
 import { JwtStrategy } from '../../../libs/strategies/jwt.strategy';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Business Services
 import { AuthManagementService } from './auth-management.service';

@@ -5,13 +5,14 @@ import { DomainScheduleParticipantService } from '../../../domain/schedule-parti
 import { DomainScheduleRelationService } from '../../../domain/schedule-relation/schedule-relation.service';
 import { DomainScheduleDepartmentService } from '../../../domain/schedule-department/schedule-department.service';
 import { ReservationContextService } from '../../reservation/services/reservation.context.service';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import {
     CreateScheduleDto,
     CreateScheduleParticipantDto,
     CreateScheduleRelationDto,
 } from '../dtos/create-schedule.dto';
 import { Schedule } from '../../../domain/schedule/schedule.entity';
+import { ScheduleDepartment } from '../../../domain/schedule-department/schedule-department.entity';
 import { ScheduleRelation } from '../../../domain/schedule-relation/schedule-relation.entity';
 import { ScheduleStatus, ScheduleType } from '../../../../libs/enums/schedule-type.enum';
 import { ParticipantsType, ReservationStatus } from '../../../../libs/enums/reservation-type.enum';
@@ -128,18 +129,13 @@ export class ScheduleMutationContextService {
             return;
         }
 
-        // 각 부서별로 관계 생성
-        for (const departmentId of departmentIds) {
-            const createDto = {
-                scheduleId,
-                departmentId,
-            };
+        const repo = queryRunner
+            ? queryRunner.manager.getRepository(ScheduleDepartment)
+            : this.dataSource.getRepository(ScheduleDepartment);
 
-            // 도메인 서비스를 사용하여 트랜잭션 내에서 생성
-            // DomainScheduleDepartmentService.save 메서드를 직접 사용
-            await this.domainScheduleDepartmentService.save(createDto, {
-                queryRunner: queryRunner,
-            });
+        for (const departmentId of departmentIds) {
+            const entity = repo.create({ scheduleId, departmentId });
+            await repo.save(entity);
         }
 
         this.logger.log(`일정 부서 관계 생성 완료: Schedule ${scheduleId}, Departments [${departmentIds.join(', ')}]`);
@@ -389,10 +385,10 @@ export class ScheduleMutationContextService {
             );
 
             // 3) 참가자 생성
-            await this.일정_참가자를_추가한다(createdSchedule.scheduleId!, user.employeeId, 'RESERVER', queryRunner);
+            await this.일정_참가자를_추가한다(createdSchedule.scheduleId!, user.id, 'RESERVER', queryRunner);
 
             for (const participant of data.participants) {
-                if (participant.employeeId !== user.employeeId) {
+                if (participant.employeeId !== user.id) {
                     await this.일정_참가자를_추가한다(
                         createdSchedule.scheduleId!,
                         participant.employeeId,

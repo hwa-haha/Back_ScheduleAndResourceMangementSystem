@@ -24,9 +24,7 @@ export class FCMMicroserviceAdapter {
         private readonly configService: ConfigService,
     ) {
         // 환경변수에서 FCM API URL 가져오기
-        this.fcmServiceUrl =
-            this.configService.get<string>('FCM_API_URL') ||
-            'https://lnms-dev.lumir.space';
+        this.fcmServiceUrl = this.configService.get<string>('FCM_API_URL') || 'https://lnms-dev.lumir.space';
     }
 
     /**

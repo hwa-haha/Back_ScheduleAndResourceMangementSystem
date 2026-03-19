@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, In, MoreThanOrEqual, Not, Raw } from 'typeorm';
 import { Maintenance } from '../../../domain/maintenance/maintenance.entity';
-import { Employee } from '../../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ERROR_MESSAGE } from '../../../../libs/constants/error-message';
 import { NotificationType } from '../../../../libs/enums/notification-type.enum';
 import { Role } from '../../../../libs/enums/role-type.enum';
@@ -10,7 +10,7 @@ import { Role } from '../../../../libs/enums/role-type.enum';
 import { DomainMaintenanceService } from '../../../domain/maintenance/maintenance.service';
 import { DomainConsumableService } from '../../../domain/consumable/consumable.service';
 import { DomainVehicleInfoService } from '../../../domain/vehicle-info/vehicle-info.service';
-import { DomainEmployeeService } from '../../../domain/employee/employee.service';
+import { DomainEmployeeService } from '@libs/modules/employee/employee.service';
 import { DomainFileService } from '../../../domain/file/file.service';
 
 // Context Services

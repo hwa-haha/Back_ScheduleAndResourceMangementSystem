@@ -6,6 +6,6 @@
             "@libs/*": ["../../libs/*"]
         }
     },
-    "include": ["src/**/*", "libs/**/*", "../../libs/entities"],
+    "include": ["src/**/*", "libs/**/*"],
     "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

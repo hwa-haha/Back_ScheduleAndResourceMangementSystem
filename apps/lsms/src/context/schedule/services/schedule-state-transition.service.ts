@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
 import { Schedule } from '../../../domain/schedule/schedule.entity';
+import { ScheduleDepartment } from '../../../domain/schedule-department/schedule-department.entity';
 import { Reservation } from '../../../domain/reservation/reservation.entity';
 import { ScheduleParticipant } from '../../../domain/schedule-participant/schedule-participant.entity';
 import { ParticipantsType, ReservationStatus } from '../../../../libs/enums/reservation-type.enum';
@@ -531,14 +532,12 @@ export class ScheduleStateTransitionService {
 
         // 2. 새로운 부서 관계들 생성
         if (newDepartmentIds && newDepartmentIds.length > 0) {
+            const repo = queryRunner
+                ? queryRunner.manager.getRepository(ScheduleDepartment)
+                : this.dataSource.getRepository(ScheduleDepartment);
             for (const departmentId of newDepartmentIds) {
-                const createDto = {
-                    scheduleId,
-                    departmentId,
-                };
-                await this.domainScheduleDepartmentService.save(createDto, {
-                    queryRunner,
-                });
+                const entity = repo.create({ scheduleId, departmentId });
+                await repo.save(entity);
             }
         }
     }

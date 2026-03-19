@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Schedule } from '../schedule/schedule.entity';
-import { Department } from '../department/department.entity';
+import { Department } from '@libs/modules/department/department.entity';
 
 @Entity('schedule_departments')
 export class ScheduleDepartment {

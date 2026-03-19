@@ -23,7 +23,7 @@ import { StatisticsModule } from './business/statistics/statistics.module';
 import { AuthManagementModule } from './business/auth-management/auth-management.module';
 import { DomainModule } from './domain/domain.module';
 import { RequestInterceptor } from '../libs/interceptors/request.interceptor';
-import { MigrationModule } from './intergration/migration/migration.module';
+// import { MigrationModule } from './intergration/migration/migration.module';
 
 @Module({
     imports: [

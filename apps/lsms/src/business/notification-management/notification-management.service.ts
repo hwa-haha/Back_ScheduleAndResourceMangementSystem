@@ -190,7 +190,7 @@ export class NotificationManagementService {
                     resourceType: resource?.type,
                 },
             };
-            const notificationTarget = participants.map((participant) => participant.employee.employeeId);
+            const notificationTarget = participants.map((participant) => participant.employee.id);
             await this.notificationContextService.알림_전송_프로세스를_진행한다(
                 NotificationType.RESERVATION_DATE_UPCOMING,
                 notificationData,

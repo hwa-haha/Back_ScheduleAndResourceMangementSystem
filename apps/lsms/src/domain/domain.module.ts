@@ -3,9 +3,6 @@ import { Module } from '@nestjs/common';
 // 도메인 모듈들
 import { DomainAccommodationInfoModule } from './accommodation-info/accommodation-info.module';
 import { DomainConsumableModule } from './consumable/consumable.module';
-import { DomainDepartmentModule } from './department/department.module';
-import { DomainDepartmentEmployeeModule } from './department-employee/department-employee.module';
-import { DomainEmployeeModule } from './employee/employee.module';
 import { DomainEquipmentInfoModule } from './equipment-info/equipment-info.module';
 import { DomainFileModule } from './file/file.module';
 import { DomainFileMaintenanceModule } from './file-maintenance/file-maintenance.module';
@@ -32,6 +29,17 @@ import { DomainScheduleParticipantModule } from './schedule-participant/schedule
 import { DomainScheduleRelationModule } from './schedule-relation/schedule-relation.module';
 import { DomainVehicleInfoModule } from './vehicle-info/vehicle-info.module';
 
+// import { DomainDepartmentEmployeeModule } from '../../../../libs/temp/department-employee/department-employee.module';
+import { DomainEmployeeExtraInfoModule } from './employee-extra-info/employee-extra-info.module';
+
+import { DomainDepartmentModule } from '@libs/modules/department/department.module';
+import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
+import { DomainEmployeeDepartmentPositionModule } from '@libs/modules/employee-department-position/employee-department-position.module';
+import { DomainPositionModule } from '@libs/modules/position/position.module';
+import { DomainEmployeeDepartmentPositionHistoryModule } from '@libs/modules/employee-department-position-history/employee-department-position-history.module';
+import { DomainRankModule } from '@libs/modules/rank/rank.module';
+import { DomainDepartmentHistoryModule } from '@libs/modules/department-history/department-history.module';
+
 /**
  * 도메인 통합 모듈
  *
@@ -47,9 +55,6 @@ import { DomainVehicleInfoModule } from './vehicle-info/vehicle-info.module';
 
         DomainAccommodationInfoModule,
         DomainConsumableModule,
-        DomainDepartmentModule,
-        DomainDepartmentEmployeeModule,
-        DomainEmployeeModule,
         DomainEquipmentInfoModule,
         DomainFileModule,
         DomainFileMaintenanceModule,
@@ -72,13 +77,21 @@ import { DomainVehicleInfoModule } from './vehicle-info/vehicle-info.module';
         DomainScheduleParticipantModule,
         DomainScheduleRelationModule,
         DomainVehicleInfoModule,
+
+        DomainEmployeeExtraInfoModule,
+        // DomainDepartmentEmployeeModule,
+
+        DomainDepartmentModule,
+        DomainEmployeeModule,
+        DomainEmployeeDepartmentPositionModule,
+        DomainEmployeeDepartmentPositionHistoryModule,
+        DomainPositionModule,
+        DomainRankModule,
+        DomainDepartmentHistoryModule,
     ],
     exports: [
         DomainAccommodationInfoModule,
         DomainConsumableModule,
-        DomainDepartmentModule,
-        DomainDepartmentEmployeeModule,
-        DomainEmployeeModule,
         DomainEquipmentInfoModule,
         DomainFileModule,
         DomainFileMaintenanceModule,
@@ -104,6 +117,17 @@ import { DomainVehicleInfoModule } from './vehicle-info/vehicle-info.module';
         DomainScheduleParticipantModule,
         DomainScheduleRelationModule,
         DomainVehicleInfoModule,
+
+        DomainEmployeeExtraInfoModule,
+        // DomainDepartmentEmployeeModule,
+
+        DomainDepartmentModule,
+        DomainEmployeeModule,
+        DomainEmployeeDepartmentPositionModule,
+        DomainEmployeeDepartmentPositionHistoryModule,
+        DomainPositionModule,
+        DomainRankModule,
+        DomainDepartmentHistoryModule,
     ],
 })
 export class DomainModule {}

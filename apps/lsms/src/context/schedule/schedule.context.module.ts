@@ -9,13 +9,14 @@ import { SchedulePolicyService } from './services/schedule-policy.service';
 import { ScheduleStateTransitionService } from './services/schedule-state-transition.service';
 import { SchedulePostProcessingService } from './services/schedule-post-processing.service';
 
-import { DomainEmployeeModule } from '../../domain/employee/employee.module';
+import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
+import { DomainEmployeeDepartmentPositionModule } from '@libs/modules/employee-department-position/employee-department-position.module';
 import { DomainReservationModule } from '../../domain/reservation/reservation.module';
 import { DomainResourceModule } from '../../domain/resource/resource.module';
 import { DomainResourceGroupModule } from '../../domain/resource-group/resource-group.module';
 import { ReservationContextModule } from '../reservation/reservation.context.module';
 import { DomainProjectModule } from '../../domain/project/project.module';
-import { DomainDepartmentModule } from '../../domain/department/department.module';
+import { DomainDepartmentModule } from '@libs/modules/department/department.module';
 import { DomainScheduleDepartmentModule } from '../../domain/schedule-department/schedule-department.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { DomainScheduleDepartmentModule } from '../../domain/schedule-department
         DomainScheduleParticipantModule,
         DomainScheduleRelationModule,
         DomainEmployeeModule,
+        DomainEmployeeDepartmentPositionModule,
         DomainReservationModule,
         DomainResourceModule,
         DomainResourceGroupModule,

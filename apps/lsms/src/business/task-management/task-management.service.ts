@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Employee } from '../../domain/employee/employee.entity';
+import { Employee } from '@libs/modules/employee/employee.entity';
 import { ResourceContextService } from '../../context/resource/services/resource.context.service';
 import { NotificationContextService } from '../../context/notification/services/notification.context.service';
 import { ConsumableContextService } from '../../context/resource/services/consumable.context.service';
@@ -29,7 +29,7 @@ export class TaskManagementService {
         if (type === '차량반납지연' || type === '전체') {
             // 반납 지연된 예약 조회
             const scheduleIds = await this.scheduleQueryContextService.직원의_역할별_일정ID들을_조회한다(
-                user.employeeId,
+                user.id,
                 ParticipantsType.RESERVER,
             );
             const scheduleRelations = await this.scheduleQueryContextService.복수_일정과_관계정보들을_조회한다(
@@ -77,8 +77,9 @@ export class TaskManagementService {
                 });
         }
         if (type === '소모품교체' || type === '전체') {
-            const isResourceAdmin = user.roles.includes(Role.RESOURCE_ADMIN);
-            const isSystemAdmin = user.roles.includes(Role.SYSTEM_ADMIN);
+            const userAny = user as any;
+            const isResourceAdmin = (userAny.roles as string[] | undefined)?.includes(Role.RESOURCE_ADMIN) ?? false;
+            const isSystemAdmin = (userAny.roles as string[] | undefined)?.includes(Role.SYSTEM_ADMIN) ?? false;
 
             let needReplaceConsumable = [];
             if (isResourceAdmin || isSystemAdmin) {
@@ -143,14 +144,15 @@ export class TaskManagementService {
                             );
 
                             if (reserver && reserver.employee) {
+                                const emp = reserver.employee as any;
                                 manager = {
-                                    employeeId: reserver.employee.employeeId,
+                                    employeeId: reserver.employee.id,
                                     name: reserver.employee.name,
                                     employeeNumber: reserver.employee.employeeNumber,
-                                    department: reserver.employee.department,
-                                    position: reserver.employee.position,
-                                    rank: reserver.employee.rank,
-                                    positionTitle: reserver.employee.positionTitle,
+                                    department: emp.department ?? '',
+                                    position: emp.position ?? '',
+                                    rank: emp.rank?.rankTitle ?? emp.rank ?? '',
+                                    positionTitle: emp.positionTitle ?? '',
                                 };
                             }
                         }
@@ -208,15 +210,18 @@ export class TaskManagementService {
                         consumableName: consumable.name,
                         startDate: null,
                         endDate: null,
-                        manager: {
-                            employeeId: resource.resourceManagers[0].employee.employeeId,
-                            name: resource.resourceManagers[0].employee.name,
-                            employeeNumber: resource.resourceManagers[0].employee.employeeNumber,
-                            department: resource.resourceManagers[0].employee.department,
-                            position: resource.resourceManagers[0].employee.position,
-                            rank: resource.resourceManagers[0].employee.rank,
-                            positionTitle: resource.resourceManagers[0].employee.positionTitle,
-                        },
+                        manager: resource.resourceManagers?.[0]?.employee ? (() => {
+                            const mgrEmp = resource.resourceManagers[0].employee as any;
+                            return {
+                                employeeId: mgrEmp.id,
+                                name: mgrEmp.name,
+                                employeeNumber: mgrEmp.employeeNumber,
+                                department: mgrEmp.department ?? '',
+                                position: mgrEmp.position ?? '',
+                                rank: mgrEmp.rank?.rankTitle ?? mgrEmp.rank ?? '',
+                                positionTitle: mgrEmp.positionTitle ?? '',
+                            };
+                        })() : null,
                         notifications: notifications,
                         // 직전 정비시 주행거리
                         lastMaintenanceMileage:
@@ -243,7 +248,7 @@ export class TaskManagementService {
      */
     private async 교체필요한_소모품을_조회한다(user: Employee, isSystemAdmin: boolean): Promise<TaskResponseDto[]> {
         const resources = await this.resourceContextService.관리자별_자원을_소모품정보와_함께_조회한다(
-            user.employeeId,
+            user.id,
             isSystemAdmin,
         );
 
