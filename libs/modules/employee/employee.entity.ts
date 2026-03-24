@@ -25,7 +25,7 @@ export enum EmployeeStatus {
     Terminated = '퇴사',
 }
 
-@Entity('employees-info')
+@Entity('employees')
 export class Employee {
     @PrimaryColumn({ type: 'uuid', comment: '직원 ID (외부 제공)' })
     id: string;

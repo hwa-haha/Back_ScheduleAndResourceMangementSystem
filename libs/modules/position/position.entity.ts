@@ -17,9 +17,9 @@ export class Position {
     @Column({ comment: '관리 권한 여부', default: false })
     hasManagementAuthority: boolean;
 
-    @CreateDateColumn({ comment: '생성일' })
-    createdAt: Date;
+    // @CreateDateColumn({ comment: '생성일' })
+    // createdAt: Date;
 
-    @UpdateDateColumn({ comment: '수정일' })
-    updatedAt: Date;
+    // @UpdateDateColumn({ comment: '수정일' })
+    // updatedAt: Date;
 }

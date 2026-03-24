@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { OrganizationMigrationService } from './migration.service';
-import { ScenarioMigrationService } from './scenario-migration.service';
-import { ScenarioMigrationController } from './scenario-migration.controller';
-import { ScenarioMigrationPortGuard } from './scenario-migration-port.guard';
+// import { ScenarioMigrationService } from './scenario-migration.service';
+// import { ScenarioMigrationController } from './scenario-migration.controller';
+// import { ScenarioMigrationPortGuard } from './scenario-migration-port.guard';
 import { SSOModule } from '@libs/integrations/sso/sso.module';
 import { DomainDepartmentModule } from '@libs/modules/department/department.module';
 import { DomainEmployeeModule } from '@libs/modules/employee/employee.module';
@@ -30,8 +30,8 @@ import { DomainDepartmentHistoryModule } from '@libs/modules/department-history/
         DomainEmployeeDepartmentPositionHistoryModule,
         DomainDepartmentHistoryModule,
     ],
-    controllers: [ScenarioMigrationController],
-    providers: [OrganizationMigrationService, ScenarioMigrationService, ScenarioMigrationPortGuard],
-    exports: [OrganizationMigrationService, ScenarioMigrationService],
+    controllers: [],
+    providers: [OrganizationMigrationService],
+    exports: [OrganizationMigrationService],
 })
 export class OrganizationMigrationModule {}
