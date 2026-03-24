@@ -43,15 +43,12 @@ export class ScheduleAuthorizationService {
         }
 
         // 2. 사용자의 일정 참여 정보 조회
-        const reserver = await this.domainScheduleParticipantService.findReserverByScheduleId(
-            user.id,
-            scheduleId,
-        );
+        const reserver = await this.domainScheduleParticipantService.findReserverByScheduleId(user.id, scheduleId);
 
         if (!reserver) {
             return {
                 isAuthorized: false,
-                reason: '해당 일정의 예약자가 아닙니다.',
+                reason: '해당 일정의 관련자가 아닙니다.',
             };
         }
 
@@ -77,10 +74,9 @@ export class ScheduleAuthorizationService {
      * 사용자가 일정의 참가자인지 확인합니다 (예약자 포함)
      */
     async 참가자인지_확인한다(user: Employee, scheduleId: string): Promise<boolean> {
-        const participants = await this.domainScheduleParticipantService.findByEmployeeIdAndScheduleIds(
-            user.id,
-            [scheduleId],
-        );
+        const participants = await this.domainScheduleParticipantService.findByEmployeeIdAndScheduleIds(user.id, [
+            scheduleId,
+        ]);
 
         return participants.length > 0;
     }
@@ -126,11 +122,11 @@ export class ScheduleAuthorizationService {
                 return { isAuthorized: true };
 
             case ScheduleAction.CANCEL:
-                // 예약자만 취소 가능
-                if (userRole !== ParticipantsType.RESERVER) {
+                // 예약자 & 참가자만 취소 가능
+                if (userRole !== ParticipantsType.RESERVER && userRole !== ParticipantsType.PARTICIPANT) {
                     return {
                         isAuthorized: false,
-                        reason: '일정 취소는 예약자만 가능합니다.',
+                        reason: '일정 취소는 관련자만 가능합니다.',
                     };
                 }
                 return { isAuthorized: true };
