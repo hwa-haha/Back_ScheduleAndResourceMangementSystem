@@ -92,7 +92,7 @@ export class ReservationService {
                                 employeeNumber: emp?.employeeNumber,
                                 department: emp?.department ?? '',
                                 position: emp?.position ?? '',
-                                rank: emp?.rank?.rankTitle ?? emp?.rank ?? '',
+                                rank: emp?.rank?.rankName ?? emp?.rank ?? '',
                                 positionTitle: emp?.positionTitle ?? '',
                             },
                         };
@@ -191,7 +191,7 @@ export class ReservationService {
                                   employeeNumber: emp.employeeNumber,
                                   department: emp.department ?? '',
                                   position: emp.position ?? '',
-                                  rank: emp.rank?.rankTitle ?? emp.rank ?? '',
+                                  rank: emp.rank?.rankName ?? emp.rank ?? '',
                                   positionTitle: emp.positionTitle ?? '',
                               }
                             : undefined,
@@ -257,7 +257,7 @@ export class ReservationService {
                               employeeNumber: emp.employeeNumber,
                               department: emp.department ?? '',
                               position: emp.position ?? '',
-                              rank: emp.rank?.rankTitle ?? emp.rank ?? '',
+                              rank: emp.rank?.rankName ?? emp.rank ?? '',
                               positionTitle: emp.positionTitle ?? '',
                           }
                         : undefined,

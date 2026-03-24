@@ -6,7 +6,7 @@ export class Rank {
     id: string;
 
     @Column({ comment: '직급명 (예: 사원, 주임, 대리, 과장, 차장, 부장)' })
-    rankTitle: string;
+    rankName: string;
 
     @Column({ unique: true, comment: '직급 코드' })
     rankCode: string;
