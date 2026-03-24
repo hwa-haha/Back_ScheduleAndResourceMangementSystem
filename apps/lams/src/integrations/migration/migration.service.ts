@@ -248,7 +248,7 @@ export class OrganizationMigrationService {
             const existing = await this.rankService.findOne(rankDto.id, manager);
             const rank = existing ?? new Rank();
             rank.id = rankDto.id;
-            rank.rankTitle = rankDto.rankName;
+            rank.rankName = rankDto.rankName;
             rank.rankCode = rankDto.rankCode;
             rank.level = rankDto.level;
             await this.rankService.save(rank, { queryRunner });
