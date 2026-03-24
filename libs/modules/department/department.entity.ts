@@ -18,7 +18,7 @@ export enum DepartmentType {
     TEAM = 'TEAM',
 }
 
-@Entity('departments-info')
+@Entity('departments')
 @Unique('UQ_departments_parent_order', ['parentDepartmentId', 'order'])
 @Index('IDX_departments_parent_order', ['parentDepartmentId', 'order'])
 @Index('UQ_departments_root_order', ['order'], {
