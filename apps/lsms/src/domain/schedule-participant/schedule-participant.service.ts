@@ -37,7 +37,7 @@ export class DomainScheduleParticipantService extends BaseService<SchedulePartic
 
     async findReserverByScheduleId(employeeId: string, scheduleId: string): Promise<ScheduleParticipant> {
         return this.scheduleParticipantRepository.findOne({
-            where: { scheduleId, employeeId, type: ParticipantsType.RESERVER },
+            where: { scheduleId, employeeId },
         });
     }
 

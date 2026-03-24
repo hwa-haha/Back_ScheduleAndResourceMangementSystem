@@ -4,7 +4,6 @@ import { DomainAttendanceTypeService } from '../../domain/attendance-type/attend
 import { DomainHolidayInfoService } from '../../domain/holiday-info/holiday-info.service';
 import { DomainProjectService } from '../../domain/project/project.service';
 import { DomainEmployeeExtraInfoService } from '../../domain/employee-extra-info/employee-extra-info.service';
-import { OrganizationMigrationService } from '../migration/migration.service';
 import { UploadFileHandler } from '../../context/file-management-context/handlers/file-upload/commands/upload-file.handler';
 import { UploadFileCommand } from '../../context/file-management-context/handlers/file-upload/commands/upload-file.command';
 import { DomainFileService } from '../../domain/file/file.service';
@@ -35,7 +34,6 @@ export class InitService implements OnApplicationBootstrap {
         private readonly holidayInfoService: DomainHolidayInfoService,
         private readonly projectService: DomainProjectService,
         private readonly employeeExtraInfoService: DomainEmployeeExtraInfoService,
-        private readonly organizationMigrationService: OrganizationMigrationService,
         private readonly uploadFileHandler: UploadFileHandler,
         private readonly fileService: DomainFileService,
     ) {}
@@ -553,22 +551,22 @@ export class InitService implements OnApplicationBootstrap {
      * SSO에서 데이터를 가져와 기존 레코드는 업데이트, 없으면 삽입합니다.
      * 매 부팅 시 실행되어 SSO와 로컬 DB를 동기화합니다.
      */
-    private async 조직데이터마이그레이션(): Promise<void> {
-        this.logger.log('조직 데이터 마이그레이션(동기화) 실행 중...');
+    // private async 조직데이터마이그레이션(): Promise<void> {
+    //     this.logger.log('조직 데이터 마이그레이션(동기화) 실행 중...');
 
-        try {
-            const result = await this.organizationMigrationService.마이그레이션한다({
-                includeTerminated: true,
-                includeInactiveDepartments: true,
-            });
-            this.logger.log(
-                `✅ 조직 데이터 마이그레이션 완료: 직급 ${result.statistics.ranks}개, 직책 ${result.statistics.positions}개, 부서 ${result.statistics.departments}개, 부서이력 ${result.statistics.departmentHistories}건, 직원 ${result.statistics.employees}명`,
-            );
-        } catch (error) {
-            this.logger.error(`조직 데이터 마이그레이션 실패: ${error.message}`, error.stack);
-            // 마이그레이션 실패는 애플리케이션 시작을 막지 않습니다
-        }
-    }
+    //     try {
+    //         const result = await this.organizationMigrationService.마이그레이션한다({
+    //             includeTerminated: true,
+    //             includeInactiveDepartments: true,
+    //         });
+    //         this.logger.log(
+    //             `✅ 조직 데이터 마이그레이션 완료: 직급 ${result.statistics.ranks}개, 직책 ${result.statistics.positions}개, 부서 ${result.statistics.departments}개, 부서이력 ${result.statistics.departmentHistories}건, 직원 ${result.statistics.employees}명`,
+    //         );
+    //     } catch (error) {
+    //         this.logger.error(`조직 데이터 마이그레이션 실패: ${error.message}`, error.stack);
+    //         // 마이그레이션 실패는 애플리케이션 시작을 막지 않습니다
+    //     }
+    // }
 
     /**
      * 초기 파일을 업로드한다
