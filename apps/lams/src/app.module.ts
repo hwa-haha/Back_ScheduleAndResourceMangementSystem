@@ -12,7 +12,6 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConfig } from '@libs/configs/jwt.config';
 import { JwtStrategy } from '../libs/strategies/jwt.strategy';
-import { OrganizationMigrationModule } from './integrations/migration/migration.module';
 import { InitModule } from './integrations/init/init.module';
 import { HolidaySyncModule } from './integrations/holiday-sync';
 
@@ -33,7 +32,6 @@ import { HolidaySyncModule } from './integrations/holiday-sync';
         DatabaseModule,
         DomainModule, // refactoring/domain의 모든 도메인 모듈 통합
         InterfaceModule, // 인터페이스 모듈 (API 엔드포인트)
-        OrganizationMigrationModule,
         InitModule, // 기본 데이터 초기화 모듈
         HolidaySyncModule, // 매년 1/1 공휴일 API 동기화
     ],
