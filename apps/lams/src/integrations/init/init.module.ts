@@ -6,8 +6,6 @@ import { DomainHolidayInfoModule } from '../../domain/holiday-info/holiday-info.
 import { DomainProjectModule } from '../../domain/project/project.module';
 import { DomainEmployeeExtraInfoModule } from '../../domain/employee-extra-info/employee-extra-info.module';
 import { DomainFileModule } from '../../domain/file/file.module';
-import { OrganizationMigrationModule } from '../migration/migration.module';
-import { PrvDbMgrModule } from '../prv-db-mgr/prv-db-mgr.module';
 import { FileManagementContextModule } from '../../context/file-management-context/file-management-context.module';
 
 /**
@@ -22,8 +20,6 @@ import { FileManagementContextModule } from '../../context/file-management-conte
         DomainProjectModule,
         DomainEmployeeExtraInfoModule,
         DomainFileModule,
-        OrganizationMigrationModule,
-        // PrvDbMgrModule,
         FileManagementContextModule.forRoot(),
     ],
     providers: [InitService],
