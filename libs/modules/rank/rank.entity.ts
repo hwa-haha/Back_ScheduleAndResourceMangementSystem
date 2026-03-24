@@ -14,9 +14,9 @@ export class Rank {
     @Column({ comment: '직급 레벨 (낮을수록 상위 직급)' })
     level: number;
 
-    @CreateDateColumn({ comment: '생성일' })
-    createdAt: Date;
+    // @CreateDateColumn({ comment: '생성일' })
+    // createdAt: Date;
 
-    @UpdateDateColumn({ comment: '수정일' })
-    updatedAt: Date;
+    // @UpdateDateColumn({ comment: '수정일' })
+    // updatedAt: Date;
 }
