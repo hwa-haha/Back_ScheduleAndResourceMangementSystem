@@ -75,7 +75,7 @@ export class EmployeeContextService {
      */
     private async 루미르_하위부서_ID_목록을_조회한다(): Promise<string[]> {
         const allDepts = await this.departmentRepository.find();
-        const allIds: string[] = [];
+        const allIds: string[] = [LUMIR_ROOT_DEPARTMENT_ID];
 
         const collect = (parentId: string) => {
             const children = allDepts.filter((d) => d.parentDepartmentId === parentId);
@@ -557,7 +557,16 @@ export class EmployeeContextService {
                     });
             };
 
-            const hierarchy = buildHierarchy(LUMIR_ROOT_DEPARTMENT_ID);
+            const hierarchy = [
+                {
+                    ...this.부서를_DTO로_변환한다(allSubDepts.find((d) => d.id === LUMIR_ROOT_DEPARTMENT_ID)),
+                    childDepartments: buildHierarchy(LUMIR_ROOT_DEPARTMENT_ID),
+                    childDepartmentCount: buildHierarchy(LUMIR_ROOT_DEPARTMENT_ID).length,
+                },
+                ...buildHierarchy(LUMIR_ROOT_DEPARTMENT_ID).filter(
+                    (d) => d.parentDepartmentId !== LUMIR_ROOT_DEPARTMENT_ID,
+                ),
+            ];
 
             this.logger.log(`부서 계층구조 조회 완료: 유효 부서 ${validDepts.length}개`);
 
