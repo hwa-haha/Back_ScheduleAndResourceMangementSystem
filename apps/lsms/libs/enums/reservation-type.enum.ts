@@ -12,4 +12,6 @@ export enum ParticipantsType {
     RESERVER = 'RESERVER', // 예약자
     PARTICIPANT = 'PARTICIPANT', // 참여자
     CC_RECEIPIENT = 'CC_RECEIPIENT', // 수신참조자
+    /** 일정: 참석자가 아닌 직원이 내 캘린더에만 추가한 참조 관계 */
+    SCHEDULE_REFERENCE = 'SCHEDULE_REFERENCE',
 }

@@ -164,6 +164,17 @@ export class ScheduleCreateRequestDto {
     participants?: ScheduleParticipantDto[];
 
     @ApiProperty({
+        description: '일정 참조자(내 캘린더 참조로만 연결되는 직원)',
+        type: [ScheduleParticipantDto],
+        required: false,
+    })
+    @IsOptional()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => ScheduleParticipantDto)
+    referenceParticipants?: ScheduleParticipantDto[];
+
+    @ApiProperty({
         description: '프로젝트 선택',
         type: ProjectSelectionDto,
         required: false,

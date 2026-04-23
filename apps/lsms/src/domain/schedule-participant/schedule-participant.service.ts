@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DomainScheduleParticipantRepository } from './schedule-participant.repository';
 import { BaseService } from '../../../libs/services/base.service';
 import { ScheduleParticipant } from './schedule-participant.entity';
 import { ParticipantsType } from '../../../libs/enums/reservation-type.enum';
+import { IRepositoryOptions } from '../../../libs/interfaces/repository.interface';
 import { In } from 'typeorm';
 
 @Injectable()
@@ -57,5 +58,25 @@ export class DomainScheduleParticipantService extends BaseService<SchedulePartic
             where: { scheduleId, employeeId, type },
         });
         return participant !== null;
+    }
+
+    async 직원이_예약자_또는_참석자인지(employeeId: string, scheduleId: string): Promise<boolean> {
+        const row = await this.scheduleParticipantRepository.findOne({
+            where: {
+                scheduleId,
+                employeeId,
+                type: In([ParticipantsType.RESERVER, ParticipantsType.PARTICIPANT]),
+            },
+        });
+        return row !== null;
+    }
+
+    async 일정_직원_타입별_참가자를_삭제한다(
+        scheduleId: string,
+        employeeId: string,
+        type: ParticipantsType,
+        options?: IRepositoryOptions<ScheduleParticipant>,
+    ): Promise<void> {
+        await this.scheduleParticipantRepository.조건에_맞는_참가자를_삭제한다({ scheduleId, employeeId, type }, options);
     }
 }

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Patch, Param, Query, Body } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Post,
+    Patch,
+    Delete,
+    Param,
+    Query,
+    Body,
+    HttpCode,
+    HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse, ApiExcludeEndpoint, ApiBody } from '@nestjs/swagger';
 import { ScheduleManagementService } from '../schedule-management.service';
 import { Employee } from '@libs/modules/employee/employee.entity';
@@ -164,6 +175,35 @@ export class ScheduleController {
         @Body() createScheduleRequestList: ScheduleCreateRequestListDto,
     ): Promise<ScheduleCreateResponseDto> {
         return this.scheduleManagementService.createSchedule(user, createScheduleRequestList);
+    }
+
+    @Post(':scheduleId/my-calendar')
+    @ApiOperation({
+        summary: '내 일정(캘린더 참조)에 추가',
+        description: '참석자·예약자가 아닌 일정을 로그인 사용자의 내 일정 목록에 참조로 추가합니다.',
+    })
+    @ApiOkResponse({
+        description: '추가 결과 (added: 신규 행 생성 여부)',
+        schema: { type: 'object', properties: { added: { type: 'boolean' } } },
+    })
+    async addScheduleToMyCalendar(
+        @User() user: Employee,
+        @Param('scheduleId') scheduleId: string,
+    ): Promise<{ added: boolean }> {
+        return this.scheduleManagementService.addScheduleToMyCalendar(user, scheduleId);
+    }
+
+    @Delete(':scheduleId/my-calendar')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({
+        summary: '내 일정(캘린더 참조)에서 제거',
+        description: '로그인 사용자의 일정 캘린더 참조(SCHEDULE_REFERENCE) 연결을 삭제합니다.',
+    })
+    async removeScheduleFromMyCalendar(
+        @User() user: Employee,
+        @Param('scheduleId') scheduleId: string,
+    ): Promise<void> {
+        return this.scheduleManagementService.removeScheduleFromMyCalendar(user, scheduleId);
     }
 
     /**

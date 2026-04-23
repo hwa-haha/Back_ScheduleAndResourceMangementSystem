@@ -12,7 +12,8 @@ export enum ScheduleCategoryType {
 
 export class MyScheduleQueryDto {
     @ApiProperty({
-        description: '역할 기준 필터 (예약자, 참석자)',
+        description:
+            '역할 기준 필터 (예약자, 참석자, 수신참조자, 일정 캘린더 참조). 미지정 시 모든 관계 포함.',
         enum: ParticipantsType,
         required: false,
         example: ParticipantsType.RESERVER,

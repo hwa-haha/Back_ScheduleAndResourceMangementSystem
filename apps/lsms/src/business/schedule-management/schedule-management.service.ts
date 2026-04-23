@@ -250,6 +250,7 @@ export class ScheduleManagementService {
                                 reserver: 0,
                                 participant: 0,
                                 ccRecipient: 0,
+                                scheduleReference: 0,
                             },
                             dateGroups: new Map(),
                         });
@@ -280,6 +281,8 @@ export class ScheduleManagementService {
                     if (participant.type === 'RESERVER') employeeGroup.types.reserver++;
                     else if (participant.type === 'PARTICIPANT') employeeGroup.types.participant++;
                     else if (participant.type === 'CC_RECEIPIENT') employeeGroup.types.ccRecipient++;
+                    else if (participant.type === ParticipantsType.SCHEDULE_REFERENCE)
+                        employeeGroup.types.scheduleReference++;
                 });
             }
 
@@ -436,6 +439,14 @@ export class ScheduleManagementService {
             hasPrevious,
             schedules: scheduleCalendarItems,
         };
+    }
+
+    async addScheduleToMyCalendar(user: Employee, scheduleId: string): Promise<{ added: boolean }> {
+        return this.scheduleMutationService.일정을_내일정_참조로_추가한다(user, scheduleId);
+    }
+
+    async removeScheduleFromMyCalendar(user: Employee, scheduleId: string): Promise<void> {
+        await this.scheduleMutationService.일정_내일정_참조를_제거한다(user, scheduleId);
     }
 
     /**
@@ -658,6 +669,7 @@ export class ScheduleManagementService {
                     notificationMinutes,
                     scheduleType,
                     participants,
+                    referenceParticipants,
                     projectSelection,
                     resourceSelection,
                     departmentIds,
@@ -806,6 +818,22 @@ export class ScheduleManagementService {
                                     queryRunner,
                                 );
                             }
+                        }
+
+                        const reserverOrParticipantIds = new Set<string>([user.id]);
+                        for (const p of data.participants || []) {
+                            reserverOrParticipantIds.add(p.employeeId);
+                        }
+                        for (const ref of referenceParticipants || []) {
+                            if (reserverOrParticipantIds.has(ref.employeeId)) {
+                                continue;
+                            }
+                            await this.scheduleMutationService.일정_참가자를_추가한다(
+                                createdSchedule.scheduleId!,
+                                ref.employeeId,
+                                ParticipantsType.SCHEDULE_REFERENCE,
+                                queryRunner,
+                            );
                         }
 
                         // 4) 일정관계정보 생성 (예약, 프로젝트 관계)

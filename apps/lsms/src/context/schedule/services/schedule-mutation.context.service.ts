@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DataSource, QueryRunner } from 'typeorm';
 import { DomainScheduleService } from '../../../domain/schedule/schedule.service';
 import { DomainScheduleParticipantService } from '../../../domain/schedule-participant/schedule-participant.service';
@@ -96,6 +96,50 @@ export class ScheduleMutationContextService {
         await this.domainScheduleParticipantService.save(participantEntity, {
             queryRunner: queryRunner,
         });
+    }
+
+    /**
+     * 참석자가 아닌 일정을 로그인 사용자의 내 일정(캘린더 참조)으로 추가합니다.
+     */
+    async 일정을_내일정_참조로_추가한다(user: Employee, scheduleId: string): Promise<{ added: boolean }> {
+        const schedule = await this.domainScheduleService.findByScheduleId(scheduleId);
+        if (!schedule?.scheduleId) {
+            throw new NotFoundException(`일정을 찾을 수 없습니다. ID: ${scheduleId}`);
+        }
+        if (schedule.status === ScheduleStatus.CANCELLED) {
+            throw new BadRequestException('취소된 일정은 내 일정에 추가할 수 없습니다.');
+        }
+
+        const isReserverOrParticipant = await this.domainScheduleParticipantService.직원이_예약자_또는_참석자인지(
+            user.id,
+            scheduleId,
+        );
+        if (isReserverOrParticipant) {
+            throw new BadRequestException('이미 예약자 또는 참석자로 등록된 일정입니다.');
+        }
+
+        const already = await this.domainScheduleParticipantService.checkParticipantByScheduleIdAndType(
+            user.id,
+            scheduleId,
+            ParticipantsType.SCHEDULE_REFERENCE,
+        );
+        if (already) {
+            return { added: false };
+        }
+
+        await this.일정_참가자를_추가한다(scheduleId, user.id, ParticipantsType.SCHEDULE_REFERENCE);
+        return { added: true };
+    }
+
+    /**
+     * 내 일정(캘린더 참조)에서 해당 일정 연결을 제거합니다.
+     */
+    async 일정_내일정_참조를_제거한다(user: Employee, scheduleId: string): Promise<void> {
+        await this.domainScheduleParticipantService.일정_직원_타입별_참가자를_삭제한다(
+            scheduleId,
+            user.id,
+            ParticipantsType.SCHEDULE_REFERENCE,
+        );
     }
 
     /**

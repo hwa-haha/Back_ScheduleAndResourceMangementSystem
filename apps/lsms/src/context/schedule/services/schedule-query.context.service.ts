@@ -1017,8 +1017,8 @@ export class ScheduleQueryContextService {
         hasNext: boolean;
         hasPrevious: boolean;
     }> {
-        // 1. 기본 일정 ID 조회 (역할 조건 포함) TODO : 순서 변경이 있을 수 도 있음 (undefind, "DESC" 추가)
-        const scheduleIds = await this.직원의_역할별_일정ID들을_조회한다_내역(employeeId, ParticipantsType.RESERVER);
+        // 1. 기본 일정 ID 조회 (예약자·참석자·캘린더 참조 등 schedule_participants 전체 관계)
+        const scheduleIds = await this.직원의_역할별_일정ID들을_조회한다_내역(employeeId, query.role);
         // 4. 키워드 검색 적용
         const filteredScheduleIds = await this.키워드로_일정ID들을_조회한다(scheduleIds, query.keyword);
         // 5. 페이지네이션 적용
