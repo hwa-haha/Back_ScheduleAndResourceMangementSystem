@@ -8,6 +8,9 @@ import { join } from 'path';
  *
  * 환경 변수를 기반으로 TypeORM 설정을 생성합니다.
  * 개발/운영 환경에 따른 다른 설정을 지원합니다.
+ *
+ * 로컬에서 엔티티 기준으로 테이블을 자동 생성하려면 NODE_ENV가 production이 아닐 때
+ * TYPEORM_SYNC=true (또는 설정 키 database.sync=true)를 설정합니다. 운영에서는 절대 켜지 마세요.
  */
 @Injectable()
 export class DatabaseConfigService implements TypeOrmOptionsFactory {
@@ -38,6 +41,11 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             this.configService.get<string>('database.schema') ||
             this.configService.get<string>('POSTGRES_SCHEMA', 'public');
 
+        const syncRequested =
+            this.configService.get<string>('TYPEORM_SYNC') === 'true' ||
+            this.configService.get<string>('database.sync') === 'true';
+        const synchronize = !isProduction && syncRequested;
+
         return {
             type: 'postgres',
             host: dbHost,
@@ -51,8 +59,7 @@ export class DatabaseConfigService implements TypeOrmOptionsFactory {
             // migrations: [join(__dirname, '../migrations/*{.ts,.js}')],
             // migrationsRun: false, // 애플리케이션 시작 시 자동 마이그레이션 실행 여부
 
-            // 개발 환경 설정
-            // synchronize: true, // 개발 환경에서만 스키마 자동 동기화
+            synchronize,
             logging: isDevelopment ? ['error', 'warn'] : ['error'],
 
             // 연결 풀 설정
