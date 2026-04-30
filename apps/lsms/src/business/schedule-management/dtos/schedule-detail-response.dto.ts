@@ -328,6 +328,12 @@ export class ScheduleDetailResponseDto {
     isMine?: boolean;
 
     @ApiProperty({
+        description: '로그인 사용자가 내 일정(캘린더 참조)으로 이 일정을 추가했는지 여부',
+        example: false,
+    })
+    isInMyCalendar: boolean;
+
+    @ApiProperty({
         description: '예약자 정보',
         type: ScheduleDetailParticipantDto,
         required: false,
@@ -335,7 +341,7 @@ export class ScheduleDetailResponseDto {
     reserver?: ScheduleDetailParticipantDto;
 
     @ApiProperty({
-        description: '참가자 목록 (예약자 제외)',
+        description: '참가자 목록 (예약자·캘린더 참조 제외)',
         type: [ScheduleDetailParticipantDto],
     })
     participants: ScheduleDetailParticipantDto[];

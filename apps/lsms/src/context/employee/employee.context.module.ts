@@ -8,9 +8,11 @@ import { DomainEmployeeExtraInfoModule } from '../../domain/employee-extra-info/
 // import { EmployeeMicroserviceAdapter } from '../../../../../libs/temp/employee/adapters/employee-microservice.adapter';
 import { DomainEmployeeDepartmentPositionModule } from '@libs/modules/employee-department-position/employee-department-position.module';
 import { DomainPositionModule } from '@libs/modules/position/position.module';
+import { DomainDepartmentModule } from '@libs/modules/department/department.module';
 
 @Module({
     imports: [
+        DomainDepartmentModule,
         DomainEmployeeModule,
         DomainEmployeeExtraInfoModule,
         DomainEmployeeDepartmentPositionModule,

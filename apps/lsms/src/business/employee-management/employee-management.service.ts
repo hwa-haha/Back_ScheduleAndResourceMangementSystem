@@ -38,10 +38,12 @@ export class EmployeeManagementService {
     async findAllDepartments(): Promise<DepartmentListResponseDto> {
         const departments = await this.employeeContextService.모든_부서를_조회한다();
 
-        return {
+        const response: DepartmentListResponseDto = {
             departments: departments,
             totalCount: departments.length,
         };
+        console.log('[전체 부서 목록 조회] 반환:', JSON.stringify(response, null, 2));
+        return response;
     }
 
     async findSubDepartments(): Promise<DepartmentListResponseDto> {

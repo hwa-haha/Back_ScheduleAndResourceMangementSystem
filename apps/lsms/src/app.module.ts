@@ -21,6 +21,7 @@ import { TaskManagementModule } from './business/task-management/task-management
 import { NotificationManagementModule } from './business/notification-management/notification-management.module';
 import { StatisticsModule } from './business/statistics/statistics.module';
 import { AuthManagementModule } from './business/auth-management/auth-management.module';
+import { OrganizationSeedModule } from './dev-org-seed/organization-seed.module';
 import { DomainModule } from './domain/domain.module';
 import { RequestInterceptor } from '../libs/interceptors/request.interceptor';
 // import { MigrationModule } from './intergration/migration/migration.module';
@@ -57,6 +58,9 @@ import { RequestInterceptor } from '../libs/interceptors/request.interceptor';
         NotificationManagementModule,
         StatisticsModule,
         AuthManagementModule,
+
+        /** 로컬/개발용 조직 시드 (Swagger: Dev · 조직 시드) */
+        OrganizationSeedModule,
     ],
     providers: [
         {

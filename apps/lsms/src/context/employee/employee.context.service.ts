@@ -6,6 +6,7 @@ import { DomainEmployeeExtraInfoService } from '../../domain/employee-extra-info
 import { EmployeeExtraInfo } from '../../domain/employee-extra-info/employee-extra-info.entity';
 import { EmployeeDepartmentPosition } from '@libs/modules/employee-department-position/employee-department-position.entity';
 import { DomainPositionService } from '@libs/modules/position/position.service';
+import { DomainDepartmentService } from '@libs/modules/department/department.service';
 import { Role } from '../../../libs/enums/role-type.enum';
 import { DataSource, In, IsNull, Not, Repository } from 'typeorm';
 import { EmployeeResponseDto } from '../../business/employee-management/dtos/employee-response.dto';
@@ -23,6 +24,14 @@ import axios from 'axios';
 /** 루미르 주식회사 최상위 부서 ID (departments-info 기준 고정값) */
 const LUMIR_ROOT_DEPARTMENT_ID = '0152150e-dbdf-45a4-8657-3615bdeaec28';
 
+/**
+ * `LSMS_DEPARTMENT_LIST_MODE=all` 이면 루미르 특정 부서 트리 + EDP 교집합 대신,
+ * DB 상 활성 부서(퇴사자 명칭 부서 제외) 기준으로 조회합니다. 로컬 시드 등 테스트용입니다.
+ */
+function 개발호환전체부서목록모드이다(): boolean {
+    return process.env.LSMS_DEPARTMENT_LIST_MODE === 'all';
+}
+
 @Injectable()
 export class EmployeeContextService {
     private readonly logger = new Logger(EmployeeContextService.name);
@@ -36,6 +45,7 @@ export class EmployeeContextService {
 
     constructor(
         private readonly domainEmployeeExtraInfoService: DomainEmployeeExtraInfoService,
+        private readonly domainDepartmentService: DomainDepartmentService,
         private readonly domainPositionService: DomainPositionService,
         // private readonly employeeMicroserviceAdapter: EmployeeMicroserviceAdapter,
         // private readonly departmentMicroserviceAdapter: DepartmentMicroserviceAdapter,
@@ -90,19 +100,32 @@ export class EmployeeContextService {
 
     /**
      * EDP 기반으로 유효한 부서 목록을 조회한다
-     * - 루미르 최상위 부서의 하위 부서 중 EDP에 직원이 배치된 부서만 반환
+     * - 기본(운영/SPO): 루미르 최상위 부서의 하위 부서 ∩ EDP에 직원이 배치된 부서만
+     * - LSMS_DEPARTMENT_LIST_MODE=all: 활성·퇴사자 명칭 부서 제외 목록 ∩ EDP (시드 등 로컬 조직 테스트용)
      */
     private async EDP_기반_유효부서_목록을_조회한다(): Promise<Department[]> {
-        const [subDeptIds, edpDeptIds] = await Promise.all([
-            this.루미르_하위부서_ID_목록을_조회한다(),
-            this.EDP에_존재하는_부서ID_집합을_조회한다(),
-        ]);
+        const edpDeptIds = await this.EDP에_존재하는_부서ID_집합을_조회한다();
+
+        if (개발호환전체부서목록모드이다()) {
+            const 활성평탄 = await this.domainDepartmentService.퇴사자를제외한전체부서목록을조회한다();
+            const valid = 활성평탄.filter((d) => edpDeptIds.has(d.id));
+            return valid;
+        }
+
+        const subDeptIds = await this.루미르_하위부서_ID_목록을_조회한다();
         const validIds = subDeptIds.filter((id) => edpDeptIds.has(id));
         if (validIds.length === 0) return [];
         return this.departmentRepository.find({
             where: { id: In(validIds) },
             order: { order: 'ASC' },
         });
+    }
+
+    /**
+     * LSMS_DEPARTMENT_LIST_MODE=all 일 때 평탄하게 전체 부서(EDP 무관·퇴직자 명 부서만 제외·활성만)를 조회한다
+     */
+    private async 활성평탄부서목록전체를조회한다(): Promise<Department[]> {
+        return this.domainDepartmentService.퇴사자를제외한전체부서목록을조회한다();
     }
 
     /**
@@ -472,11 +495,15 @@ export class EmployeeContextService {
     }
 
     /**
-     * 모든 부서 목록을 조회한다 (EDP 기반 - 루미르 하위 부서 중 EDP에 직원이 있는 부서만)
+     * 모든 부서 목록을 조회한다
+     * - 기본: 루미르 하위 ∩ EDP
+     * - LSMS_DEPARTMENT_LIST_MODE=all: 퇴사자 명칭 부서 제외 활성 부서 전체(평탄 목록·EDP 없어도 표시)
      */
     async 모든_부서를_조회한다(): Promise<any[]> {
         try {
-            const departments = await this.EDP_기반_유효부서_목록을_조회한다();
+            const departments = 개발호환전체부서목록모드이다()
+                ? await this.활성평탄부서목록전체를조회한다()
+                : await this.EDP_기반_유효부서_목록을_조회한다();
             return departments.map((dept) => this.부서를_DTO로_변환한다(dept));
         } catch (error) {
             this.logger.error('부서 목록 조회 실패:', error);
@@ -485,11 +512,13 @@ export class EmployeeContextService {
     }
 
     /**
-     * 하위 부서 목록만 조회한다 (EDP 기반 - 루미르 하위 부서 중 EDP에 직원이 있고 부모 부서가 있는 부서)
+     * 하위 부서 목록만 조회한다 (평탄 규칙은 `모든_부서`와 동일)
      */
     async 하위_부서_목록을_조회한다(): Promise<any[]> {
         try {
-            const departments = await this.EDP_기반_유효부서_목록을_조회한다();
+            const departments = 개발호환전체부서목록모드이다()
+                ? await this.활성평탄부서목록전체를조회한다()
+                : await this.EDP_기반_유효부서_목록을_조회한다();
             const result = departments
                 .filter((dept) => !!dept.parentDepartmentId)
                 .map((dept) => this.부서를_DTO로_변환한다(dept));
@@ -503,11 +532,13 @@ export class EmployeeContextService {
     }
 
     /**
-     * 루트 부서 목록만 조회한다 (EDP 기반 - 루미르 하위 부서 중 EDP에 직원이 있고 부모 부서가 없는 부서)
+     * 루트 부서 목록만 조회한다 (평탄 규칙은 `모든_부서`와 동일)
      */
     async 루트_부서_목록을_조회한다(): Promise<any[]> {
         try {
-            const departments = await this.EDP_기반_유효부서_목록을_조회한다();
+            const departments = 개발호환전체부서목록모드이다()
+                ? await this.활성평탄부서목록전체를조회한다()
+                : await this.EDP_기반_유효부서_목록을_조회한다();
             const result = departments
                 .filter((dept) => !dept.parentDepartmentId)
                 .map((dept) => this.부서를_DTO로_변환한다(dept));
@@ -521,12 +552,55 @@ export class EmployeeContextService {
     }
 
     /**
+     * LSMS_DEPARTMENT_LIST_MODE=all 에서 활성 트리 루트부터 재귀 빌드 (루미르 고정 ID 미사용)
+     */
+    private async 개발호환모드부서계층을_조회한다(): Promise<any[]> {
+        const allSubDepts = await this.활성평탄부서목록전체를조회한다();
+        const edpDeptIds = await this.EDP에_존재하는_부서ID_집합을_조회한다();
+        const validDepts = allSubDepts.filter((d) => edpDeptIds.has(d.id));
+        const validDeptIdSet = new Set(validDepts.map((d) => d.id));
+
+        const buildHierarchy = (parentId: string): any[] =>
+            allSubDepts
+                .filter((d) => d.parentDepartmentId === parentId)
+                .sort((a, b) => a.order - b.order)
+                .flatMap((dept) => {
+                    const children = buildHierarchy(dept.id);
+                    if (!validDeptIdSet.has(dept.id) && children.length === 0) return [];
+                    return [
+                        {
+                            ...this.부서를_DTO로_변환한다(dept),
+                            childDepartments: children,
+                            childDepartmentCount: children.length,
+                        },
+                    ];
+                });
+
+        const roots = allSubDepts
+            .filter((d) => !d.parentDepartmentId)
+            .sort((a, b) => a.order - b.order);
+
+        return roots.map((root) => ({
+            ...this.부서를_DTO로_변환한다(root),
+            childDepartments: buildHierarchy(root.id),
+            childDepartmentCount: buildHierarchy(root.id).length,
+        }));
+    }
+
+    /**
      * 부서 계층구조를 트리 형태로 조회한다 (EDP 기반)
      * - 루미르 최상위 부서의 하위 부서 중 EDP에 직원이 있는 부서들로 구성
      * - 계층 탐색 시 EDP에 없더라도 유효 부서들의 공통 조상은 포함
+     * - LSMS_DEPARTMENT_LIST_MODE=all 일 때는 루미르 특정 노드 고정 없이 활성 계층 전체 구간
      */
     async 부서_계층구조를_조회한다(): Promise<any[]> {
         try {
+            if (개발호환전체부서목록모드이다()) {
+                const hierarchy = await this.개발호환모드부서계층을_조회한다();
+                this.logger.log(`부서 계층구조 조회 완료(all 모드): 루트 ${hierarchy.length}개`);
+                return hierarchy;
+            }
+
             const validDepts = await this.EDP_기반_유효부서_목록을_조회한다();
             const validDeptIdSet = new Set(validDepts.map((d) => d.id));
 

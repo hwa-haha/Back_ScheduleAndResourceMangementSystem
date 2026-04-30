@@ -11,7 +11,11 @@ export class DepartmentController {
     constructor(private readonly employeeManagementService: EmployeeManagementService) {}
 
     @Get('')
-    @ApiOperation({ summary: '전체 부서 목록 조회' })
+    @ApiOperation({
+        summary: '전체 부서 목록 조회',
+        description:
+            '기본은 루미르 조직 트리 및 EDP(직원 배치) 기준 필터입니다. 로컬 시드 부서까지 보려면 `LSMS_DEPARTMENT_LIST_MODE=all` 을 설정하세요.',
+    })
     @ApiDataResponse({
         status: 200,
         description: '전체 부서 목록을 성공적으로 조회했습니다.',

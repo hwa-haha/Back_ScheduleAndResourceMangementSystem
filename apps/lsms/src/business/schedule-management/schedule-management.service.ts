@@ -570,7 +570,15 @@ export class ScheduleManagementService {
         }
         const { schedule, project, departments, reservation, resource, participants } = scheduleData;
         const reserver = participants?.find((p) => p.type === ParticipantsType.RESERVER);
-        const regularParticipants = participants?.filter((p) => p.type !== ParticipantsType.RESERVER) || [];
+        const isInMyCalendar =
+            participants?.some(
+                (p) => p.type === ParticipantsType.SCHEDULE_REFERENCE && p.employeeId === user.id,
+            ) ?? false;
+        const regularParticipants =
+            participants?.filter(
+                (p) =>
+                    p.type !== ParticipantsType.RESERVER && p.type !== ParticipantsType.SCHEDULE_REFERENCE,
+            ) || [];
 
         // 3~5. 정책/실행/후처리: 조회이므로 생략
 
@@ -627,6 +635,7 @@ export class ScheduleManagementService {
             notifyBeforeStart: schedule.notifyBeforeStart,
             notifyMinutesBeforeStart: schedule.notifyMinutesBeforeStart,
             isMine: reserver?.employeeId === user.id,
+            isInMyCalendar,
             reserver: reserverDto,
             participants: participantsDto,
             project: projectDto,

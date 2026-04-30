@@ -153,6 +153,9 @@ export { FileResponseDto } from './context/file/dtos/file-response.dto';
 export { ReservationVehicleFileResponseDto } from './context/file/dtos/reservation-vehicle-file-response.dto';
 export * from './context/file/dtos/index';
 
+// Dev · 조직 시드 (Swagger 스키마)
+export * from './dev-org-seed/dtos/organization-seed-response.dto';
+
 // ============================================================================
 // 📋 BUSINESS LAYER SPECIFIC DTOs
 // ============================================================================

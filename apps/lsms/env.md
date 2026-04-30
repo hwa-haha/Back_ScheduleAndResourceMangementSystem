@@ -25,6 +25,10 @@ JWT_SECRET=13hjkabsud23l13asbizx
 JWT_EXPIRES_IN=24h 
 GLOBAL_SECRET=13hjkabsud23l13asbizx
 
+# 부서 API(v2): 기본값은 운영/SSO 부서 트리(루미르 루트 ID 기준)·EDP 교집합만 노출함.
+# 로컬 시드 부서까지 GET /api/v2/departments 등에서 보려면 all 로 설정한다.
+# LSMS_DEPARTMENT_LIST_MODE=all
+
 WEB_PUSH_PUBLIC_KEY=BIjDkj2RVRCmukBgreTh-TeXZpZ7EhR10nLXr6lumCndXkM9D8QvCnGvvR2U0ZcYNEEhlUxdD_srRB9jY2Nlp04
 WEB_PUSH_PRIVATE_KEY=K3IKvIlZuci9qjpfGufuGIvkgsFV0ivW9rR-FPZ-QHA
 
