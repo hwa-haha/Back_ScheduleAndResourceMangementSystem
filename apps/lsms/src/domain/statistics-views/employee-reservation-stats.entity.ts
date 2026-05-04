@@ -30,7 +30,7 @@ FROM
     reservations r
     JOIN reservation_participants rp ON r."reservationId" = rp."reservationId"
     JOIN resources res ON r."resourceId" = res."resourceId"
-    JOIN employees e ON rp."employeeId" = e."employeeId"
+    JOIN employees e ON rp."employeeId" = e."id"
 WHERE
     rp.type = 'RESERVER'
 GROUP BY

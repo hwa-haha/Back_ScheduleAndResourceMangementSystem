@@ -18,10 +18,10 @@ import { ViewEntity, ViewColumn } from 'typeorm';
     m.images,
     m."createdAt",
     m."updatedAt",
-    e."employeeId" AS "responsibleEmployeeId",
+    e."id" AS "responsibleEmployeeId",
     e.name AS "responsibleEmployeeName",
-    e.department,
-    e.position,
+    NULL::text AS department,
+    NULL::text AS position,
     EXTRACT(YEAR FROM CAST(m.date AS timestamp)) AS year,
     EXTRACT(MONTH FROM CAST(m.date AS timestamp)) AS month,
     m.date AS "dateStr"
@@ -30,7 +30,7 @@ FROM
     JOIN vehicle_infos vi ON res."resourceId" = vi."resourceId"
     LEFT JOIN consumables c ON vi."vehicleInfoId" = c."vehicleInfoId"
     LEFT JOIN maintenances m ON c."consumableId" = m."consumableId"
-    LEFT JOIN employees e ON m."maintananceBy"::uuid = e."employeeId"
+    LEFT JOIN employees e ON m."maintananceBy"::uuid = e."id"
 WHERE
     res.type = 'VEHICLE'
     AND m."maintenanceId" IS NOT NULL
