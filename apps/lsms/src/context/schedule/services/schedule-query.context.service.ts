@@ -3,6 +3,7 @@ import { DomainScheduleService } from '../../../domain/schedule/schedule.service
 import { DomainScheduleParticipantService } from '../../../domain/schedule-participant/schedule-participant.service';
 import { DomainScheduleRelationService } from '../../../domain/schedule-relation/schedule-relation.service';
 import { DomainScheduleDepartmentService } from '../../../domain/schedule-department/schedule-department.service';
+import { DomainScheduleMyReferenceService } from '../../../domain/schedule-my-reference/schedule-my-reference.service';
 
 import { DataSource, In, Like, MoreThanOrEqual, Not, IsNull, LessThanOrEqual, Repository } from 'typeorm';
 import { Schedule } from '../../../domain/schedule/schedule.entity';
@@ -50,6 +51,7 @@ export class ScheduleQueryContextService {
         private readonly domainResourceService: DomainResourceService,
         private readonly domainResourceGroupService: DomainResourceGroupService,
         private readonly domainScheduleDepartmentService: DomainScheduleDepartmentService,
+        private readonly domainScheduleMyReferenceService: DomainScheduleMyReferenceService,
         private readonly dataSource: DataSource,
     ) {
         this.edpRepository = this.dataSource.getRepository(EmployeeDepartmentPosition);
@@ -313,46 +315,85 @@ export class ScheduleQueryContextService {
             participantsMap = new Map(Object.entries(participantGroups));
         }
 
+        // 관계 행이 없는 일정(순수 일정·참조만 연결 등)은 relation 없이 schedules에서만 적재
+        const orphanScheduleIds = scheduleIds.filter((id) => {
+            const relation = relationMap.get(id);
+            return !relation?.schedule;
+        });
+        const orphanScheduleById = new Map<string, Schedule>();
+        if (orphanScheduleIds.length > 0) {
+            const orphanSchedules = await this.domainScheduleService.findByScheduleIds(orphanScheduleIds);
+            for (const sch of orphanSchedules) {
+                if (!sch.deletedAt) {
+                    orphanScheduleById.set(sch.scheduleId, sch);
+                }
+            }
+        }
+
         // ✅ 4. 결과 배열 구성 (응답 형태 동일하게 유지)
         const results = [];
         for (const scheduleId of scheduleIds) {
             const relation = relationMap.get(scheduleId);
-            if (!relation || !relation.schedule) {
-                continue; // 존재하지 않는 일정은 제외
+            const scheduleFromRelation = relation?.schedule;
+
+            if (scheduleFromRelation) {
+                const schedule = scheduleFromRelation;
+                let project = null;
+                let departments = null;
+                let reservation = null;
+                let resource = null;
+                let participants = [];
+
+                if (option?.withProject && relation.projectId) {
+                    project = projectMap.get(relation.projectId) || null;
+                }
+
+                if (option?.withDepartment) {
+                    departments = departmentMap.get(scheduleId) || null;
+                }
+
+                if (option?.withReservation && relation.reservation) {
+                    reservation = relation.reservation;
+                    if (option?.withResource && reservation.resource) {
+                        resource = reservation.resource;
+                    }
+                }
+
+                if (option?.withParticipants) {
+                    participants = participantsMap.get(scheduleId) || [];
+                }
+
+                results.push({
+                    schedule,
+                    project,
+                    departments,
+                    reservation,
+                    resource,
+                    participants,
+                });
+                continue;
             }
 
-            const schedule = relation.schedule;
-            let project = null;
+            const schedule = orphanScheduleById.get(scheduleId);
+            if (!schedule) {
+                continue;
+            }
+
             let departments = null;
-            let reservation = null;
-            let resource = null;
-            let participants = [];
-
-            if (option?.withProject && relation.projectId) {
-                project = projectMap.get(relation.projectId) || null;
-            }
-
+            let participants: ScheduleParticipantsWithEmployee[] = [];
             if (option?.withDepartment) {
                 departments = departmentMap.get(scheduleId) || null;
             }
-
-            if (option?.withReservation && relation.reservation) {
-                reservation = relation.reservation;
-                if (option?.withResource && reservation.resource) {
-                    resource = reservation.resource;
-                }
-            }
-
             if (option?.withParticipants) {
                 participants = participantsMap.get(scheduleId) || [];
             }
 
             results.push({
                 schedule,
-                project,
+                project: null,
                 departments,
-                reservation,
-                resource,
+                reservation: null,
+                resource: null,
                 participants,
             });
         }
@@ -364,7 +405,7 @@ export class ScheduleQueryContextService {
         category?: ScheduleCategoryType,
         employees?: Employee[],
         projectIds?: string[],
-    ): Promise<string[]> {
+    ): Promise<{ scheduleIds: string[]; calendarReferenceScheduleIds: string[] }> {
         // 1. 월별 일정 조회
         const startDateOfMonth = new Date(`${date}-01`);
         const endDateOfMonth = new Date(`${date}-01`);
@@ -375,10 +416,20 @@ export class ScheduleQueryContextService {
         const monthlySchedules = await this.domainScheduleService.findByDateRange(startDateOfMonth, endDateOfMonth);
         let scheduleIds = monthlySchedules.map((schedule) => schedule.scheduleId);
 
-        // 2. 특정 직원(들)의 일정 필터링
+        let calendarReferenceScheduleIds: string[] = [];
+
+        // 2. 특정 직원(들)의 일정 필터링 (참여·소속 부서/회사·내 일정 참조)
         if (employees) {
             const employeeArray = employees;
             const allEmployeeScheduleIds = new Set<string>();
+
+            calendarReferenceScheduleIds =
+                await this.domainScheduleMyReferenceService.복수_직원의_기간과_겹치는_참조_일정_ID_목록을_조회한다(
+                    employeeArray.map((e) => e.id),
+                    startDateOfMonth,
+                    endDateOfMonth,
+                );
+            calendarReferenceScheduleIds.forEach((id) => allEmployeeScheduleIds.add(id));
 
             for (const employee of employeeArray) {
                 // 각 직원의 참여 일정 조회
@@ -447,7 +498,10 @@ export class ScheduleQueryContextService {
             }
         }
 
-        return [...new Set(scheduleIds)]; // 중복 제거
+        return {
+            scheduleIds: [...new Set(scheduleIds)],
+            calendarReferenceScheduleIds,
+        };
     }
 
     async 예약의_일정ID들을_조회한다(reservationId: string | string[]): Promise<string[]> {
@@ -973,6 +1027,15 @@ export class ScheduleQueryContextService {
                 const belongingScheduleIds = await this.직원의_소속_일정ID들을_조회한다(department.id, now);
                 scheduleIds = Array.from(new Set([...scheduleIds, ...belongingScheduleIds]));
             }
+        }
+
+        // 역할 필터가 없을 때만: 내 일정(참조)로 넣어 둔 일정 ID를 합친다
+        if (query.role === undefined || query.role === null) {
+            const referenceScheduleIds = await this.domainScheduleMyReferenceService.직원의_시작일_기준_참조_일정_ID_목록을_조회한다(
+                employeeId,
+                now,
+            );
+            scheduleIds = Array.from(new Set([...scheduleIds, ...referenceScheduleIds]));
         }
 
         // 2. 카테고리별 필터링

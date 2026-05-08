@@ -95,6 +95,13 @@ export class MyScheduleItemDto {
         required: false,
     })
     resource?: MyScheduleResourceDto;
+
+    @ApiProperty({
+        description:
+            '예약자·참석자가 아닌 상태에서, 내 일정(참조)로만 이 항목이 목록에 포함된 경우 true (참석·예약과 겹치면 false)',
+        example: false,
+    })
+    isIncludedAsMyScheduleReference: boolean;
 }
 
 export class MyScheduleResponseDto {

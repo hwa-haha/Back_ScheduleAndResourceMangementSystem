@@ -6,6 +6,7 @@ import {
     InternalServerErrorException,
 } from '@nestjs/common';
 import { Employee } from '@libs/modules/employee/employee.entity';
+import { EmployeeDepartmentPosition } from '@libs/modules/employee-department-position/employee-department-position.entity';
 
 // 기존 DTO들 import
 import { ScheduleCalendarQueryDto } from './dtos/schedule-calendar-query.dto';
@@ -57,6 +58,9 @@ import { EmployeeContextService } from '../../context/employee/employee.context.
 import { ScheduleNotificationContextService } from '../../context/notification/services/schedule-notification.context.service';
 import { MyScheduleHistoryQueryDto } from './dtos/my-schedule-history-query.dto';
 import { MyScheduleHistoryResponseDto } from './dtos/my-schedule-history-response.dto';
+import { DomainScheduleParticipantService } from '../../domain/schedule-participant/schedule-participant.service';
+import { DomainScheduleMyReferenceService } from '../../domain/schedule-my-reference/schedule-my-reference.service';
+import { ScheduleMyReferenceMutationResponseDto } from './dtos/schedule-my-reference-mutation.dto';
 
 @Injectable()
 export class ScheduleManagementService {
@@ -77,6 +81,8 @@ export class ScheduleManagementService {
         private readonly scheduleMutationService: ScheduleMutationContextService,
         private readonly scheduleStateTransitionService: ScheduleStateTransitionService,
         private readonly schedulePostProcessingService: SchedulePostProcessingService,
+        private readonly domainScheduleParticipantService: DomainScheduleParticipantService,
+        private readonly domainScheduleMyReferenceService: DomainScheduleMyReferenceService,
     ) {}
 
     /** 승훈프로님 구현용 프로젝트 테스트 데이터 - 2025-09-24 생성함
@@ -121,17 +127,20 @@ export class ScheduleManagementService {
             // 내 일정만 보기
             selectedEmployees = [user];
         } else if (query.employeeIds && query.employeeIds.length > 0) {
-            // 특정 직원들의 일정만 조회
-            const employees = await this.employeeContextService.복수_직원정보를_조회한다(query.employeeIds);
-            selectedEmployees = employees;
+            // 특정 직원들의 일정만 조회 (복수_직원정보는 DTO라 employeeId만 있음 → 캘린더 조회는 Entity id가 필요)
+            const employeeDtos = await this.employeeContextService.복수_직원정보를_조회한다(query.employeeIds);
+            selectedEmployees = employeeDtos.map(
+                (dto: { employeeId: string }) => ({ id: dto.employeeId }) as Employee,
+            );
         }
 
-        const scheduleIds = await this.scheduleQueryContextService.캘린더용_일정을_조회한다(
-            query.date,
-            query.category,
-            selectedEmployees.length > 0 ? selectedEmployees : undefined,
-            query.projectIds || undefined,
-        );
+        const { scheduleIds, calendarReferenceScheduleIds } =
+            await this.scheduleQueryContextService.캘린더용_일정을_조회한다(
+                query.date,
+                query.category,
+                selectedEmployees.length > 0 ? selectedEmployees : undefined,
+                query.projectIds || undefined,
+            );
 
         if (scheduleIds.length === 0) {
             return { schedules: [] };
@@ -144,14 +153,27 @@ export class ScheduleManagementService {
             withProject: true,
             withParticipants: true, // 예약자 정보 필요
         });
-        // employeeIds 필터링 적용 (해당 직원이 참여하는 일정만)
-        // TODO : 부서 및 회사 일정도 추가 필요
+
+        const calendarReferenceScheduleIdSet =
+            query.employeeIds && query.employeeIds.length > 0
+                ? new Set(calendarReferenceScheduleIds)
+                : undefined;
+
+        // employeeIds 필터링: 참가자·부서/회사·내 일정(참조)
         let filteredScheduleDataList = scheduleDataList;
         if (query.employeeIds && query.employeeIds.length > 0) {
-            filteredScheduleDataList = scheduleDataList.filter(({ participants }) => {
+            filteredScheduleDataList = scheduleDataList.filter(({ schedule, participants }) => {
+                if (
+                    schedule.scheduleType === ScheduleType.COMPANY ||
+                    schedule.scheduleType === ScheduleType.DEPARTMENT
+                ) {
+                    return true;
+                }
+                if (calendarReferenceScheduleIdSet?.has(schedule.scheduleId)) {
+                    return true;
+                }
                 if (!participants || participants.length === 0) return false;
 
-                // 해당 일정에 지정된 직원 중 하나라도 참여하는지 확인
                 return participants.some(
                     (participant) =>
                         participant.employee?.id &&
@@ -399,7 +421,22 @@ export class ScheduleManagementService {
             withResource: true,
         });
 
+        const referenceMap = await this.domainScheduleMyReferenceService.일정_ID_목록에_대한_참조_존재_맵을_만든다(
+            user.id,
+            scheduleIds,
+        );
+        const participantRows =
+            scheduleIds.length > 0
+                ? await this.domainScheduleParticipantService.findByEmployeeIdAndScheduleIds(user.id, scheduleIds)
+                : [];
+
         const scheduleCalendarItems = scheduleDataList.map(({ schedule, project, reservation, resource }) => {
+            const myRows = participantRows.filter((p) => p.scheduleId === schedule.scheduleId);
+            const isReserver = myRows.some((p) => p.type === ParticipantsType.RESERVER);
+            const isParticipant = myRows.some((p) => p.type === ParticipantsType.PARTICIPANT);
+            const hasRefBookmark = referenceMap.get(schedule.scheduleId) ?? false;
+            const isIncludedAsMyScheduleReference = hasRefBookmark && !isReserver && !isParticipant;
+
             return {
                 scheduleId: schedule.scheduleId,
                 title: schedule.title,
@@ -421,6 +458,7 @@ export class ScheduleManagementService {
                           resourceType: resource.type,
                       }
                     : undefined,
+                isIncludedAsMyScheduleReference,
             };
         });
         // .sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
@@ -560,6 +598,24 @@ export class ScheduleManagementService {
         const { schedule, project, departments, reservation, resource, participants } = scheduleData;
         const reserver = participants?.find((p) => p.type === ParticipantsType.RESERVER);
         const regularParticipants = participants?.filter((p) => p.type !== ParticipantsType.RESERVER) || [];
+        const isReserver = reserver?.employeeId === user.id;
+        const isParticipant =
+            participants?.some(
+                (p) => p.employeeId === user.id && p.type === ParticipantsType.PARTICIPANT,
+            ) ?? false;
+        const employeeDeptIds = await this.직원의_EDP_부서ID_집합을_조회한다(user.id);
+        const isInDepartmentScheduleLinkedDepartment =
+            schedule.scheduleType === ScheduleType.DEPARTMENT &&
+            (departments ?? []).some((d) => employeeDeptIds.has(d.id));
+        const showMyScheduleReferenceControl =
+            !isReserver && !isParticipant && !isInDepartmentScheduleLinkedDepartment;
+        let myScheduleReferenceIncluded = false;
+        if (showMyScheduleReferenceControl) {
+            myScheduleReferenceIncluded = await this.domainScheduleMyReferenceService.참조가_존재하는지_확인한다(
+                user.id,
+                schedule.scheduleId,
+            );
+        }
 
         // 3~5. 정책/실행/후처리: 조회이므로 생략
 
@@ -621,7 +677,65 @@ export class ScheduleManagementService {
             project: projectDto,
             departments: departmentsDto,
             reservation: reservationDto,
+            showMyScheduleReferenceControl,
+            myScheduleReferenceIncluded,
         };
+    }
+
+    /**
+     * 내 일정(참조) 추가 — 예약자·참석자인 일정에는 사용할 수 없음
+     */
+    async addMyScheduleReference(user: Employee, scheduleId: string): Promise<ScheduleMyReferenceMutationResponseDto> {
+        await this.내일정참조_추가가능여부를_검증한다(user.id, scheduleId);
+        await this.domainScheduleMyReferenceService.참조를_추가한다(user.id, scheduleId);
+        return { success: true, included: true };
+    }
+
+    /**
+     * 내 일정(참조) 해제 — 멱등(없으면 그대로 성공)
+     */
+    async removeMyScheduleReference(
+        user: Employee,
+        scheduleId: string,
+    ): Promise<ScheduleMyReferenceMutationResponseDto> {
+        await this.scheduleQueryContextService.일정과_관계정보들을_조회한다(scheduleId, {});
+        await this.domainScheduleMyReferenceService.참조를_해제한다(user.id, scheduleId);
+        return { success: true, included: false };
+    }
+
+    private async 내일정참조_추가가능여부를_검증한다(userId: string, scheduleId: string): Promise<void> {
+        const scheduleData = await this.scheduleQueryContextService.일정과_관계정보들을_조회한다(scheduleId, {
+            withParticipants: true,
+            withDepartment: true,
+        });
+        const { schedule, participants, departments } = scheduleData;
+        if (schedule.deletedAt) {
+            throw new NotFoundException('삭제된 일정입니다.');
+        }
+        const reserver = participants?.find((p) => p.type === ParticipantsType.RESERVER);
+        const isReserver = reserver?.employeeId === userId;
+        const isParticipant =
+            participants?.some(
+                (p) => p.employeeId === userId && p.type === ParticipantsType.PARTICIPANT,
+            ) ?? false;
+        const employeeDeptIds = await this.직원의_EDP_부서ID_집합을_조회한다(userId);
+        const isInDepartmentScheduleLinkedDepartment =
+            schedule.scheduleType === ScheduleType.DEPARTMENT &&
+            (departments ?? []).some((d) => employeeDeptIds.has(d.id));
+        if (isReserver || isParticipant || isInDepartmentScheduleLinkedDepartment) {
+            throw new BadRequestException(
+                '예약자·참석자이거나, 부서 일정의 대상 부서에 속한 경우에는 내 일정(참조)를 사용할 수 없습니다.',
+            );
+        }
+    }
+
+    /** 내 일정(참조) UI/API 판단용 — 직원 EDP에 등록된 부서 ID 집합 */
+    private async 직원의_EDP_부서ID_집합을_조회한다(employeeId: string): Promise<Set<string>> {
+        const rows = await this.dataSource.getRepository(EmployeeDepartmentPosition).find({
+            where: { employeeId },
+            select: { departmentId: true },
+        });
+        return new Set(rows.map((r) => r.departmentId).filter(Boolean));
     }
 
     // ============================================================================

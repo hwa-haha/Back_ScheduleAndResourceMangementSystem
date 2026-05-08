@@ -49,6 +49,7 @@ export * from './business/schedule-management/dtos/schedule-calendar-query.dto';
 export * from './business/schedule-management/dtos/resource-schedule-query.dto';
 export * from './business/schedule-management/dtos/my-schedule-query.dto';
 export * from './business/schedule-management/dtos/my-schedule-statistics-query.dto';
+export * from './business/schedule-management/dtos/schedule-my-reference-mutation.dto';
 
 // ============================================================================
 // 📋 EMPLOYEE MANAGEMENT DTOs

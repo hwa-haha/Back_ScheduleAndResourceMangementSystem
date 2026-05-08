@@ -18,6 +18,7 @@ import { ReservationContextModule } from '../reservation/reservation.context.mod
 import { DomainProjectModule } from '../../domain/project/project.module';
 import { DomainDepartmentModule } from '@libs/modules/department/department.module';
 import { DomainScheduleDepartmentModule } from '../../domain/schedule-department/schedule-department.module';
+import { DomainScheduleMyReferenceModule } from '../../domain/schedule-my-reference/schedule-my-reference.module';
 
 @Module({
     imports: [
@@ -32,6 +33,7 @@ import { DomainScheduleDepartmentModule } from '../../domain/schedule-department
         DomainProjectModule,
         DomainDepartmentModule,
         DomainScheduleDepartmentModule,
+        DomainScheduleMyReferenceModule,
         ReservationContextModule,
     ],
     providers: [

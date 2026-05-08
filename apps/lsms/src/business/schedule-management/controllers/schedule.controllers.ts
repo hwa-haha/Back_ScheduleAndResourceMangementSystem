@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Query, Body, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiOkResponse, ApiExcludeEndpoint, ApiBody } from '@nestjs/swagger';
 import { ScheduleManagementService } from '../schedule-management.service';
 import { Employee } from '@libs/modules/employee/employee.entity';
@@ -17,6 +17,10 @@ import { ScheduleExtendResponseDto } from '../dtos/schedule-extend-response.dto'
 import { ScheduleUpdateRequestDto } from '../dtos/schedule-update-request.dto';
 import { MyScheduleHistoryQueryDto } from '../dtos/my-schedule-history-query.dto';
 import { MyScheduleHistoryResponseDto } from '../dtos/my-schedule-history-response.dto';
+import {
+    ScheduleMyReferenceAddRequestDto,
+    ScheduleMyReferenceMutationResponseDto,
+} from '../dtos/schedule-my-reference-mutation.dto';
 
 @ApiTags('v2 일정')
 @Controller('v2/schedule')
@@ -58,6 +62,7 @@ export class ScheduleController {
      * 조회 조건
      * 1. 현재시간을 기준으로 오늘 날짜 이후의 일정만 조회한다.
      * 2. 필터 - 역할 기준 ( 예약자, 참석자 ) / 카테고리 ( 전체, 일정, 프로젝트, 자원 별 )
+     * 2-1. 역할 필터를 주지 않으면 내 일정(참조)로 넣은 일정도 목록·통계에 포함된다.
      * 3. 제목과 자원명으로 검색할 수 있다.
      * 4. 통계는 검색 및 페이지네이션과 무관하게 필터 조건만 적용하여 계산한다.
      * 5. 일정 목록은 검색 및 페이지네이션이 적용된다.
@@ -65,7 +70,7 @@ export class ScheduleController {
     @ApiOperation({
         summary: '내 일정 조회 (통계 + 목록)',
         description:
-            '로그인한 사용자의 일정 통계와 목록을 함께 조회합니다. 통계는 검색에 영향받지 않으며, 목록은 검색과 페이지네이션이 적용됩니다.',
+            '로그인한 사용자의 일정 통계와 목록을 함께 조회합니다. 역할 필터가 없으면 내 일정(참조) 일정도 포함됩니다. 통계는 검색에 영향받지 않으며, 목록은 검색과 페이지네이션이 적용됩니다.',
     })
     @ApiOkResponse({
         description: '내 일정 조회 성공',
@@ -144,6 +149,40 @@ export class ScheduleController {
         @Query() query: ScheduleDetailQueryDto,
     ): Promise<ScheduleDetailResponseDto> {
         return this.scheduleManagementService.findScheduleDetail(user, query);
+    }
+
+    @Post('my-reference')
+    @ApiOperation({
+        summary: '내 일정(참조) 추가',
+        description:
+            '로그인 사용자의 내 일정(참조) 목록에 일정을 추가합니다. 해당 일정의 예약자·참석자인 경우에는 호출할 수 없습니다.',
+    })
+    @ApiBody({ type: ScheduleMyReferenceAddRequestDto })
+    @ApiOkResponse({
+        description: '추가 성공',
+        type: ScheduleMyReferenceMutationResponseDto,
+    })
+    async addMyScheduleReference(
+        @User() user: Employee,
+        @Body() body: ScheduleMyReferenceAddRequestDto,
+    ): Promise<ScheduleMyReferenceMutationResponseDto> {
+        return this.scheduleManagementService.addMyScheduleReference(user, body.scheduleId);
+    }
+
+    @Delete('my-reference/:scheduleId')
+    @ApiOperation({
+        summary: '내 일정(참조) 해제',
+        description: '로그인 사용자의 내 일정(참조)에서 해당 일정을 제거합니다. 이미 제거된 경우에도 성공으로 처리됩니다.',
+    })
+    @ApiOkResponse({
+        description: '해제 성공',
+        type: ScheduleMyReferenceMutationResponseDto,
+    })
+    async removeMyScheduleReference(
+        @User() user: Employee,
+        @Param('scheduleId', ParseUUIDPipe) scheduleId: string,
+    ): Promise<ScheduleMyReferenceMutationResponseDto> {
+        return this.scheduleManagementService.removeMyScheduleReference(user, scheduleId);
     }
 
     @Post()

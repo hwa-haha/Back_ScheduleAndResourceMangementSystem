@@ -9,11 +9,15 @@ import { NotificationContextModule } from '../../context/notification/notificati
 import { FileContextModule } from '../../context/file/file.context.module';
 import { ProjectContextModule } from '../../context/project/project.context.module';
 import { EmployeeContextModule } from '../../context/employee/employee.context.module';
+import { DomainScheduleParticipantModule } from '../../domain/schedule-participant/schedule-participant.module';
+import { DomainScheduleMyReferenceModule } from '../../domain/schedule-my-reference/schedule-my-reference.module';
 import { createSimpleScheduleTestData } from './test-data/schedule-test-data';
 
 @Module({
     imports: [
         ScheduleContextModule,
+        DomainScheduleParticipantModule,
+        DomainScheduleMyReferenceModule,
         ResourceContextModule,
         ReservationContextModule,
         NotificationContextModule,

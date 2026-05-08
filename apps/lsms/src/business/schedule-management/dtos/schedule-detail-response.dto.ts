@@ -360,4 +360,18 @@ export class ScheduleDetailResponseDto {
         required: false,
     })
     reservation?: ScheduleDetailReservationDto;
+
+    @ApiProperty({
+        description:
+            '「내 일정에 표시(참조)」 영역 전체 표시 여부. 예약자·참석자이거나, 부서 일정이면서 일정에 연결된 부서 중 직원 EDP 부서와 겹치면 false (내 일정에 이미 소속으로 포함).',
+        example: true,
+    })
+    showMyScheduleReferenceControl: boolean;
+
+    @ApiProperty({
+        description:
+            '내 일정(참조)에 포함됨. showMyScheduleReferenceControl이 true일 때만 의미가 있으며, false인 경우 항상 false.',
+        example: false,
+    })
+    myScheduleReferenceIncluded: boolean;
 }

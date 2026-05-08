@@ -25,6 +25,7 @@ import { DomainResourceGroupModule } from './resource-group/resource-group.modul
 import { DomainResourceManagerModule } from './resource-manager/resource-manager.module';
 import { DomainScheduleModule } from './schedule/schedule.module';
 import { DomainScheduleDepartmentModule } from './schedule-department/schedule-department.module';
+import { DomainScheduleMyReferenceModule } from './schedule-my-reference/schedule-my-reference.module';
 import { DomainScheduleParticipantModule } from './schedule-participant/schedule-participant.module';
 import { DomainScheduleRelationModule } from './schedule-relation/schedule-relation.module';
 import { DomainVehicleInfoModule } from './vehicle-info/vehicle-info.module';
@@ -74,6 +75,7 @@ import { DomainDepartmentHistoryModule } from '@libs/modules/department-history/
         DomainReservationVehicleModule,
         DomainScheduleModule,
         DomainScheduleDepartmentModule,
+        DomainScheduleMyReferenceModule,
         DomainScheduleParticipantModule,
         DomainScheduleRelationModule,
         DomainVehicleInfoModule,
@@ -114,6 +116,7 @@ import { DomainDepartmentHistoryModule } from '@libs/modules/department-history/
         DomainResourceManagerModule,
         DomainScheduleModule,
         DomainScheduleDepartmentModule,
+        DomainScheduleMyReferenceModule,
         DomainScheduleParticipantModule,
         DomainScheduleRelationModule,
         DomainVehicleInfoModule,
